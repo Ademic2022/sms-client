@@ -3,9 +3,10 @@
 import Link from "next/link";
 import { useState } from "react";
 
+import { IconDownload } from "@/components/icons";
 import { NoticeText } from "@/components/privacy/NoticeText";
 import { SettingsNav } from "@/components/SettingsNav";
-import { ActionDialog, Badge, Button, Card, ErrorNote, Field, Loading, Notice, PageHeader, RowLink, Stat, Tabs, Textarea } from "@/components/ui";
+import { ActionDialog, Badge, Button, ButtonLink, Card, ErrorNote, Field, Loading, Notice, PageHeader, RowLink, Stat, Tabs, Textarea } from "@/components/ui";
 import { graphql } from "@/gql";
 import { gql, useGql } from "@/lib/api";
 import { useDerivedState } from "@/lib/hooks";
@@ -108,6 +109,14 @@ export default function PrivacySettingsPage() {
             )}
           </>
         )}
+      </Card>
+
+      <Card
+        title="A copy of your school's records"
+        description="Everything the portal holds for your school in one Excel workbook: students, guardians, staff, bills, payments, scores and attendance. Use it for your own backups, or if you ever move to another system."
+        actions={<ButtonLink href="/files/school-records.xlsx" size="sm" variant="secondary" icon={<IconDownload size={15} />}>Download records</ButtonLink>}
+      >
+        <p className="text-sm text-muted">Downloads are recorded in the audit log. The file contains children&apos;s personal data: keep it somewhere safe and do not email it.</p>
       </Card>
 
       <ActionDialog

@@ -2,9 +2,9 @@
 
 import { useState, type FormEvent } from "react";
 
-import { IconReceipt } from "@/components/icons";
+import { IconDownload, IconReceipt } from "@/components/icons";
 import { StudentPicker, type PickedStudent } from "@/components/StudentPicker";
-import { Button, Card, Empty, ErrorNote, Field, IconButton, Input, Loading, Notice, PageHeader, Select, StatusBadge, Table, TD, TH } from "@/components/ui";
+import { Button, ButtonLink, Card, Dialog, Empty, ErrorNote, Field, IconButton, Input, Loading, Notice, PageHeader, Select, StatusBadge, Table, TD, TH } from "@/components/ui";
 import { graphql } from "@/gql";
 import { gql, useGql } from "@/lib/api";
 import { naira, toKobo } from "@/lib/money";
@@ -42,6 +42,9 @@ function localDateTime() {
 export default function PaymentsPage() {
   const { can } = useSession();
   const [method, setMethod] = useState("");
+  const [exporting, setExporting] = useState(false);
+  const [range, setRange] = useState({ from: "", to: "" });
+  const exportHref = `/files/payments.xlsx?${new URLSearchParams({ ...(range.from && { from: range.from }), ...(range.to && { to: range.to }), ...(method && { method }) })}`;
   const payments = useGql(RecentPaymentsDocument, { method: method || null });
   const [student, setStudent] = useState<PickedStudent | null>(null);
   const balance = useGql(BalanceDocument, student ? { studentId: student.id } : null);
@@ -138,12 +141,13 @@ export default function PaymentsPage() {
       <Card
         flush
         title="Recent payments"
-        actions={
+        actions={<>
           <Select value={method} onChange={(e) => setMethod(e.target.value)} className="w-auto" aria-label="Method">
             <option value="">All methods</option>
             {Object.entries(METHODS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
           </Select>
-        }
+          {can("fees.view") && <Button size="sm" variant="secondary" icon={<IconDownload size={15} />} onClick={() => setExporting(true)}>Export</Button>}
+        </>}
       >
         {payments.isLoading ? (
           <div className="p-5"><Loading /></div>
@@ -172,6 +176,19 @@ export default function PaymentsPage() {
           </Table>
         )}
       </Card>
+      <Dialog
+        open={exporting}
+        onClose={() => setExporting(false)}
+        title="Export payments to Excel"
+        description={`Every payment in the period, with receipt numbers, references and who recorded it, plus reversals and a total. ${method ? `Only ${METHODS[method as keyof typeof METHODS] ?? method} payments, as filtered.` : "All methods."}`}
+        footer={<><Button variant="secondary" onClick={() => setExporting(false)}>Close</Button><ButtonLink href={exportHref} icon={<IconDownload size={15} />}>Download</ButtonLink></>}
+      >
+        <div className="grid grid-cols-2 gap-3">
+          <Field label="From" optional><Input type="date" value={range.from} max={range.to || undefined} onChange={(e) => setRange({ ...range, from: e.target.value })} /></Field>
+          <Field label="To" optional><Input type="date" value={range.to} min={range.from || undefined} onChange={(e) => setRange({ ...range, to: e.target.value })} /></Field>
+        </div>
+        <p className="mt-2 text-xs text-muted">Leave both empty for every payment ever recorded.</p>
+      </Dialog>
     </>
   );
 }

@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 
-import { IconPlus } from "@/components/icons";
+import { IconPlus, IconUpload } from "@/components/icons";
+import { ImportDialog } from "@/components/ImportDialog";
 import { SettingsNav } from "@/components/SettingsNav";
 import { Badge, Button, Card, Checkbox, Dialog, ErrorNote, Field, Input, Loading, Notice, PageHeader, Select, Table, TD, TH } from "@/components/ui";
 import { graphql } from "@/gql";
@@ -59,6 +60,7 @@ export default function StaffPage() {
   const [busy, setBusy] = useState(false);
   const [dialogErr, setDialogErr] = useState<string | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
+  const [importing, setImporting] = useState(false);
 
   if (isLoading) return <Loading />;
   if (!data) return <ErrorNote error={error} />;
@@ -96,7 +98,10 @@ export default function StaffPage() {
       {msg && <Notice tone="success">{msg}</Notice>}
 
       <Card flush title="Staff" description={`${data.staff.length} people`}
-        actions={<Button size="sm" icon={<IconPlus size={15} />} onClick={() => { setDialogErr(null); setForm({ firstName: "", lastName: "", phone: "", email: "", roles: ["subject_teacher"] }); setDialog("add"); }}>Add staff member</Button>}>
+        actions={<>
+          <Button size="sm" variant="secondary" icon={<IconUpload size={15} />} onClick={() => setImporting(true)}>Import from Excel</Button>
+          <Button size="sm" icon={<IconPlus size={15} />} onClick={() => { setDialogErr(null); setForm({ firstName: "", lastName: "", phone: "", email: "", roles: ["subject_teacher"] }); setDialog("add"); }}>Add staff member</Button>
+        </>}>
         <Table>
           <thead><tr><TH>Name</TH><TH>Contact</TH><TH>Roles</TH><TH>Status</TH><TH /></tr></thead>
           <tbody>
@@ -192,6 +197,17 @@ export default function StaffPage() {
           </Field>
         </div>
       </Dialog>
+      <ImportDialog
+        open={importing}
+        onClose={() => setImporting(false)}
+        title="Import staff from Excel"
+        description="One row per person, with their roles. Anyone already on the staff keeps their account and gains the new roles. New staff sign in with their phone number and set a password using “Forgot password”."
+        templateHref="/files/staff/template.xlsx"
+        uploadPath="/files/staff/import/"
+        submitLabel="Import staff"
+        summary={(r) => `${r.created} added, ${r.updated} already on the staff updated.`}
+        onDone={() => void mutate()}
+      />
     </>
   );
 }

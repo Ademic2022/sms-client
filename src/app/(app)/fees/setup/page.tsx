@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 
-import { IconPlus } from "@/components/icons";
+import { IconPlus, IconUpload } from "@/components/icons";
+import { ImportDialog } from "@/components/ImportDialog";
 import { Badge, Button, Card, ErrorNote, FormActions, Input, Loading, Notice, PageHeader, cx } from "@/components/ui";
 import { graphql } from "@/gql";
 import { gql, useGql } from "@/lib/api";
@@ -29,7 +30,8 @@ const SetScheduleDocument = graphql(`
 type Cell = { amount: string; compulsory: boolean };
 
 export default function FeeSetupPage() {
-  const { term } = useSession();
+  const { term, can } = useSession();
+  const [importing, setImporting] = useState(false);
   const { data, error, isLoading, mutate } = useGql(FeeSetupDocument, term ? { termId: term.id } : null);
   const [cells, setCells] = useDerivedState(
     data,
@@ -152,6 +154,25 @@ export default function FeeSetupPage() {
           </FormActions>
         </>
       )}
+      {can("fees.manage") && (
+        <Card
+          title="Opening balances"
+          description="New to the portal? Bring across what each student owed, or paid ahead, from your old records. These count in every balance, reminder and debtors list."
+          actions={<Button size="sm" variant="secondary" icon={<IconUpload size={15} />} onClick={() => setImporting(true)}>Import from Excel</Button>}
+        >
+          <p className="text-sm text-muted">The template lists every active student. Fill in the amounts you need and leave the rest blank. You can also change one student&apos;s opening balance from their fees account.</p>
+        </Card>
+      )}
+      <ImportDialog
+        open={importing}
+        onClose={() => setImporting(false)}
+        title="Import opening balances"
+        description="Amounts in naira. Use a minus sign for money paid ahead. Uploading again replaces a student's earlier opening balance."
+        templateHref="/files/fees/opening-balances.xlsx"
+        uploadPath="/files/fees/opening-balances/import/"
+        submitLabel="Import balances"
+        summary={(r) => `Opening balances saved for ${r.saved} student${r.saved === 1 ? "" : "s"}, totalling ₦${(Number(r.total_kobo) / 100).toLocaleString("en-NG")}.`}
+      />
     </>
   );
 }

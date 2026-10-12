@@ -1,8 +1,8 @@
-# Akada · sms-client
+# Akademiq · sms-client
 
-The web app for **Akada**, a multi-tenant school management platform for Nigerian private nursery, primary and secondary schools. It's a mobile-first, installable progressive web app (PWA). Teachers enter scores and take registers on their phones, even offline. Principals approve and publish results, bursars collect fees, and parents pay online and download report cards.
+The web app for **Akademiq**, a multi-tenant school management platform for Nigerian private nursery, primary and secondary schools. It's a mobile-first, installable progressive web app (PWA). Teachers enter scores and take registers on their phones, even offline. Principals approve and publish results, bursars collect fees, and parents pay online and download report cards.
 
-Each school opens the app on its own address, for example `greenfield.akada.ng`, with its own name, crest and colours. The bare domain shows the marketing homepage and school sign-up.
+Each school opens the app on its own address, for example `greenfield.akademiq.ng`, with its own name, crest and colours. The bare domain shows the marketing homepage and school sign-up.
 
 > **Backend:** [sms-server](https://github.com/Ademic2022/sms-server), Django with a GraphQL API. This app needs it running.
 
@@ -38,13 +38,13 @@ Each school opens the app on its own address, for example `greenfield.akada.ng`,
 | Role | Screens |
 | --- | --- |
 | School owner | Overview: fees billed, collected and outstanding, enrolment by level, results progress |
-| Administrator | Students (search, add, Excel import, profiles, withdraw or transfer), academic setup, staff and roles, school settings, billing (invoices, online payment, invoice PDFs, buying SMS units), privacy notice and consent coverage, paper consent forms on student profiles, support access, audit log |
+| Administrator | Students (search, add, Excel import, profiles, withdraw or transfer), academic setup, staff and roles (with Excel import), school settings including automatic fee reminders, message delivery reports and resending to failed numbers, a download of all school records, billing (invoices, online payment, invoice PDFs, buying SMS units), privacy notice and consent coverage, paper consent forms on student profiles, support access, audit log |
 | Class teacher | One-tap daily register, class broadsheet, report card comments, behaviour and skills ratings |
 | Subject teacher | Score grid with autosave, offline queueing, limits per assessment column, and Excel download and upload |
 | Principal | Missing scores per class, approve and lock, publish on a chosen date, generate report cards for a whole class |
-| Bursar | Fee setup, term bills, discounts, cash, POS and bank payments, receipts, students owing, SMS fee reminders |
+| Bursar | Fee setup, term bills, discounts, opening balances (by hand or from Excel), cash, POS and bank payments, receipts, payments export for the accountant, students owing, SMS fee reminders |
 | Parent | Each child's balance and bill, one payment covering several children, results by term, report card and receipt downloads, privacy notice and consent (asked before first use, withdrawable at any time) |
-| Platform admin | Schools, usage, suspension, SMS sender name approval, SMS unit credits, subscription invoices (raise, record bank transfers, void) |
+| Platform admin | Schools, usage per school (sign-ins, active people, money collected, SMS units), suspension, SMS sender name approval, SMS unit credits, subscription invoices (raise, record bank transfers, void) |
 
 ## Tech stack
 

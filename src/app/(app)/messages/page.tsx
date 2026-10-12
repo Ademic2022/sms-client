@@ -4,17 +4,20 @@ import Link from "next/link";
 import { useDeferredValue, useState } from "react";
 
 import { IconMessage, IconSend } from "@/components/icons";
-import { Badge, Button, Card, Checkbox, Empty, ErrorNote, Field, Input, Loading, Notice, PageHeader, Select, Textarea, cx } from "@/components/ui";
+import { ActionDialog, Badge, Button, Card, Checkbox, Empty, ErrorNote, Field, Input, Loading, Notice, PageHeader, Select, Textarea, cx } from "@/components/ui";
 import { graphql } from "@/gql";
 import { gql, useGql } from "@/lib/api";
+import { localPhone } from "@/lib/money";
 import { ArmsDocument } from "@/lib/queries";
 import { useSession } from "@/lib/session";
+
+const ResendDocument = graphql(`mutation ResendFailed($messageId: ID!) { resendFailed(messageId: $messageId) { id unitsUsed } }`);
 
 const MessagesDocument = graphql(`
   query Messages {
     smsWalletBalance
     messages(limit: 30) {
-      id kind audience title body unitsUsed createdAt sendSms
+      id kind audience title body unitsUsed createdAt sendSms isAutomatic
       arm { label }
       delivery { queued sent delivered failed skipped }
       failedRecipients { id phone error }
@@ -51,6 +54,7 @@ const KIND_LABELS: Record<string, string> = {
 
 export default function MessagesPage() {
   const { can } = useSession();
+  const [resending, setResending] = useState<{ id: string; count: number } | null>(null);
   const { data, isLoading, mutate } = useGql(MessagesDocument, {});
   const arms = useGql(ArmsDocument, {});
   const [form, setForm] = useState({ audience: "all_parents", armId: "", title: "", body: "", sendSms: true, showInApp: true });
@@ -157,18 +161,18 @@ export default function MessagesPage() {
           ) : (
             <ul className="max-h-[720px] overflow-y-auto">
               {data.messages.map((m) => {
-                const sent = m.delivery.sent + m.delivery.delivered;
                 return (
                   <li key={m.id} className="border-b border-line px-5 py-4 last:border-b-0">
                     <div className="flex items-baseline justify-between gap-3">
-                      <span className="truncate text-sm font-medium text-ink">{m.title || KIND_LABELS[m.kind] || m.kind}</span>
+                      <span className="flex min-w-0 items-center gap-2"><span className="truncate text-sm font-medium text-ink">{m.title || KIND_LABELS[m.kind] || m.kind}</span>{m.isAutomatic && <Badge tone="brand">Automatic</Badge>}</span>
                       <time className="flex-none text-xs text-muted">{new Date(m.createdAt).toLocaleString("en-NG", { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" })}</time>
                     </div>
                     <div className="mt-0.5 text-xs text-muted">{AUDIENCES[m.audience]?.label ?? "Individual"}{m.arm && ` · ${m.arm.label}`}</div>
                     <p className="mt-1.5 line-clamp-2 text-[13px] leading-relaxed text-muted">{m.body}</p>
                     {m.sendSms && (
                       <div className="mt-2 flex flex-wrap gap-1.5">
-                        {sent > 0 && <Badge tone="good" dot>{sent} sent</Badge>}
+                        {m.delivery.delivered > 0 && <Badge tone="good" dot>{m.delivery.delivered} delivered</Badge>}
+                        {m.delivery.sent > 0 && <Badge dot>{m.delivery.sent} awaiting delivery report</Badge>}
                         {m.delivery.queued > 0 && <Badge dot>{m.delivery.queued} queued</Badge>}
                         {m.delivery.failed > 0 && <Badge tone="bad" dot>{m.delivery.failed} failed</Badge>}
                         {m.delivery.skipped > 0 && <Badge tone="warn" dot>{m.delivery.skipped} not sent: no units</Badge>}
@@ -176,10 +180,17 @@ export default function MessagesPage() {
                       </div>
                     )}
                     {m.failedRecipients.length > 0 && (
-                      <details className="mt-2 text-xs">
-                        <summary className="cursor-pointer font-medium text-red-700 dark:text-red-300">Show failed numbers</summary>
-                        <ul className="mt-1 space-y-0.5 text-muted">{m.failedRecipients.map((r) => <li key={r.id}>{r.phone}: {r.error}</li>)}</ul>
-                      </details>
+                      <div className="mt-2 flex flex-wrap items-start justify-between gap-2 text-xs">
+                        <details>
+                          <summary className="cursor-pointer font-medium text-red-700 dark:text-red-300">Show failed numbers</summary>
+                          <ul className="mt-1 space-y-0.5 text-muted">{m.failedRecipients.map((r) => <li key={r.id}><span className="tabular-nums">{localPhone(r.phone)}</span>: {r.error}</li>)}</ul>
+                        </details>
+                        {can("messaging.send") && (
+                          <Button size="sm" variant="secondary" onClick={() => setResending({ id: m.id, count: m.failedRecipients.length })}>
+                            Resend to {m.failedRecipients.length} number{m.failedRecipients.length === 1 ? "" : "s"}
+                          </Button>
+                        )}
+                      </div>
                     )}
                   </li>
                 );
@@ -188,6 +199,18 @@ export default function MessagesPage() {
           )}
         </Card>
       </div>
+      <ActionDialog
+        open={resending !== null}
+        onClose={() => setResending(null)}
+        title={`Resend to ${resending?.count ?? 0} number${resending?.count === 1 ? "" : "s"}?`}
+        description="Each parent gets the same text as before. This uses SMS units again. If a number is on Do Not Disturb or switched off, it may fail again."
+        confirmLabel="Resend"
+        onConfirm={async () => {
+          const { resendFailed } = await gql(ResendDocument, { messageId: resending!.id });
+          setMsg(`Resent. ${resendFailed.unitsUsed} SMS units used.`);
+          await mutate();
+        }}
+      />
     </>
   );
 }

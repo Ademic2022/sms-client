@@ -117,7 +117,7 @@ export type PlatformSchoolsQueryVariables = Exact<{
 }>;
 
 
-export type PlatformSchoolsQuery = { platformSchools: Array<{ id: string, name: string, slug: string, status: string, accessMode: string, plan: string | null, studentCount: number, trialEndsAt: string | null, lastActivityAt: string | null, createdAt: string, smsSenderId: string, smsSenderStatus: string }> };
+export type PlatformSchoolsQuery = { platformSchools: Array<{ id: string, name: string, slug: string, status: string, accessMode: string, plan: string | null, studentCount: number, trialEndsAt: string | null, lastActivityAt: string | null, createdAt: string, smsSenderId: string, smsSenderStatus: string, usage: { signIns7d: number, activeUsers7d: number, smsUnits30d: number, collected30dKobo: number, onlineShare30d: number, unpaidInvoices: number } }> };
 
 export type SetSchoolStatusMutationVariables = Exact<{
   schoolId: string | number;
@@ -243,7 +243,17 @@ export type LedgerQueryVariables = Exact<{
 }>;
 
 
-export type LedgerQuery = { ledger: { balanceKobo: number, chargedKobo: number, paidKobo: number, student: { id: string, fullName: string, admissionNumber: string, currentArm: { label: string } | null }, bills: Array<{ id: string, broughtForwardKobo: number, totalKobo: number, term: { id: string, label: string }, lines: Array<{ id: string, kind: string, description: string, amountKobo: number, isOptional: boolean }> }>, payments: Array<{ id: string, amountKobo: number, method: string, status: string, receiptNumber: string, reference: string, paidAt: string, reversedReason: string }>, discounts: Array<{ id: string, name: string, kind: string, value: number, item: { name: string } | null, term: { label: string } | null }> }, feeItems: Array<{ id: string, name: string }> };
+export type LedgerQuery = { ledger: { balanceKobo: number, chargedKobo: number, paidKobo: number, openingBalance: { amountKobo: number, asOf: string, note: string } | null, student: { id: string, fullName: string, admissionNumber: string, currentArm: { label: string } | null }, bills: Array<{ id: string, broughtForwardKobo: number, totalKobo: number, term: { id: string, label: string }, lines: Array<{ id: string, kind: string, description: string, amountKobo: number, isOptional: boolean }> }>, payments: Array<{ id: string, amountKobo: number, method: string, status: string, receiptNumber: string, reference: string, paidAt: string, reversedReason: string }>, discounts: Array<{ id: string, name: string, kind: string, value: number, item: { name: string } | null, term: { label: string } | null }> }, feeItems: Array<{ id: string, name: string }> };
+
+export type SetOpeningBalanceMutationVariables = Exact<{
+  studentId: string | number;
+  amountKobo?: number | null | undefined;
+  asOf?: string | null | undefined;
+  note: string;
+}>;
+
+
+export type SetOpeningBalanceMutation = { setOpeningBalance: { amountKobo: number } | null };
 
 export type AddDiscountMutationVariables = Exact<{
   studentId: string | number;
@@ -283,10 +293,17 @@ export type ReversePaymentMutationVariables = Exact<{
 
 export type ReversePaymentMutation = { reversePayment: { id: string, status: string } };
 
+export type ResendFailedMutationVariables = Exact<{
+  messageId: string | number;
+}>;
+
+
+export type ResendFailedMutation = { resendFailed: { id: string, unitsUsed: number } };
+
 export type MessagesQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type MessagesQuery = { smsWalletBalance: number, messages: Array<{ id: string, kind: string, audience: string, title: string, body: string, unitsUsed: number, createdAt: string, sendSms: boolean, arm: { label: string } | null, delivery: { queued: number, sent: number, delivered: number, failed: number, skipped: number }, failedRecipients: Array<{ id: string, phone: string, error: string }> }> };
+export type MessagesQuery = { smsWalletBalance: number, messages: Array<{ id: string, kind: string, audience: string, title: string, body: string, unitsUsed: number, createdAt: string, sendSms: boolean, isAutomatic: boolean, arm: { label: string } | null, delivery: { queued: number, sent: number, delivered: number, failed: number, skipped: number }, failedRecipients: Array<{ id: string, phone: string, error: string }> }> };
 
 export type EstimateMessageQueryVariables = Exact<{
   body: string;
@@ -562,7 +579,7 @@ export type ConfirmPlatformPaymentMutation = { confirmPlatformPayment: { referen
 export type SchoolSettingsQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type SchoolSettingsQuery = { school: { name: string, motto: string, address: string, phone: string, email: string, primaryColor: string, secondaryColor: string } | null, schoolSettings: { showClassPosition: boolean, admissionNumberFormat: string, admissionNumberPrefix: string, resultDebtThresholdKobo: number | null, transactionChargeBearer: string, smsSenderId: string, smsSenderStatus: string, notifyParentOnAbsence: boolean, reportTemplate: string, principalTitle: string }, supportGrants: Array<{ id: string, reason: string, expiresAt: string, grantedBy: string }>, schoolBranding: { logoUrl: string | null, signatureUrl: string | null, stampUrl: string | null } };
+export type SchoolSettingsQuery = { school: { name: string, motto: string, address: string, phone: string, email: string, primaryColor: string, secondaryColor: string } | null, schoolSettings: { showClassPosition: boolean, admissionNumberFormat: string, admissionNumberPrefix: string, resultDebtThresholdKobo: number | null, transactionChargeBearer: string, smsSenderId: string, smsSenderStatus: string, notifyParentOnAbsence: boolean, reportTemplate: string, principalTitle: string, feeRemindersEnabled: boolean, feeReminderEveryDays: number, feeReminderMinBalanceKobo: number, feeReminderTemplate: string }, supportGrants: Array<{ id: string, reason: string, expiresAt: string, grantedBy: string }>, schoolBranding: { logoUrl: string | null, signatureUrl: string | null, stampUrl: string | null } };
 
 export type UpdateSchoolSettingsMutationVariables = Exact<{
   name?: string | null | undefined;
@@ -576,6 +593,11 @@ export type UpdateSchoolSettingsMutationVariables = Exact<{
 
 
 export type UpdateSchoolSettingsMutation = { updateSchoolSettings: { showClassPosition: boolean } };
+
+export type FeeReminderStatusQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type FeeReminderStatusQuery = { feeReminderStatus: { enabled: boolean, nextDueOn: string | null, lastSentAt: string | null, recipients: number, units: number, walletBalance: number, sample: string | null } };
 
 export type GrantSupportMutationVariables = Exact<{
   reason: string;
@@ -959,6 +981,14 @@ export const PlatformSchoolsDocument = new TypedDocumentString(`
     createdAt
     smsSenderId
     smsSenderStatus
+    usage {
+      signIns7d
+      activeUsers7d
+      smsUnits30d
+      collected30dKobo
+      onlineShare30d
+      unpaidInvoices
+    }
   }
 }
     `) as unknown as TypedDocumentString<PlatformSchoolsQuery, PlatformSchoolsQueryVariables>;
@@ -1164,6 +1194,11 @@ export const LedgerDocument = new TypedDocumentString(`
     balanceKobo
     chargedKobo
     paidKobo
+    openingBalance {
+      amountKobo
+      asOf
+      note
+    }
     student {
       id
       fullName
@@ -1217,6 +1252,18 @@ export const LedgerDocument = new TypedDocumentString(`
   }
 }
     `) as unknown as TypedDocumentString<LedgerQuery, LedgerQueryVariables>;
+export const SetOpeningBalanceDocument = new TypedDocumentString(`
+    mutation SetOpeningBalance($studentId: ID!, $amountKobo: Int, $asOf: Date, $note: String!) {
+  setOpeningBalance(
+    studentId: $studentId
+    amountKobo: $amountKobo
+    asOf: $asOf
+    note: $note
+  ) {
+    amountKobo
+  }
+}
+    `) as unknown as TypedDocumentString<SetOpeningBalanceMutation, SetOpeningBalanceMutationVariables>;
 export const AddDiscountDocument = new TypedDocumentString(`
     mutation AddDiscount($studentId: ID!, $name: String!, $kind: String!, $value: Kobo!, $itemId: ID) {
   addDiscount(
@@ -1258,6 +1305,14 @@ export const ReversePaymentDocument = new TypedDocumentString(`
   }
 }
     `) as unknown as TypedDocumentString<ReversePaymentMutation, ReversePaymentMutationVariables>;
+export const ResendFailedDocument = new TypedDocumentString(`
+    mutation ResendFailed($messageId: ID!) {
+  resendFailed(messageId: $messageId) {
+    id
+    unitsUsed
+  }
+}
+    `) as unknown as TypedDocumentString<ResendFailedMutation, ResendFailedMutationVariables>;
 export const MessagesDocument = new TypedDocumentString(`
     query Messages {
   smsWalletBalance
@@ -1270,6 +1325,7 @@ export const MessagesDocument = new TypedDocumentString(`
     unitsUsed
     createdAt
     sendSms
+    isAutomatic
     arm {
       label
     }
@@ -1865,6 +1921,10 @@ export const SchoolSettingsDocument = new TypedDocumentString(`
     notifyParentOnAbsence
     reportTemplate
     principalTitle
+    feeRemindersEnabled
+    feeReminderEveryDays
+    feeReminderMinBalanceKobo
+    feeReminderTemplate
   }
   supportGrants {
     id
@@ -1894,6 +1954,19 @@ export const UpdateSchoolSettingsDocument = new TypedDocumentString(`
   }
 }
     `) as unknown as TypedDocumentString<UpdateSchoolSettingsMutation, UpdateSchoolSettingsMutationVariables>;
+export const FeeReminderStatusDocument = new TypedDocumentString(`
+    query FeeReminderStatus {
+  feeReminderStatus {
+    enabled
+    nextDueOn
+    lastSentAt
+    recipients
+    units
+    walletBalance
+    sample
+  }
+}
+    `) as unknown as TypedDocumentString<FeeReminderStatusQuery, FeeReminderStatusQueryVariables>;
 export const GrantSupportDocument = new TypedDocumentString(`
     mutation GrantSupport($reason: String!, $hours: Int!) {
   grantSupportAccess(reason: $reason, hours: $hours) {

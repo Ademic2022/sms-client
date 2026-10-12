@@ -248,6 +248,16 @@ type FeeItemType {
   order: Int!
 }
 
+type FeeReminderStatus {
+  enabled: Boolean!
+  nextDueOn: Date
+  lastSentAt: DateTime
+  recipients: Int!
+  units: Int!
+  walletBalance: Int!
+  sample: String
+}
+
 type FeeScheduleType {
   id: ID!
   amountKobo: Kobo!
@@ -331,6 +341,7 @@ type Ledger {
   balanceKobo: Kobo!
   chargedKobo: Kobo!
   paidKobo: Kobo!
+  openingBalance: OpeningBalanceType
   bills: [BillType!]!
   payments: [PaymentType!]!
   discounts: [DiscountType!]!
@@ -398,6 +409,8 @@ type MessageRecipientType {
   status: String!
   units: Int!
   error: String!
+  statusDetail: String!
+  deliveredAt: DateTime
 }
 
 type MessageType {
@@ -411,6 +424,7 @@ type MessageType {
   senderId: String!
   unitsUsed: Int!
   createdAt: DateTime!
+  isAutomatic: Boolean!
   arm: ArmType
   delivery: DeliveryCounts!
   failedRecipients: [MessageRecipientType!]!
@@ -460,6 +474,11 @@ type Mutation {
   unlockResults(armId: ID!, termId: ID!, reason: String!): String!
   publishResults(armId: ID!, termId: ID!, publishAt: DateTime = null, notifyParents: Boolean! = true): String!
   generateReportCards(armId: ID!, termId: ID!): Boolean!
+
+  """
+  Set or clear what a student owed before the school joined. Negative means paid ahead.
+  """
+  setOpeningBalance(studentId: ID!, amountKobo: Int, asOf: Date = null, note: String! = ""): OpeningBalanceType
   saveFeeItem(name: String!, order: Int! = 0, id: ID = null): FeeItemType!
   setFeeSchedule(termId: ID!, schedules: [ScheduleInput!]!): [FeeScheduleType!]!
   generateBills(termId: ID!, armId: ID = null): Int!
@@ -470,6 +489,11 @@ type Mutation {
   reversePayment(paymentId: ID!, reason: String!): PaymentType!
   startCheckout(payFor: [PayFor!]!, callbackUrl: String!, email: String = null): CheckoutResult!
   sendMessage(audience: String!, body: String!, title: String! = "", armId: ID = null, sendSms: Boolean! = true, showInApp: Boolean! = true): MessageType!
+
+  """
+  Send a message again to the numbers it failed to reach. Uses SMS units.
+  """
+  resendFailed(messageId: ID!): MessageType!
 
   """A parent consents for their children under the current notice."""
   giveConsent(studentIds: [ID!]!): MyConsent!
@@ -534,6 +558,12 @@ type Notice {
   title: String!
   body: String!
   createdAt: String!
+}
+
+type OpeningBalanceType {
+  amountKobo: Kobo!
+  asOf: Date!
+  note: String!
 }
 
 type OwnerDashboard {
@@ -660,6 +690,11 @@ type Query {
   smsWalletBalance: Int!
   estimateMessage(body: String!, audience: String!, armId: ID = null): SmsEstimate!
 
+  """
+  Automatic fee reminders: when the next goes out and who it would reach.
+  """
+  feeReminderStatus: FeeReminderStatus!
+
   """In-app notices for the logged-in user."""
   notices(limit: Int! = 20): [Notice!]!
 
@@ -753,6 +788,7 @@ type SchoolRow {
   createdAt: DateTime!
   smsSenderId: String!
   smsSenderStatus: String!
+  usage: SchoolUsage!
 }
 
 type SchoolSettings {
@@ -766,6 +802,19 @@ type SchoolSettings {
   notifyParentOnAbsence: Boolean!
   reportTemplate: String!
   principalTitle: String!
+  feeRemindersEnabled: Boolean!
+  feeReminderEveryDays: Int!
+  feeReminderMinBalanceKobo: Kobo!
+  feeReminderTemplate: String!
+}
+
+type SchoolUsage {
+  signIns7d: Int!
+  activeUsers7d: Int!
+  smsUnits30d: Int!
+  collected30dKobo: Kobo!
+  onlineShare30d: Float!
+  unpaidInvoices: Int!
 }
 
 type ScoreCell {

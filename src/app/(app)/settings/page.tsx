@@ -17,6 +17,7 @@ const SettingsDocument = graphql(`
     schoolSettings {
       showClassPosition admissionNumberFormat admissionNumberPrefix resultDebtThresholdKobo transactionChargeBearer
       smsSenderId smsSenderStatus notifyParentOnAbsence reportTemplate principalTitle
+      feeRemindersEnabled feeReminderEveryDays feeReminderMinBalanceKobo feeReminderTemplate
     }
     supportGrants { id reason expiresAt grantedBy }
     schoolBranding { logoUrl signatureUrl stampUrl }
@@ -29,6 +30,10 @@ const UpdateDocument = graphql(`
       showClassPosition
     }
   }
+`);
+
+const ReminderStatusDocument = graphql(`
+  query FeeReminderStatus { feeReminderStatus { enabled nextDueOn lastSentAt recipients units walletBalance sample } }
 `);
 
 const GrantDocument = graphql(`mutation GrantSupport($reason: String!, $hours: Int!) { grantSupportAccess(reason: $reason, hours: $hours) { id } }`);
@@ -49,13 +54,19 @@ export default function SettingsPage() {
       showClassPosition: ss.showClassPosition, admissionNumberFormat: ss.admissionNumberFormat, admissionNumberPrefix: ss.admissionNumberPrefix,
       debt: ss.resultDebtThresholdKobo === null || ss.resultDebtThresholdKobo === undefined ? "" : String(ss.resultDebtThresholdKobo / 100),
       bearer: ss.transactionChargeBearer, sender: ss.smsSenderId, notifyAbsence: ss.notifyParentOnAbsence, reportTemplate: ss.reportTemplate, principalTitle: ss.principalTitle,
+      remindersOn: ss.feeRemindersEnabled, remindEvery: String(ss.feeReminderEveryDays), remindMin: ss.feeReminderMinBalanceKobo ? String(ss.feeReminderMinBalanceKobo / 100) : "",
+      remindText: ss.feeReminderTemplate,
     }),
-    { showClassPosition: true, admissionNumberFormat: "", admissionNumberPrefix: "", debt: "", bearer: "school", sender: "", notifyAbsence: false, reportTemplate: "classic", principalTitle: "Principal" },
+    {
+      showClassPosition: true, admissionNumberFormat: "", admissionNumberPrefix: "", debt: "", bearer: "school", sender: "", notifyAbsence: false, reportTemplate: "classic", principalTitle: "Principal",
+      remindersOn: false, remindEvery: "14", remindMin: "", remindText: "",
+    },
   );
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [supportReason, setSupportReason] = useState("");
+  const reminders = useGql(ReminderStatusDocument, canSchool ? {} : null);
 
   if (!canSchool) {
     return (
@@ -79,17 +90,25 @@ export default function SettingsPage() {
       setBusy(false);
       return;
     }
+    const remindMinKobo = s.remindMin.trim() === "" ? 0 : toKobo(s.remindMin);
+    if (remindMinKobo === null) {
+      setErr("Enter a valid minimum balance for fee reminders.");
+      setBusy(false);
+      return;
+    }
     const current = data?.schoolSettings;
     const settingsJson: Record<string, unknown> = {
       show_class_position: s.showClassPosition, admission_number_format: s.admissionNumberFormat, admission_number_prefix: s.admissionNumberPrefix,
       result_debt_threshold_kobo: debtKobo, transaction_charge_bearer: s.bearer, notify_parent_on_absence: s.notifyAbsence,
       report_template: s.reportTemplate, principal_title: s.principalTitle,
+      fee_reminders_enabled: s.remindersOn, fee_reminder_every_days: Number(s.remindEvery), fee_reminder_min_balance_kobo: remindMinKobo,
+      fee_reminder_template: s.remindText,
     };
     if (s.sender !== current?.smsSenderId) settingsJson.sms_sender_id = s.sender;
     try {
       await gql(UpdateDocument, { ...school, settingsJson });
       setMsg("Settings saved.");
-      await Promise.all([mutate(), refresh()]);
+      await Promise.all([mutate(), refresh(), reminders.mutate()]);
     } catch (e) {
       setErr((e as Error).message);
     } finally {
@@ -183,6 +202,35 @@ export default function SettingsPage() {
             <Checkbox label="Text parents when a child is marked absent" description="Uses one SMS unit per parent per absence." checked={s.notifyAbsence} onChange={(v) => setS({ ...s, notifyAbsence: v })} />
           </div>
         </FormSection>
+        <FormSection title="Automatic fee reminders" description="An SMS to parents who still owe, sent at 10am on a schedule while a term is running. Parents with several children get one message.">
+          <div className="space-y-4">
+            <Checkbox label="Send fee reminders automatically" description="Never on Sundays, never outside term, and never while the portal is read-only." checked={s.remindersOn} onChange={(v) => setS({ ...s, remindersOn: v })} />
+            {s.remindersOn && (
+              <>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <Field label="How often">
+                    <Select value={s.remindEvery} onChange={(e) => setS({ ...s, remindEvery: e.target.value })}>
+                      <option value="7">Every week</option>
+                      <option value="14">Every two weeks</option>
+                      <option value="21">Every three weeks</option>
+                      <option value="30">Every month</option>
+                    </Select>
+                  </Field>
+                  <Field label="Only when the balance is more than" optional hint="Leave empty to remind everyone who owes anything.">
+                    <div className="relative">
+                      <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted">₦</span>
+                      <Input inputMode="decimal" value={s.remindMin} onChange={(e) => setS({ ...s, remindMin: e.target.value })} className="pl-7 tabular-nums" placeholder="5,000" />
+                    </div>
+                  </Field>
+                </div>
+                <Field label="Message" hint={<>Use {"{student_name}"}, {"{balance}"}, {"{school_name}"} and {"{portal}"}. {"{balance}"} is required.</>}>
+                  <Textarea rows={3} value={s.remindText} onChange={(e) => setS({ ...s, remindText: e.target.value })} />
+                </Field>
+              </>
+            )}
+            {reminders.data && <ReminderSummary status={reminders.data.feeReminderStatus} />}
+          </div>
+        </FormSection>
       </Card>
       <FormActions><Button busy={busy} onClick={save}>Save settings</Button></FormActions>
 
@@ -206,5 +254,24 @@ export default function SettingsPage() {
         </div>
       </Card>
     </>
+  );
+}
+
+function ReminderSummary({ status }: { status: { enabled: boolean; nextDueOn?: string | null; lastSentAt?: string | null; recipients: number; units: number; walletBalance: number; sample?: string | null } }) {
+  const day = (iso: string) => new Date(iso).toLocaleDateString("en-NG", { weekday: "short", day: "numeric", month: "long" });
+  const short = status.enabled && status.units > status.walletBalance;
+  return (
+    <div className="space-y-2 rounded-lg border border-line bg-subtle/50 px-4 py-3 text-[13px] text-muted">
+      <div>
+        {status.enabled
+          ? status.nextDueOn ? <>Next reminder <span className="font-medium text-ink">{day(status.nextDueOn)}</span>, to </> : <>No reminder scheduled: no term is running. Right now it would go to </>
+          : <>Turned off. If it were on, it would go to </>}
+        <span className="font-medium text-ink">{status.recipients} parent{status.recipients === 1 ? "" : "s"}</span> and use about {status.units} SMS unit{status.units === 1 ? "" : "s"}.
+        {status.lastSentAt && <> Last sent {day(status.lastSentAt)}.</>}
+      </div>
+      {short && <div className="font-medium text-amber-800 dark:text-amber-200">Your wallet has {status.walletBalance} units, not enough for the next reminder. Buy units under Billing.</div>}
+      {status.sample && <div className="rounded-md border border-line bg-surface px-3 py-2 text-ink">{status.sample}</div>}
+      <div className="text-xs">Saved settings only. Save to update this preview.</div>
+    </div>
   );
 }

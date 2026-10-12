@@ -7,11 +7,13 @@ import { ActionDialog, Badge, Button, Card, Empty, ErrorNote, Loading, Notice, P
 import { InvoicesPanel } from "@/components/console/InvoicesPanel";
 import { graphql } from "@/gql";
 import { gql, useGql } from "@/lib/api";
+import { naira } from "@/lib/money";
 
 const PlatformSchoolsDocument = graphql(`
   query PlatformSchools($search: String) {
     platformSchools(search: $search) {
       id name slug status accessMode plan studentCount trialEndsAt lastActivityAt createdAt smsSenderId smsSenderStatus
+      usage { signIns7d activeUsers7d smsUnits30d collected30dKobo onlineShare30d unpaidInvoices }
     }
   }
 `);
@@ -84,7 +86,7 @@ export default function ConsolePage() {
           <div className="p-5"><Empty title="No schools found" icon={<IconBuilding size={18} />} /></div>
         ) : (
           <Table>
-            <thead><tr><TH>School</TH><TH align="right">Students</TH><TH>Plan</TH><TH>Status</TH><TH>Last active</TH><TH /></tr></thead>
+            <thead><tr><TH>School</TH><TH align="right">Students</TH><TH>Plan</TH><TH>Status</TH><TH>Last 7 days</TH><TH>Last 30 days</TH><TH /></tr></thead>
             <tbody>
               {schools.map((s) => {
                 const onTrial = s.trialEndsAt && new Date(s.trialEndsAt) > new Date();
@@ -94,7 +96,14 @@ export default function ConsolePage() {
                     <TD align="right" className="tabular-nums">{s.studentCount.toLocaleString("en-NG")}</TD>
                     <TD>{onTrial ? <Badge tone="brand">Trial to {new Date(s.trialEndsAt!).toLocaleDateString("en-NG", { day: "numeric", month: "short" })}</Badge> : <span className="text-muted">{s.plan ?? "No plan"}</span>}</TD>
                     <TD><StatusBadge status={s.status === "active" && s.accessMode !== "full" ? s.accessMode : s.status} /></TD>
-                    <TD className="text-muted">{ago(s.lastActivityAt)}</TD>
+                    <TD className="whitespace-nowrap text-muted">
+                      <div className="text-ink">{s.usage.activeUsers7d} people, {s.usage.signIns7d} sign-ins</div>
+                      <div className="text-xs">Last active {ago(s.lastActivityAt).toLowerCase()}</div>
+                    </TD>
+                    <TD className="whitespace-nowrap text-muted">
+                      <div className="text-ink tabular-nums">{naira(s.usage.collected30dKobo)} collected</div>
+                      <div className="text-xs">{Math.round(s.usage.onlineShare30d * 100)}% online · {s.usage.smsUnits30d.toLocaleString("en-NG")} SMS units{s.usage.unpaidInvoices ? ` · ${s.usage.unpaidInvoices} unpaid invoice${s.usage.unpaidInvoices > 1 ? "s" : ""}` : ""}</div>
+                    </TD>
                     <TD align="right">
                       <div className="flex justify-end gap-2">
                         <Button size="sm" variant="secondary" onClick={() => setCrediting(s)}>Add SMS units</Button>

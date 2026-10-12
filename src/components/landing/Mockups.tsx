@@ -167,7 +167,7 @@ export function PhoneMock() {
             Greenfield Schools: N85,000 received for Chidinma Okafor (GRE/2025/0142). Receipt RCT/2026/000318. Balance N0.
           </div>
           <div className="lp-pop max-w-[88%] rounded-2xl rounded-bl-md bg-white px-3 py-2 shadow-sm" style={{ animationDelay: "1.9s" }}>
-            First term results for Chidinma are now available. Log in at greenfield.akada.ng to view.
+            First term results for Chidinma are now available. Log in at greenfield.akademiq.ng to view.
           </div>
           <div className="pt-1 text-center text-[8.5px] text-[#7b847e]">Today 4:12 PM</div>
         </div>

@@ -134,7 +134,7 @@ export default function SignUpPage() {
       aside={ASIDE}
       title="Create your school's portal"
       subtitle={`${SITE.trialDays}-day free trial. No card required.`}
-      footer={<p>Already set up? Sign in from your school&apos;s own web address, for example <span className="font-medium text-ink">yourschool.{host || "akada.ng"}</span>.</p>}
+      footer={<p>Already set up? Sign in from your school&apos;s own web address, for example <span className="font-medium text-ink">yourschool.{host || "akademiq.ng"}</span>.</p>}
     >
       <form onSubmit={submit} className="space-y-6">
         {error && <AuthAlert>{error}</AuthAlert>}
@@ -154,7 +154,7 @@ export default function SignUpPage() {
                 className="h-12 min-w-0 flex-1 bg-transparent px-3.5 text-[15px] text-ink outline-none"
                 placeholder="greenfield"
               />
-              <span className="flex items-center border-l border-line bg-subtle px-3.5 text-sm text-muted">.{host || "akada.ng"}</span>
+              <span className="flex items-center border-l border-line bg-subtle px-3.5 text-sm text-muted">.{host || "akademiq.ng"}</span>
             </div>
           </AuthField>
           <div>
