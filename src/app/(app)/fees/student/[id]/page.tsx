@@ -3,7 +3,7 @@
 import { useParams } from "next/navigation";
 import { useState } from "react";
 
-import { IconPlus, IconReceipt } from "@/components/icons";
+import { IconClose, IconPlus, IconReceipt } from "@/components/icons";
 import { ActionDialog, Badge, Button, Card, Dialog, ErrorNote, Field, IconButton, Input, Loading, Notice, PageHeader, Select, Stat, StatusBadge, Table, TD } from "@/components/ui";
 import { graphql } from "@/gql";
 import { gql, useGql } from "@/lib/api";
@@ -35,6 +35,10 @@ const AddBillItemDocument = graphql(`
   }
 `);
 
+const RemoveBillItemDocument = graphql(`
+  mutation RemoveBillItem($lineId: ID!, $reason: String!) { removeBillItem(lineId: $lineId, reason: $reason) { id } }
+`);
+
 const ReversePaymentDocument = graphql(`
   mutation ReversePayment($paymentId: ID!, $reason: String!) { reversePayment(paymentId: $paymentId, reason: $reason) { id status } }
 `);
@@ -47,6 +51,7 @@ export default function StudentLedgerPage() {
   const { data, error, isLoading, mutate } = useGql(LedgerDocument, { studentId: id });
   const [msg, setMsg] = useState<string | null>(null);
   const [reversing, setReversing] = useState<{ id: string; receipt: string; amount: number } | null>(null);
+  const [removing, setRemoving] = useState<{ id: string; description: string; amount: number } | null>(null);
   const [dialog, setDialog] = useState<null | "discount" | "item">(null);
   const [discount, setDiscount] = useState({ name: "Sibling discount", kind: "percent", value: "10", itemId: "" });
   const [extra, setExtra] = useState({ itemId: "", description: "", amount: "", credit: false, reason: "" });
@@ -114,11 +119,19 @@ export default function StudentLedgerPage() {
                         {line.kind === "adjustment" && <span className="ml-2"><Badge tone="warn">Adjustment</Badge></span>}
                       </TD>
                       <TD align="right" className={line.amountKobo < 0 ? "tabular-nums text-emerald-700 dark:text-emerald-300" : "tabular-nums"}>{naira(line.amountKobo)}</TD>
+                      {manage && (
+                        <TD align="right" className="w-12">
+                          <IconButton label={`Remove ${line.description}`} onClick={() => setRemoving({ id: line.id, description: line.description, amount: line.amountKobo })}>
+                            <IconClose size={14} />
+                          </IconButton>
+                        </TD>
+                      )}
                     </tr>
                   ))}
                   <tr className="bg-subtle/50">
                     <TD className="font-semibold">Term total</TD>
                     <TD align="right" className="font-semibold tabular-nums">{naira(bill.totalKobo)}</TD>
+                    {manage && <TD />}
                   </tr>
                 </tbody>
               </Table>
@@ -171,6 +184,22 @@ export default function StudentLedgerPage() {
         </div>
       </div>
 
+      <ActionDialog
+        open={removing !== null}
+        onClose={() => setRemoving(null)}
+        title={`Remove ${removing?.description ?? ""} from the bill?`}
+        description={removing && removing.amount < 0
+          ? `This discount is worth ${naira(-removing.amount)}. Removing it increases the balance by that amount. The change is recorded in the audit log with your name.`
+          : `${removing ? naira(removing.amount) : ""} will no longer be charged, and the balance goes down by that amount. The change is recorded in the audit log with your name.`}
+        confirmLabel="Remove from bill"
+        tone="danger"
+        input={{ label: "Reason", placeholder: "e.g. Student does not use the school bus this term" }}
+        onConfirm={async (reason) => {
+          await gql(RemoveBillItemDocument, { lineId: removing!.id, reason });
+          setMsg(`${removing!.description} removed from the bill.`);
+          await mutate();
+        }}
+      />
       <ActionDialog
         open={reversing !== null}
         onClose={() => setReversing(null)}

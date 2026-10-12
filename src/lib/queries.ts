@@ -19,3 +19,14 @@ export const StudentSearchDocument = graphql(`
     students(search: $search, limit: 8) { items { id fullName admissionNumber currentArm { label } } }
   }
 `);
+
+/** A parent's children and their consent status under the school's current privacy notice. */
+export const MyConsentDocument = graphql(`
+  query MyConsent {
+    myConsent {
+      pending
+      notice { version body publishedAt schoolName }
+      children { consented givenAt source student { id fullName firstName currentArm { label } } }
+    }
+  }
+`);

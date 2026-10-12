@@ -119,8 +119,9 @@ export function AuthShell({ title, subtitle, children, footer, wide, aside }: { 
             <svg viewBox="0 0 16 16" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden><rect x="3" y="7" width="10" height="7" rx="1.5" /><path d="M5.5 7V5a2.5 2.5 0 0 1 5 0v2" /></svg>
             Encrypted connection. We never ask for your password by SMS or phone.
           </span>
-          <span>
-            Powered by <Link href={school ? "#" : "/"} className="font-medium text-ink hover:underline">{SITE.name}</Link>
+          <span className="flex items-center gap-4">
+            {school && <Link href="/privacy" className="font-medium text-ink hover:underline">Privacy notice</Link>}
+            <span>Powered by <Link href={school ? "#" : "/"} className="font-medium text-ink hover:underline">{SITE.name}</Link></span>
           </span>
         </footer>
       </main>

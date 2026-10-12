@@ -98,6 +98,13 @@ type ChildAccount {
   currentBill: BillType
 }
 
+type ChildConsent {
+  student: StudentType!
+  consented: Boolean!
+  givenAt: DateTime
+  source: String
+}
+
 type ChildResult {
   visible: Boolean!
   reason: String!
@@ -150,6 +157,27 @@ type ComponentType {
 type Conflict {
   studentId: ID!
   serverStatus: String!
+}
+
+type ConsentOverview {
+  notice: PrivacyNoticeType!
+  activeStudents: Int!
+  withConsent: Int!
+  missing: [StudentType!]!
+  dpaVersion: String!
+  dpaAcceptedAt: DateTime
+  dpaAcceptedBy: String
+}
+
+type ConsentRecord {
+  id: ID!
+  guardianName: String!
+  noticeVersion: String!
+  source: String!
+  givenAt: DateTime!
+  recordedBy: String
+  withdrawnAt: DateTime
+  withdrawalReason: String!
 }
 
 """Date (isoformat)"""
@@ -210,6 +238,13 @@ type GradingScaleType {
   id: ID!
   name: String!
   bands: [GradeBandType!]!
+}
+
+type GuardianConsentRow {
+  guardianId: ID!
+  guardianName: String!
+  relationship: String!
+  consent: ConsentRecord
 }
 
 input GuardianInput {
@@ -380,6 +415,25 @@ type Mutation {
   reversePayment(paymentId: ID!, reason: String!): PaymentType!
   startCheckout(payFor: [PayFor!]!, callbackUrl: String!, email: String = null): CheckoutResult!
   sendMessage(audience: String!, body: String!, title: String! = "", armId: ID = null, sendSms: Boolean! = true, showInApp: Boolean! = true): MessageType!
+
+  """A parent consents for their children under the current notice."""
+  giveConsent(studentIds: [ID!]!): MyConsent!
+
+  """A parent withdraws their consent for one child."""
+  withdrawMyConsent(studentId: ID!, reason: String!): MyConsent!
+
+  """Staff record consent a parent gave on the school's paper form."""
+  recordPaperConsent(studentId: ID!, guardianId: ID!, givenOn: Date!): Boolean!
+
+  """
+  Staff record that a parent withdrew consent, for example by letter or in person.
+  """
+  recordConsentWithdrawal(consentId: ID!, reason: String!): Boolean!
+
+  """
+  Publish a new version of the privacy notice. Every parent is asked to consent again.
+  """
+  publishPrivacyNotice(body: String!): PrivacyNoticeType!
   setSchoolStatus(schoolId: ID!, status: String!, reason: String! = ""): SchoolRow!
   setSenderIdStatus(schoolId: ID!, status: String!): Boolean!
   creditSmsUnits(schoolId: ID!, units: Int!, reason: String!, amountPaidKobo: Int! = 0): Int!
@@ -390,6 +444,12 @@ type Mutation {
 type MyClasses {
   classArms: [ArmType!]!
   subjectAssignments: [SubjectAssignmentType!]!
+}
+
+type MyConsent {
+  notice: PrivacyNoticeType!
+  children: [ChildConsent!]!
+  pending: Boolean!
 }
 
 type Notice {
@@ -427,6 +487,13 @@ type PaymentType {
   recordedBy: UserType
 }
 
+type PrivacyNoticeType {
+  version: Int!
+  body: String!
+  publishedAt: DateTime!
+  schoolName: String!
+}
+
 input PromotionDecision {
   studentId: ID!
   decision: String!
@@ -444,6 +511,9 @@ type Query {
 
   """Public branding for the school on this web address."""
   school: SchoolPublic
+
+  """Logo, principal's signature and stamp, for school settings."""
+  schoolBranding: SchoolBranding!
   schoolSettings: SchoolSettings!
   sessions: [SessionType!]!
   terms(sessionId: ID = null): [TermType!]!
@@ -486,6 +556,18 @@ type Query {
 
   """In-app notices for the logged-in user."""
   notices(limit: Int! = 20): [Notice!]!
+
+  """
+  The school's current privacy notice. Public, so parents can read it before signing in.
+  """
+  privacyNotice: PrivacyNoticeType
+
+  """
+  A parent's children and whether they have consented under the current notice.
+  """
+  myConsent: MyConsent!
+  studentConsent(studentId: ID!): StudentConsent!
+  consentOverview(limit: Int! = 100): ConsentOverview!
   platformSchools(search: String = null): [SchoolRow!]!
   auditLog(objectType: String = null, objectId: String = null, actionPrefix: String = null, limit: Int! = 100): [AuditEntry!]!
   supportGrants: [SupportGrantType!]!
@@ -526,6 +608,12 @@ input ScheduleInput {
   itemId: ID!
   amountKobo: Kobo!
   isCompulsory: Boolean! = true
+}
+
+type SchoolBranding {
+  logoUrl: String
+  signatureUrl: String
+  stampUrl: String
 }
 
 type SchoolPublic {
@@ -617,6 +705,12 @@ type SmsEstimate {
   units: Int!
   walletBalance: Int!
   senderId: String!
+}
+
+type StudentConsent {
+  noticeVersion: Int!
+  guardians: [GuardianConsentRow!]!
+  history: [ConsentRecord!]!
 }
 
 type StudentGuardianType {

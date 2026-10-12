@@ -10,6 +10,13 @@ export type AttendanceEntry = {
   studentId: string | number;
 };
 
+export type BandInput = {
+  grade: string;
+  maxScore: string;
+  minScore: string;
+  remark?: string;
+};
+
 export type CommentInput = {
   classTeacherComment?: string | null | undefined;
   principalComment?: string | null | undefined;
@@ -28,6 +35,11 @@ export type GuardianInput = {
   phone: string;
   relationship?: string;
   title?: string;
+};
+
+export type LevelSubjectInput = {
+  category?: string;
+  subjectId: string | number;
 };
 
 export type PayFor = {
@@ -255,6 +267,14 @@ export type AddBillItemMutationVariables = Exact<{
 
 export type AddBillItemMutation = { addBillItem: { id: string } };
 
+export type RemoveBillItemMutationVariables = Exact<{
+  lineId: string | number;
+  reason: string;
+}>;
+
+
+export type RemoveBillItemMutation = { removeBillItem: { id: string } };
+
 export type ReversePaymentMutationVariables = Exact<{
   paymentId: string | number;
   reason: string;
@@ -303,6 +323,21 @@ export type ChildLedgerQueryVariables = Exact<{
 
 
 export type ChildLedgerQuery = { ledger: { balanceKobo: number, student: { fullName: string, admissionNumber: string, currentArm: { label: string } | null }, payments: Array<{ id: string, amountKobo: number, method: string, status: string, receiptNumber: string, paidAt: string }> } };
+
+export type GiveConsentMutationVariables = Exact<{
+  studentIds: Array<string | number> | string | number;
+}>;
+
+
+export type GiveConsentMutation = { giveConsent: { pending: boolean } };
+
+export type WithdrawMyConsentMutationVariables = Exact<{
+  studentId: string | number;
+  reason: string;
+}>;
+
+
+export type WithdrawMyConsentMutation = { withdrawMyConsent: { pending: boolean } };
 
 export type MyChildrenQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -438,7 +473,7 @@ export type AllClassesAndSubjectsQuery = { levels: Array<{ id: string, name: str
 export type AcademicSetupQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type AcademicSetupQuery = { sessions: Array<{ id: string, name: string, startDate: string, endDate: string, isCurrent: boolean }>, terms: Array<{ id: string, number: number, label: string, startDate: string, endDate: string, daysOpened: number, nextTermBegins: string | null, isCurrent: boolean, session: { id: string } }>, levels: Array<{ id: string, name: string, section: string, hasSubjectSelection: boolean, gradingScale: { id: string, name: string } | null, nextLevel: { name: string } | null, arms: Array<{ id: string, name: string, label: string, studentCount: number, classTeacher: { id: string, user: { fullName: string } } | null }>, components: Array<{ id: string, name: string, maxScore: string }>, levelSubjects: Array<{ category: string, subject: { id: string, name: string } }> }>, staff: Array<{ id: string, user: { fullName: string } }> };
+export type AcademicSetupQuery = { sessions: Array<{ id: string, name: string, startDate: string, endDate: string, isCurrent: boolean }>, terms: Array<{ id: string, number: number, label: string, startDate: string, endDate: string, daysOpened: number, nextTermBegins: string | null, isCurrent: boolean, session: { id: string } }>, levels: Array<{ id: string, name: string, section: string, order: number, hasSubjectSelection: boolean, reportTemplate: string, gradingScale: { id: string, name: string } | null, nextLevel: { id: string, name: string } | null, arms: Array<{ id: string, name: string, label: string, studentCount: number, classTeacher: { id: string, user: { fullName: string } } | null }>, components: Array<{ id: string, name: string, maxScore: string }>, levelSubjects: Array<{ category: string, subject: { id: string, name: string } }> }>, staff: Array<{ id: string, user: { fullName: string } }>, gradingScales: Array<{ id: string, name: string, bands: Array<{ grade: string, minScore: string, maxScore: string, remark: string }> }>, subjects: Array<{ id: string, name: string }> };
 
 export type SaveSessionMutationVariables = Exact<{
   name: string;
@@ -499,7 +534,7 @@ export type PromoteClassMutation = { promoteClass: { promoted: number, repeated:
 export type SchoolSettingsQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type SchoolSettingsQuery = { school: { name: string, motto: string, address: string, phone: string, email: string, primaryColor: string, secondaryColor: string } | null, schoolSettings: { showClassPosition: boolean, admissionNumberFormat: string, admissionNumberPrefix: string, resultDebtThresholdKobo: number | null, transactionChargeBearer: string, smsSenderId: string, smsSenderStatus: string, notifyParentOnAbsence: boolean, reportTemplate: string, principalTitle: string }, supportGrants: Array<{ id: string, reason: string, expiresAt: string, grantedBy: string }> };
+export type SchoolSettingsQuery = { school: { name: string, motto: string, address: string, phone: string, email: string, primaryColor: string, secondaryColor: string } | null, schoolSettings: { showClassPosition: boolean, admissionNumberFormat: string, admissionNumberPrefix: string, resultDebtThresholdKobo: number | null, transactionChargeBearer: string, smsSenderId: string, smsSenderStatus: string, notifyParentOnAbsence: boolean, reportTemplate: string, principalTitle: string }, supportGrants: Array<{ id: string, reason: string, expiresAt: string, grantedBy: string }>, schoolBranding: { logoUrl: string | null, signatureUrl: string | null, stampUrl: string | null } };
 
 export type UpdateSchoolSettingsMutationVariables = Exact<{
   name?: string | null | undefined;
@@ -528,6 +563,18 @@ export type RevokeSupportMutationVariables = Exact<{
 
 
 export type RevokeSupportMutation = { revokeSupportAccess: boolean };
+
+export type ConsentOverviewQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type ConsentOverviewQuery = { consentOverview: { activeStudents: number, withConsent: number, dpaVersion: string, dpaAcceptedAt: string | null, dpaAcceptedBy: string | null, notice: { version: number, body: string, publishedAt: string }, missing: Array<{ id: string, fullName: string, admissionNumber: string, currentArm: { label: string } | null }> } };
+
+export type PublishPrivacyNoticeMutationVariables = Exact<{
+  body: string;
+}>;
+
+
+export type PublishPrivacyNoticeMutation = { publishPrivacyNotice: { version: number } };
 
 export type StaffQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -570,7 +617,12 @@ export type StudentProfileQueryVariables = Exact<{
 }>;
 
 
-export type StudentProfileQuery = { student: { id: string, fullName: string, firstName: string, lastName: string, admissionNumber: string, gender: string, dateOfBirth: string | null, admittedOn: string, status: string, examNumbers: Record<string, unknown>, medicalNotes: string | null, emergencyContactName: string | null, emergencyContactPhone: string | null, currentArm: { id: string, label: string } | null, guardianLinks: Array<{ relationship: string, isPrimary: boolean, guardian: { id: string, title: string, firstName: string, lastName: string, phone: string, email: string } }> }, ledger?: { balanceKobo: number, chargedKobo: number, paidKobo: number }, studentSubjects?: Array<{ id: string, name: string }> };
+export type StudentProfileQuery = { student: { id: string, fullName: string, firstName: string, middleName: string, lastName: string, admissionNumber: string, gender: string, dateOfBirth: string | null, admittedOn: string, status: string, examNumbers: Record<string, unknown>, photoUrl: string | null, medicalNotes: string | null, emergencyContactName: string | null, emergencyContactPhone: string | null, currentArm: { id: string, label: string, levelId: string } | null, guardianLinks: Array<{ relationship: string, isPrimary: boolean, guardian: { id: string, title: string, firstName: string, lastName: string, phone: string, email: string } }> }, ledger?: { balanceKobo: number, chargedKobo: number, paidKobo: number }, studentSubjects?: Array<{ id: string, name: string }> };
+
+export type LevelElectivesQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type LevelElectivesQuery = { levels: Array<{ id: string, hasSubjectSelection: boolean, levelSubjects: Array<{ category: string, subject: { id: string, name: string } }> }> };
 
 export type ChangeStudentStatusMutationVariables = Exact<{
   id: string | number;
@@ -623,6 +675,11 @@ export type LoginMutationVariables = Exact<{
 
 export type LoginMutation = { login: { permissions: Array<string>, isPlatformAdmin: boolean } };
 
+export type PublicPrivacyNoticeQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type PublicPrivacyNoticeQuery = { privacyNotice: { version: number, body: string, publishedAt: string, schoolName: string } | null };
+
 export type SignUpSchoolMutationVariables = Exact<{
   name: string;
   slug: string;
@@ -643,6 +700,91 @@ export type LogoutMutationVariables = Exact<{ [key: string]: never; }>;
 
 export type LogoutMutation = { logout: boolean };
 
+export type SaveLevelMutationVariables = Exact<{
+  id?: string | number | null | undefined;
+  name: string;
+  section: string;
+  gradingScaleId?: string | number | null | undefined;
+  nextLevelId?: string | number | null | undefined;
+  hasSubjectSelection: boolean;
+  reportTemplate: string;
+}>;
+
+
+export type SaveLevelMutation = { saveLevel: { id: string } };
+
+export type SaveSubjectMutationVariables = Exact<{
+  name: string;
+}>;
+
+
+export type SaveSubjectMutation = { saveSubject: { id: string, name: string } };
+
+export type SetLevelSubjectsMutationVariables = Exact<{
+  levelId: string | number;
+  subjects: Array<LevelSubjectInput> | LevelSubjectInput;
+}>;
+
+
+export type SetLevelSubjectsMutation = { setLevelSubjects: { id: string } };
+
+export type SaveGradingScaleMutationVariables = Exact<{
+  id?: string | number | null | undefined;
+  name: string;
+  bands: Array<BandInput> | BandInput;
+}>;
+
+
+export type SaveGradingScaleMutation = { saveGradingScale: { id: string } };
+
+export type StudentConsentQueryVariables = Exact<{
+  studentId: string | number;
+}>;
+
+
+export type StudentConsentQuery = { studentConsent: { noticeVersion: number, guardians: Array<{ guardianId: string, guardianName: string, relationship: string, consent: { id: string, source: string, givenAt: string, recordedBy: string | null } | null }>, history: Array<{ id: string, guardianName: string, noticeVersion: string, source: string, givenAt: string, recordedBy: string | null, withdrawnAt: string | null, withdrawalReason: string }> } };
+
+export type RecordPaperConsentMutationVariables = Exact<{
+  studentId: string | number;
+  guardianId: string | number;
+  givenOn: string;
+}>;
+
+
+export type RecordPaperConsentMutation = { recordPaperConsent: boolean };
+
+export type RecordConsentWithdrawalMutationVariables = Exact<{
+  consentId: string | number;
+  reason: string;
+}>;
+
+
+export type RecordConsentWithdrawalMutation = { recordConsentWithdrawal: boolean };
+
+export type UpdateStudentMutationVariables = Exact<{
+  id: string | number;
+  data: StudentInput;
+}>;
+
+
+export type UpdateStudentMutation = { updateStudent: { id: string } };
+
+export type AddGuardianMutationVariables = Exact<{
+  studentId: string | number;
+  guardian: GuardianInput;
+}>;
+
+
+export type AddGuardianMutation = { addGuardian: { id: string } };
+
+export type SetStudentSubjectsMutationVariables = Exact<{
+  studentId: string | number;
+  subjectIds: Array<string | number> | string | number;
+}>;
+
+
+export type SetStudentSubjectsMutation = { setStudentSubjects: Array<{ id: string }> };
+
 export type ArmsQueryVariables = Exact<{ [key: string]: never; }>;
 
 
@@ -659,6 +801,11 @@ export type StudentSearchQueryVariables = Exact<{
 
 
 export type StudentSearchQuery = { students: { items: Array<{ id: string, fullName: string, admissionNumber: string, currentArm: { label: string } | null }> } };
+
+export type MyConsentQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type MyConsentQuery = { myConsent: { pending: boolean, notice: { version: number, body: string, publishedAt: string, schoolName: string }, children: Array<{ consented: boolean, givenAt: string | null, source: string | null, student: { id: string, fullName: string, firstName: string, currentArm: { label: string } | null } }> } };
 
 export type MeQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -1040,6 +1187,13 @@ export const AddBillItemDocument = new TypedDocumentString(`
   }
 }
     `) as unknown as TypedDocumentString<AddBillItemMutation, AddBillItemMutationVariables>;
+export const RemoveBillItemDocument = new TypedDocumentString(`
+    mutation RemoveBillItem($lineId: ID!, $reason: String!) {
+  removeBillItem(lineId: $lineId, reason: $reason) {
+    id
+  }
+}
+    `) as unknown as TypedDocumentString<RemoveBillItemMutation, RemoveBillItemMutationVariables>;
 export const ReversePaymentDocument = new TypedDocumentString(`
     mutation ReversePayment($paymentId: ID!, $reason: String!) {
   reversePayment(paymentId: $paymentId, reason: $reason) {
@@ -1159,6 +1313,20 @@ export const ChildLedgerDocument = new TypedDocumentString(`
   }
 }
     `) as unknown as TypedDocumentString<ChildLedgerQuery, ChildLedgerQueryVariables>;
+export const GiveConsentDocument = new TypedDocumentString(`
+    mutation GiveConsent($studentIds: [ID!]!) {
+  giveConsent(studentIds: $studentIds) {
+    pending
+  }
+}
+    `) as unknown as TypedDocumentString<GiveConsentMutation, GiveConsentMutationVariables>;
+export const WithdrawMyConsentDocument = new TypedDocumentString(`
+    mutation WithdrawMyConsent($studentId: ID!, $reason: String!) {
+  withdrawMyConsent(studentId: $studentId, reason: $reason) {
+    pending
+  }
+}
+    `) as unknown as TypedDocumentString<WithdrawMyConsentMutation, WithdrawMyConsentMutationVariables>;
 export const MyChildrenDocument = new TypedDocumentString(`
     query MyChildren {
   myChildren {
@@ -1428,12 +1596,15 @@ export const AcademicSetupDocument = new TypedDocumentString(`
     id
     name
     section
+    order
     hasSubjectSelection
+    reportTemplate
     gradingScale {
       id
       name
     }
     nextLevel {
+      id
       name
     }
     arms {
@@ -1466,6 +1637,20 @@ export const AcademicSetupDocument = new TypedDocumentString(`
     user {
       fullName
     }
+  }
+  gradingScales {
+    id
+    name
+    bands {
+      grade
+      minScore
+      maxScore
+      remark
+    }
+  }
+  subjects {
+    id
+    name
   }
 }
     `) as unknown as TypedDocumentString<AcademicSetupQuery, AcademicSetupQueryVariables>;
@@ -1555,6 +1740,11 @@ export const SchoolSettingsDocument = new TypedDocumentString(`
     expiresAt
     grantedBy
   }
+  schoolBranding {
+    logoUrl
+    signatureUrl
+    stampUrl
+  }
 }
     `) as unknown as TypedDocumentString<SchoolSettingsQuery, SchoolSettingsQueryVariables>;
 export const UpdateSchoolSettingsDocument = new TypedDocumentString(`
@@ -1584,6 +1774,37 @@ export const RevokeSupportDocument = new TypedDocumentString(`
   revokeSupportAccess(grantId: $id)
 }
     `) as unknown as TypedDocumentString<RevokeSupportMutation, RevokeSupportMutationVariables>;
+export const ConsentOverviewDocument = new TypedDocumentString(`
+    query ConsentOverview {
+  consentOverview(limit: 50) {
+    notice {
+      version
+      body
+      publishedAt
+    }
+    activeStudents
+    withConsent
+    dpaVersion
+    dpaAcceptedAt
+    dpaAcceptedBy
+    missing {
+      id
+      fullName
+      admissionNumber
+      currentArm {
+        label
+      }
+    }
+  }
+}
+    `) as unknown as TypedDocumentString<ConsentOverviewQuery, ConsentOverviewQueryVariables>;
+export const PublishPrivacyNoticeDocument = new TypedDocumentString(`
+    mutation PublishPrivacyNotice($body: String!) {
+  publishPrivacyNotice(body: $body) {
+    version
+  }
+}
+    `) as unknown as TypedDocumentString<PublishPrivacyNoticeMutation, PublishPrivacyNoticeMutationVariables>;
 export const StaffDocument = new TypedDocumentString(`
     query Staff {
   staff {
@@ -1672,6 +1893,7 @@ export const StudentProfileDocument = new TypedDocumentString(`
     id
     fullName
     firstName
+    middleName
     lastName
     admissionNumber
     gender
@@ -1679,12 +1901,14 @@ export const StudentProfileDocument = new TypedDocumentString(`
     admittedOn
     status
     examNumbers
+    photoUrl
     medicalNotes
     emergencyContactName
     emergencyContactPhone
     currentArm {
       id
       label
+      levelId
     }
     guardianLinks {
       relationship
@@ -1710,6 +1934,21 @@ export const StudentProfileDocument = new TypedDocumentString(`
   }
 }
     `) as unknown as TypedDocumentString<StudentProfileQuery, StudentProfileQueryVariables>;
+export const LevelElectivesDocument = new TypedDocumentString(`
+    query LevelElectives {
+  levels {
+    id
+    hasSubjectSelection
+    levelSubjects {
+      category
+      subject {
+        id
+        name
+      }
+    }
+  }
+}
+    `) as unknown as TypedDocumentString<LevelElectivesQuery, LevelElectivesQueryVariables>;
 export const ChangeStudentStatusDocument = new TypedDocumentString(`
     mutation ChangeStudentStatus($id: ID!, $status: String!, $reason: String!) {
   changeStudentStatus(id: $id, status: $status, reason: $reason) {
@@ -1767,6 +2006,16 @@ export const LoginDocument = new TypedDocumentString(`
   }
 }
     `) as unknown as TypedDocumentString<LoginMutation, LoginMutationVariables>;
+export const PublicPrivacyNoticeDocument = new TypedDocumentString(`
+    query PublicPrivacyNotice {
+  privacyNotice {
+    version
+    body
+    publishedAt
+    schoolName
+  }
+}
+    `) as unknown as TypedDocumentString<PublicPrivacyNoticeQuery, PublicPrivacyNoticeQueryVariables>;
 export const SignUpSchoolDocument = new TypedDocumentString(`
     mutation SignUpSchool($name: String!, $slug: String!, $adminFirstName: String!, $adminLastName: String!, $adminPhone: String!, $adminEmail: String, $password: String!, $sections: [String!]!, $accept: Boolean!) {
   signUpSchool(
@@ -1790,6 +2039,106 @@ export const LogoutDocument = new TypedDocumentString(`
   logout
 }
     `) as unknown as TypedDocumentString<LogoutMutation, LogoutMutationVariables>;
+export const SaveLevelDocument = new TypedDocumentString(`
+    mutation SaveLevel($id: ID, $name: String!, $section: String!, $gradingScaleId: ID, $nextLevelId: ID, $hasSubjectSelection: Boolean!, $reportTemplate: String!) {
+  saveLevel(
+    id: $id
+    name: $name
+    section: $section
+    gradingScaleId: $gradingScaleId
+    nextLevelId: $nextLevelId
+    hasSubjectSelection: $hasSubjectSelection
+    reportTemplate: $reportTemplate
+  ) {
+    id
+  }
+}
+    `) as unknown as TypedDocumentString<SaveLevelMutation, SaveLevelMutationVariables>;
+export const SaveSubjectDocument = new TypedDocumentString(`
+    mutation SaveSubject($name: String!) {
+  saveSubject(name: $name) {
+    id
+    name
+  }
+}
+    `) as unknown as TypedDocumentString<SaveSubjectMutation, SaveSubjectMutationVariables>;
+export const SetLevelSubjectsDocument = new TypedDocumentString(`
+    mutation SetLevelSubjects($levelId: ID!, $subjects: [LevelSubjectInput!]!) {
+  setLevelSubjects(levelId: $levelId, subjects: $subjects) {
+    id
+  }
+}
+    `) as unknown as TypedDocumentString<SetLevelSubjectsMutation, SetLevelSubjectsMutationVariables>;
+export const SaveGradingScaleDocument = new TypedDocumentString(`
+    mutation SaveGradingScale($id: ID, $name: String!, $bands: [BandInput!]!) {
+  saveGradingScale(id: $id, name: $name, bands: $bands) {
+    id
+  }
+}
+    `) as unknown as TypedDocumentString<SaveGradingScaleMutation, SaveGradingScaleMutationVariables>;
+export const StudentConsentDocument = new TypedDocumentString(`
+    query StudentConsent($studentId: ID!) {
+  studentConsent(studentId: $studentId) {
+    noticeVersion
+    guardians {
+      guardianId
+      guardianName
+      relationship
+      consent {
+        id
+        source
+        givenAt
+        recordedBy
+      }
+    }
+    history {
+      id
+      guardianName
+      noticeVersion
+      source
+      givenAt
+      recordedBy
+      withdrawnAt
+      withdrawalReason
+    }
+  }
+}
+    `) as unknown as TypedDocumentString<StudentConsentQuery, StudentConsentQueryVariables>;
+export const RecordPaperConsentDocument = new TypedDocumentString(`
+    mutation RecordPaperConsent($studentId: ID!, $guardianId: ID!, $givenOn: Date!) {
+  recordPaperConsent(
+    studentId: $studentId
+    guardianId: $guardianId
+    givenOn: $givenOn
+  )
+}
+    `) as unknown as TypedDocumentString<RecordPaperConsentMutation, RecordPaperConsentMutationVariables>;
+export const RecordConsentWithdrawalDocument = new TypedDocumentString(`
+    mutation RecordConsentWithdrawal($consentId: ID!, $reason: String!) {
+  recordConsentWithdrawal(consentId: $consentId, reason: $reason)
+}
+    `) as unknown as TypedDocumentString<RecordConsentWithdrawalMutation, RecordConsentWithdrawalMutationVariables>;
+export const UpdateStudentDocument = new TypedDocumentString(`
+    mutation UpdateStudent($id: ID!, $data: StudentInput!) {
+  updateStudent(id: $id, data: $data) {
+    id
+  }
+}
+    `) as unknown as TypedDocumentString<UpdateStudentMutation, UpdateStudentMutationVariables>;
+export const AddGuardianDocument = new TypedDocumentString(`
+    mutation AddGuardian($studentId: ID!, $guardian: GuardianInput!) {
+  addGuardian(studentId: $studentId, guardian: $guardian) {
+    id
+  }
+}
+    `) as unknown as TypedDocumentString<AddGuardianMutation, AddGuardianMutationVariables>;
+export const SetStudentSubjectsDocument = new TypedDocumentString(`
+    mutation SetStudentSubjects($studentId: ID!, $subjectIds: [ID!]!) {
+  setStudentSubjects(studentId: $studentId, subjectIds: $subjectIds) {
+    id
+  }
+}
+    `) as unknown as TypedDocumentString<SetStudentSubjectsMutation, SetStudentSubjectsMutationVariables>;
 export const ArmsDocument = new TypedDocumentString(`
     query Arms {
   arms {
@@ -1828,6 +2177,32 @@ export const StudentSearchDocument = new TypedDocumentString(`
   }
 }
     `) as unknown as TypedDocumentString<StudentSearchQuery, StudentSearchQueryVariables>;
+export const MyConsentDocument = new TypedDocumentString(`
+    query MyConsent {
+  myConsent {
+    pending
+    notice {
+      version
+      body
+      publishedAt
+      schoolName
+    }
+    children {
+      consented
+      givenAt
+      source
+      student {
+        id
+        fullName
+        firstName
+        currentArm {
+          label
+        }
+      }
+    }
+  }
+}
+    `) as unknown as TypedDocumentString<MyConsentQuery, MyConsentQueryVariables>;
 export const MeDocument = new TypedDocumentString(`
     query Me {
   me {

@@ -39,12 +39,15 @@ type Documents = {
     "\n  query Ledger($studentId: ID!) {\n    ledger(studentId: $studentId) {\n      balanceKobo chargedKobo paidKobo\n      student { id fullName admissionNumber currentArm { label } }\n      bills { id broughtForwardKobo totalKobo term { id label } lines { id kind description amountKobo isOptional } }\n      payments { id amountKobo method status receiptNumber reference paidAt reversedReason }\n      discounts { id name kind value item { name } term { label } }\n    }\n    feeItems { id name }\n  }\n": typeof types.LedgerDocument,
     "\n  mutation AddDiscount($studentId: ID!, $name: String!, $kind: String!, $value: Kobo!, $itemId: ID) {\n    addDiscount(studentId: $studentId, name: $name, kind: $kind, value: $value, itemId: $itemId) { id }\n  }\n": typeof types.AddDiscountDocument,
     "\n  mutation AddBillItem($billId: ID!, $description: String!, $amountKobo: Kobo!, $itemId: ID, $reason: String!) {\n    addBillItem(billId: $billId, description: $description, amountKobo: $amountKobo, itemId: $itemId, reason: $reason) { id }\n  }\n": typeof types.AddBillItemDocument,
+    "\n  mutation RemoveBillItem($lineId: ID!, $reason: String!) { removeBillItem(lineId: $lineId, reason: $reason) { id } }\n": typeof types.RemoveBillItemDocument,
     "\n  mutation ReversePayment($paymentId: ID!, $reason: String!) { reversePayment(paymentId: $paymentId, reason: $reason) { id status } }\n": typeof types.ReversePaymentDocument,
     "\n  query Messages {\n    smsWalletBalance\n    messages(limit: 30) {\n      id kind audience title body unitsUsed createdAt sendSms\n      arm { label }\n      delivery { queued sent delivered failed skipped }\n      failedRecipients { id phone error }\n    }\n  }\n": typeof types.MessagesDocument,
     "\n  query EstimateMessage($body: String!, $audience: String!, $armId: ID) {\n    estimateMessage(body: $body, audience: $audience, armId: $armId) { recipients units walletBalance senderId }\n  }\n": typeof types.EstimateMessageDocument,
     "\n  mutation SendMessage($audience: String!, $body: String!, $title: String!, $armId: ID, $sendSms: Boolean!, $showInApp: Boolean!) {\n    sendMessage(audience: $audience, body: $body, title: $title, armId: $armId, sendSms: $sendSms, showInApp: $showInApp) { id unitsUsed }\n  }\n": typeof types.SendMessageDocument,
     "\n  query ChildResult($studentId: ID!, $termId: ID!) {\n    childResult(studentId: $studentId, termId: $termId) {\n      visible reason classSize classAverage reportCardUrl\n      result {\n        total average position cumulativeAverage cumulativePosition\n        student { fullName currentArm { label } }\n        subjects { subjectId subjectName total grade remark position cumulativeAverage cumulativeGrade }\n      }\n    }\n  }\n": typeof types.ChildResultDocument,
     "\n  query ChildLedger($studentId: ID!) {\n    ledger(studentId: $studentId) {\n      balanceKobo\n      student { fullName admissionNumber currentArm { label } }\n      payments { id amountKobo method status receiptNumber paidAt }\n    }\n  }\n": typeof types.ChildLedgerDocument,
+    "\n  mutation GiveConsent($studentIds: [ID!]!) { giveConsent(studentIds: $studentIds) { pending } }\n": typeof types.GiveConsentDocument,
+    "\n  mutation WithdrawMyConsent($studentId: ID!, $reason: String!) { withdrawMyConsent(studentId: $studentId, reason: $reason) { pending } }\n": typeof types.WithdrawMyConsentDocument,
     "\n  query MyChildren {\n    myChildren {\n      balanceKobo\n      student { id fullName firstName admissionNumber currentArm { label } }\n      currentBill { totalKobo term { label } lines { id description amountKobo } }\n    }\n  }\n": typeof types.MyChildrenDocument,
     "\n  mutation StartCheckout($payFor: [PayFor!]!, $callbackUrl: String!, $email: String) {\n    startCheckout(payFor: $payFor, callbackUrl: $callbackUrl, email: $email) {\n      reference authorizationUrl totalKobo convenienceFeeKobo\n    }\n  }\n": typeof types.StartCheckoutDocument,
     "\n  query CheckoutStatus($reference: String!) {\n    checkoutStatus(reference: $reference) { reference status amountKobo }\n  }\n": typeof types.CheckoutStatusDocument,
@@ -62,33 +65,48 @@ type Documents = {
     "\n  mutation SaveScores($armId: ID!, $subjectId: ID!, $termId: ID!, $entries: [ScoreEntry!]!) {\n    saveScores(armId: $armId, subjectId: $subjectId, termId: $termId, entries: $entries) {\n      saved\n      conflicts { studentId componentId serverValue }\n    }\n  }\n": typeof types.SaveScoresDocument,
     "\n  query ScoreTargets {\n    myClasses { subjectAssignments { id arm { id label } subject { id name } } }\n  }\n": typeof types.ScoreTargetsDocument,
     "\n  query AllClassesAndSubjects {\n    levels { id name arms { id label } levelSubjects { subject { id name } } }\n  }\n": typeof types.AllClassesAndSubjectsDocument,
-    "\n  query AcademicSetup {\n    sessions { id name startDate endDate isCurrent }\n    terms { id number label startDate endDate daysOpened nextTermBegins isCurrent session { id } }\n    levels {\n      id name section hasSubjectSelection\n      gradingScale { id name }\n      nextLevel { name }\n      arms { id name label studentCount classTeacher { id user { fullName } } }\n      components { id name maxScore }\n      levelSubjects { category subject { id name } }\n    }\n    staff { id user { fullName } }\n  }\n": typeof types.AcademicSetupDocument,
+    "\n  query AcademicSetup {\n    sessions { id name startDate endDate isCurrent }\n    terms { id number label startDate endDate daysOpened nextTermBegins isCurrent session { id } }\n    levels {\n      id name section order hasSubjectSelection reportTemplate\n      gradingScale { id name }\n      nextLevel { id name }\n      arms { id name label studentCount classTeacher { id user { fullName } } }\n      components { id name maxScore }\n      levelSubjects { category subject { id name } }\n    }\n    staff { id user { fullName } }\n    gradingScales { id name bands { grade minScore maxScore remark } }\n    subjects { id name }\n  }\n": typeof types.AcademicSetupDocument,
     "mutation SaveSession($name: String!, $startDate: Date!, $endDate: Date!) { saveSession(name: $name, startDate: $startDate, endDate: $endDate) { id } }": typeof types.SaveSessionDocument,
     "\n  mutation SaveTerm($id: ID, $sessionId: ID!, $number: Int!, $startDate: Date!, $endDate: Date!, $daysOpened: Int!, $nextTermBegins: Date) {\n    saveTerm(id: $id, sessionId: $sessionId, number: $number, startDate: $startDate, endDate: $endDate, daysOpened: $daysOpened, nextTermBegins: $nextTermBegins) { id }\n  }\n": typeof types.SaveTermDocument,
     "mutation SetCurrentTerm($termId: ID!) { setCurrentTerm(termId: $termId) { id } }": typeof types.SetCurrentTermDocument,
     "mutation SaveArm($id: ID, $levelId: ID!, $name: String!, $classTeacherId: ID) { saveArm(id: $id, levelId: $levelId, name: $name, classTeacherId: $classTeacherId) { id } }": typeof types.SaveArmDocument,
     "\n  mutation SetComponents($levelId: ID!, $components: [ComponentInput!]!) { setAssessmentComponents(levelId: $levelId, components: $components) { id } }\n": typeof types.SetComponentsDocument,
     "\n  mutation PromoteClass($armId: ID!, $from: ID!, $to: ID!) { promoteClass(armId: $armId, fromSessionId: $from, toSessionId: $to) { promoted repeated graduated } }\n": typeof types.PromoteClassDocument,
-    "\n  query SchoolSettings {\n    school { name motto address phone email primaryColor secondaryColor }\n    schoolSettings {\n      showClassPosition admissionNumberFormat admissionNumberPrefix resultDebtThresholdKobo transactionChargeBearer\n      smsSenderId smsSenderStatus notifyParentOnAbsence reportTemplate principalTitle\n    }\n    supportGrants { id reason expiresAt grantedBy }\n  }\n": typeof types.SchoolSettingsDocument,
+    "\n  query SchoolSettings {\n    school { name motto address phone email primaryColor secondaryColor }\n    schoolSettings {\n      showClassPosition admissionNumberFormat admissionNumberPrefix resultDebtThresholdKobo transactionChargeBearer\n      smsSenderId smsSenderStatus notifyParentOnAbsence reportTemplate principalTitle\n    }\n    supportGrants { id reason expiresAt grantedBy }\n    schoolBranding { logoUrl signatureUrl stampUrl }\n  }\n": typeof types.SchoolSettingsDocument,
     "\n  mutation UpdateSchoolSettings($name: String, $motto: String, $address: String, $phone: String, $email: String, $primaryColor: String, $settingsJson: JSON) {\n    updateSchoolSettings(name: $name, motto: $motto, address: $address, phone: $phone, email: $email, primaryColor: $primaryColor, settingsJson: $settingsJson) {\n      showClassPosition\n    }\n  }\n": typeof types.UpdateSchoolSettingsDocument,
     "mutation GrantSupport($reason: String!, $hours: Int!) { grantSupportAccess(reason: $reason, hours: $hours) { id } }": typeof types.GrantSupportDocument,
     "mutation RevokeSupport($id: ID!) { revokeSupportAccess(grantId: $id) }": typeof types.RevokeSupportDocument,
+    "\n  query ConsentOverview {\n    consentOverview(limit: 50) {\n      notice { version body publishedAt }\n      activeStudents withConsent dpaVersion dpaAcceptedAt dpaAcceptedBy\n      missing { id fullName admissionNumber currentArm { label } }\n    }\n  }\n": typeof types.ConsentOverviewDocument,
+    "\n  mutation PublishPrivacyNotice($body: String!) { publishPrivacyNotice(body: $body) { version } }\n": typeof types.PublishPrivacyNoticeDocument,
     "\n  query Staff {\n    staff { id title isActive user { id fullName phone email } roles { code name } }\n    roles { code name isSystem }\n    levels { id arms { id label } levelSubjects { subject { id name } } }\n    subjectAssignments { id arm { label } subject { name } teacher { user { fullName } } }\n  }\n": typeof types.StaffDocument,
     "\n  mutation AddStaff($firstName: String!, $lastName: String!, $phone: String, $email: String, $roleCodes: [String!]!) {\n    addStaff(firstName: $firstName, lastName: $lastName, phone: $phone, email: $email, roleCodes: $roleCodes) { id }\n  }\n": typeof types.AddStaffDocument,
     "\n  mutation SetStaffRoles($id: ID!, $roleCodes: [String!]!, $isActive: Boolean!) {\n    setStaffRoles(membershipId: $id, roleCodes: $roleCodes, isActive: $isActive) { id }\n  }\n": typeof types.SetStaffRolesDocument,
     "\n  mutation AssignSubjectTeacher($armId: ID!, $subjectId: ID!, $teacherId: ID!) {\n    assignSubjectTeacher(armId: $armId, subjectId: $subjectId, teacherId: $teacherId) { id }\n  }\n": typeof types.AssignSubjectTeacherDocument,
-    "\n  query StudentProfile($id: ID!, $withFees: Boolean!, $withSubjects: Boolean!) {\n    student(id: $id) {\n      id fullName firstName lastName admissionNumber gender dateOfBirth admittedOn status examNumbers\n      medicalNotes emergencyContactName emergencyContactPhone\n      currentArm { id label }\n      guardianLinks { relationship isPrimary guardian { id title firstName lastName phone email } }\n    }\n    ledger(studentId: $id) @include(if: $withFees) { balanceKobo chargedKobo paidKobo }\n    studentSubjects(studentId: $id) @include(if: $withSubjects) { id name }\n  }\n": typeof types.StudentProfileDocument,
+    "\n  query StudentProfile($id: ID!, $withFees: Boolean!, $withSubjects: Boolean!) {\n    student(id: $id) {\n      id fullName firstName middleName lastName admissionNumber gender dateOfBirth admittedOn status examNumbers photoUrl\n      medicalNotes emergencyContactName emergencyContactPhone\n      currentArm { id label levelId }\n      guardianLinks { relationship isPrimary guardian { id title firstName lastName phone email } }\n    }\n    ledger(studentId: $id) @include(if: $withFees) { balanceKobo chargedKobo paidKobo }\n    studentSubjects(studentId: $id) @include(if: $withSubjects) { id name }\n  }\n": typeof types.StudentProfileDocument,
+    "\n  query LevelElectives {\n    levels { id hasSubjectSelection levelSubjects { category subject { id name } } }\n  }\n": typeof types.LevelElectivesDocument,
     "\n  mutation ChangeStudentStatus($id: ID!, $status: String!, $reason: String!) {\n    changeStudentStatus(id: $id, status: $status, reason: $reason) { id status }\n  }\n": typeof types.ChangeStudentStatusDocument,
     "\n  mutation CreateStudent($data: StudentInput!, $guardians: [GuardianInput!]!) {\n    createStudent(data: $data, guardians: $guardians) { id }\n  }\n": typeof types.CreateStudentDocument,
     "\n  query Students($armId: ID, $search: String, $status: String, $offset: Int!) {\n    students(armId: $armId, search: $search, status: $status, offset: $offset, limit: 50) {\n      total\n      items { id fullName admissionNumber gender status currentArm { id label } }\n    }\n  }\n": typeof types.StudentsDocument,
     "\n  mutation RequestReset($identifier: String!) {\n    requestPasswordReset(identifier: $identifier)\n  }\n": typeof types.RequestResetDocument,
     "\n  mutation ResetPassword($identifier: String!, $code: String!, $newPassword: String!) {\n    resetPassword(identifier: $identifier, code: $code, newPassword: $newPassword)\n  }\n": typeof types.ResetPasswordDocument,
     "\n  mutation Login($identifier: String!, $password: String!) {\n    login(identifier: $identifier, password: $password) {\n      permissions\n      isPlatformAdmin\n    }\n  }\n": typeof types.LoginDocument,
+    "\n  query PublicPrivacyNotice {\n    privacyNotice { version body publishedAt schoolName }\n  }\n": typeof types.PublicPrivacyNoticeDocument,
     "\n  mutation SignUpSchool(\n    $name: String!\n    $slug: String!\n    $adminFirstName: String!\n    $adminLastName: String!\n    $adminPhone: String!\n    $adminEmail: String\n    $password: String!\n    $sections: [String!]!\n    $accept: Boolean!\n  ) {\n    signUpSchool(\n      name: $name\n      slug: $slug\n      adminFirstName: $adminFirstName\n      adminLastName: $adminLastName\n      adminPhone: $adminPhone\n      adminEmail: $adminEmail\n      password: $password\n      sections: $sections\n      acceptDataProcessingAgreement: $accept\n    ) {\n      slug\n      schoolUrl\n    }\n  }\n": typeof types.SignUpSchoolDocument,
     "\n  mutation Logout {\n    logout\n  }\n": typeof types.LogoutDocument,
+    "\n  mutation SaveLevel(\n    $id: ID\n    $name: String!\n    $section: String!\n    $gradingScaleId: ID\n    $nextLevelId: ID\n    $hasSubjectSelection: Boolean!\n    $reportTemplate: String!\n  ) {\n    saveLevel(\n      id: $id\n      name: $name\n      section: $section\n      gradingScaleId: $gradingScaleId\n      nextLevelId: $nextLevelId\n      hasSubjectSelection: $hasSubjectSelection\n      reportTemplate: $reportTemplate\n    ) {\n      id\n    }\n  }\n": typeof types.SaveLevelDocument,
+    "mutation SaveSubject($name: String!) { saveSubject(name: $name) { id name } }": typeof types.SaveSubjectDocument,
+    "\n  mutation SetLevelSubjects($levelId: ID!, $subjects: [LevelSubjectInput!]!) { setLevelSubjects(levelId: $levelId, subjects: $subjects) { id } }\n": typeof types.SetLevelSubjectsDocument,
+    "\n  mutation SaveGradingScale($id: ID, $name: String!, $bands: [BandInput!]!) { saveGradingScale(id: $id, name: $name, bands: $bands) { id } }\n": typeof types.SaveGradingScaleDocument,
+    "\n  query StudentConsent($studentId: ID!) {\n    studentConsent(studentId: $studentId) {\n      noticeVersion\n      guardians { guardianId guardianName relationship consent { id source givenAt recordedBy } }\n      history { id guardianName noticeVersion source givenAt recordedBy withdrawnAt withdrawalReason }\n    }\n  }\n": typeof types.StudentConsentDocument,
+    "\n  mutation RecordPaperConsent($studentId: ID!, $guardianId: ID!, $givenOn: Date!) {\n    recordPaperConsent(studentId: $studentId, guardianId: $guardianId, givenOn: $givenOn)\n  }\n": typeof types.RecordPaperConsentDocument,
+    "\n  mutation RecordConsentWithdrawal($consentId: ID!, $reason: String!) { recordConsentWithdrawal(consentId: $consentId, reason: $reason) }\n": typeof types.RecordConsentWithdrawalDocument,
+    "\n  mutation UpdateStudent($id: ID!, $data: StudentInput!) { updateStudent(id: $id, data: $data) { id } }\n": typeof types.UpdateStudentDocument,
+    "\n  mutation AddGuardian($studentId: ID!, $guardian: GuardianInput!) { addGuardian(studentId: $studentId, guardian: $guardian) { id } }\n": typeof types.AddGuardianDocument,
+    "\n  mutation SetStudentSubjects($studentId: ID!, $subjectIds: [ID!]!) { setStudentSubjects(studentId: $studentId, subjectIds: $subjectIds) { id } }\n": typeof types.SetStudentSubjectsDocument,
     "\n  query Arms {\n    arms { id label levelId studentCount }\n  }\n": typeof types.ArmsDocument,
     "\n  query Terms {\n    terms { id label number isCurrent session { id name } }\n  }\n": typeof types.TermsDocument,
     "\n  query StudentSearch($search: String!) {\n    students(search: $search, limit: 8) { items { id fullName admissionNumber currentArm { label } } }\n  }\n": typeof types.StudentSearchDocument,
+    "\n  query MyConsent {\n    myConsent {\n      pending\n      notice { version body publishedAt schoolName }\n      children { consented givenAt source student { id fullName firstName currentArm { label } } }\n    }\n  }\n": typeof types.MyConsentDocument,
     "\n  query Me {\n    me {\n      permissions\n      roles\n      accessMode\n      isPlatformAdmin\n      viaSupport\n      mustChangePassword\n      user { id fullName firstName phone email }\n      membership { id }\n    }\n    school { name slug motto address phone email primaryColor secondaryColor logoUrl }\n    currentTerm { id label number isCurrent session { id name } }\n  }\n": typeof types.MeDocument,
 };
 const documents: Documents = {
@@ -116,12 +134,15 @@ const documents: Documents = {
     "\n  query Ledger($studentId: ID!) {\n    ledger(studentId: $studentId) {\n      balanceKobo chargedKobo paidKobo\n      student { id fullName admissionNumber currentArm { label } }\n      bills { id broughtForwardKobo totalKobo term { id label } lines { id kind description amountKobo isOptional } }\n      payments { id amountKobo method status receiptNumber reference paidAt reversedReason }\n      discounts { id name kind value item { name } term { label } }\n    }\n    feeItems { id name }\n  }\n": types.LedgerDocument,
     "\n  mutation AddDiscount($studentId: ID!, $name: String!, $kind: String!, $value: Kobo!, $itemId: ID) {\n    addDiscount(studentId: $studentId, name: $name, kind: $kind, value: $value, itemId: $itemId) { id }\n  }\n": types.AddDiscountDocument,
     "\n  mutation AddBillItem($billId: ID!, $description: String!, $amountKobo: Kobo!, $itemId: ID, $reason: String!) {\n    addBillItem(billId: $billId, description: $description, amountKobo: $amountKobo, itemId: $itemId, reason: $reason) { id }\n  }\n": types.AddBillItemDocument,
+    "\n  mutation RemoveBillItem($lineId: ID!, $reason: String!) { removeBillItem(lineId: $lineId, reason: $reason) { id } }\n": types.RemoveBillItemDocument,
     "\n  mutation ReversePayment($paymentId: ID!, $reason: String!) { reversePayment(paymentId: $paymentId, reason: $reason) { id status } }\n": types.ReversePaymentDocument,
     "\n  query Messages {\n    smsWalletBalance\n    messages(limit: 30) {\n      id kind audience title body unitsUsed createdAt sendSms\n      arm { label }\n      delivery { queued sent delivered failed skipped }\n      failedRecipients { id phone error }\n    }\n  }\n": types.MessagesDocument,
     "\n  query EstimateMessage($body: String!, $audience: String!, $armId: ID) {\n    estimateMessage(body: $body, audience: $audience, armId: $armId) { recipients units walletBalance senderId }\n  }\n": types.EstimateMessageDocument,
     "\n  mutation SendMessage($audience: String!, $body: String!, $title: String!, $armId: ID, $sendSms: Boolean!, $showInApp: Boolean!) {\n    sendMessage(audience: $audience, body: $body, title: $title, armId: $armId, sendSms: $sendSms, showInApp: $showInApp) { id unitsUsed }\n  }\n": types.SendMessageDocument,
     "\n  query ChildResult($studentId: ID!, $termId: ID!) {\n    childResult(studentId: $studentId, termId: $termId) {\n      visible reason classSize classAverage reportCardUrl\n      result {\n        total average position cumulativeAverage cumulativePosition\n        student { fullName currentArm { label } }\n        subjects { subjectId subjectName total grade remark position cumulativeAverage cumulativeGrade }\n      }\n    }\n  }\n": types.ChildResultDocument,
     "\n  query ChildLedger($studentId: ID!) {\n    ledger(studentId: $studentId) {\n      balanceKobo\n      student { fullName admissionNumber currentArm { label } }\n      payments { id amountKobo method status receiptNumber paidAt }\n    }\n  }\n": types.ChildLedgerDocument,
+    "\n  mutation GiveConsent($studentIds: [ID!]!) { giveConsent(studentIds: $studentIds) { pending } }\n": types.GiveConsentDocument,
+    "\n  mutation WithdrawMyConsent($studentId: ID!, $reason: String!) { withdrawMyConsent(studentId: $studentId, reason: $reason) { pending } }\n": types.WithdrawMyConsentDocument,
     "\n  query MyChildren {\n    myChildren {\n      balanceKobo\n      student { id fullName firstName admissionNumber currentArm { label } }\n      currentBill { totalKobo term { label } lines { id description amountKobo } }\n    }\n  }\n": types.MyChildrenDocument,
     "\n  mutation StartCheckout($payFor: [PayFor!]!, $callbackUrl: String!, $email: String) {\n    startCheckout(payFor: $payFor, callbackUrl: $callbackUrl, email: $email) {\n      reference authorizationUrl totalKobo convenienceFeeKobo\n    }\n  }\n": types.StartCheckoutDocument,
     "\n  query CheckoutStatus($reference: String!) {\n    checkoutStatus(reference: $reference) { reference status amountKobo }\n  }\n": types.CheckoutStatusDocument,
@@ -139,33 +160,48 @@ const documents: Documents = {
     "\n  mutation SaveScores($armId: ID!, $subjectId: ID!, $termId: ID!, $entries: [ScoreEntry!]!) {\n    saveScores(armId: $armId, subjectId: $subjectId, termId: $termId, entries: $entries) {\n      saved\n      conflicts { studentId componentId serverValue }\n    }\n  }\n": types.SaveScoresDocument,
     "\n  query ScoreTargets {\n    myClasses { subjectAssignments { id arm { id label } subject { id name } } }\n  }\n": types.ScoreTargetsDocument,
     "\n  query AllClassesAndSubjects {\n    levels { id name arms { id label } levelSubjects { subject { id name } } }\n  }\n": types.AllClassesAndSubjectsDocument,
-    "\n  query AcademicSetup {\n    sessions { id name startDate endDate isCurrent }\n    terms { id number label startDate endDate daysOpened nextTermBegins isCurrent session { id } }\n    levels {\n      id name section hasSubjectSelection\n      gradingScale { id name }\n      nextLevel { name }\n      arms { id name label studentCount classTeacher { id user { fullName } } }\n      components { id name maxScore }\n      levelSubjects { category subject { id name } }\n    }\n    staff { id user { fullName } }\n  }\n": types.AcademicSetupDocument,
+    "\n  query AcademicSetup {\n    sessions { id name startDate endDate isCurrent }\n    terms { id number label startDate endDate daysOpened nextTermBegins isCurrent session { id } }\n    levels {\n      id name section order hasSubjectSelection reportTemplate\n      gradingScale { id name }\n      nextLevel { id name }\n      arms { id name label studentCount classTeacher { id user { fullName } } }\n      components { id name maxScore }\n      levelSubjects { category subject { id name } }\n    }\n    staff { id user { fullName } }\n    gradingScales { id name bands { grade minScore maxScore remark } }\n    subjects { id name }\n  }\n": types.AcademicSetupDocument,
     "mutation SaveSession($name: String!, $startDate: Date!, $endDate: Date!) { saveSession(name: $name, startDate: $startDate, endDate: $endDate) { id } }": types.SaveSessionDocument,
     "\n  mutation SaveTerm($id: ID, $sessionId: ID!, $number: Int!, $startDate: Date!, $endDate: Date!, $daysOpened: Int!, $nextTermBegins: Date) {\n    saveTerm(id: $id, sessionId: $sessionId, number: $number, startDate: $startDate, endDate: $endDate, daysOpened: $daysOpened, nextTermBegins: $nextTermBegins) { id }\n  }\n": types.SaveTermDocument,
     "mutation SetCurrentTerm($termId: ID!) { setCurrentTerm(termId: $termId) { id } }": types.SetCurrentTermDocument,
     "mutation SaveArm($id: ID, $levelId: ID!, $name: String!, $classTeacherId: ID) { saveArm(id: $id, levelId: $levelId, name: $name, classTeacherId: $classTeacherId) { id } }": types.SaveArmDocument,
     "\n  mutation SetComponents($levelId: ID!, $components: [ComponentInput!]!) { setAssessmentComponents(levelId: $levelId, components: $components) { id } }\n": types.SetComponentsDocument,
     "\n  mutation PromoteClass($armId: ID!, $from: ID!, $to: ID!) { promoteClass(armId: $armId, fromSessionId: $from, toSessionId: $to) { promoted repeated graduated } }\n": types.PromoteClassDocument,
-    "\n  query SchoolSettings {\n    school { name motto address phone email primaryColor secondaryColor }\n    schoolSettings {\n      showClassPosition admissionNumberFormat admissionNumberPrefix resultDebtThresholdKobo transactionChargeBearer\n      smsSenderId smsSenderStatus notifyParentOnAbsence reportTemplate principalTitle\n    }\n    supportGrants { id reason expiresAt grantedBy }\n  }\n": types.SchoolSettingsDocument,
+    "\n  query SchoolSettings {\n    school { name motto address phone email primaryColor secondaryColor }\n    schoolSettings {\n      showClassPosition admissionNumberFormat admissionNumberPrefix resultDebtThresholdKobo transactionChargeBearer\n      smsSenderId smsSenderStatus notifyParentOnAbsence reportTemplate principalTitle\n    }\n    supportGrants { id reason expiresAt grantedBy }\n    schoolBranding { logoUrl signatureUrl stampUrl }\n  }\n": types.SchoolSettingsDocument,
     "\n  mutation UpdateSchoolSettings($name: String, $motto: String, $address: String, $phone: String, $email: String, $primaryColor: String, $settingsJson: JSON) {\n    updateSchoolSettings(name: $name, motto: $motto, address: $address, phone: $phone, email: $email, primaryColor: $primaryColor, settingsJson: $settingsJson) {\n      showClassPosition\n    }\n  }\n": types.UpdateSchoolSettingsDocument,
     "mutation GrantSupport($reason: String!, $hours: Int!) { grantSupportAccess(reason: $reason, hours: $hours) { id } }": types.GrantSupportDocument,
     "mutation RevokeSupport($id: ID!) { revokeSupportAccess(grantId: $id) }": types.RevokeSupportDocument,
+    "\n  query ConsentOverview {\n    consentOverview(limit: 50) {\n      notice { version body publishedAt }\n      activeStudents withConsent dpaVersion dpaAcceptedAt dpaAcceptedBy\n      missing { id fullName admissionNumber currentArm { label } }\n    }\n  }\n": types.ConsentOverviewDocument,
+    "\n  mutation PublishPrivacyNotice($body: String!) { publishPrivacyNotice(body: $body) { version } }\n": types.PublishPrivacyNoticeDocument,
     "\n  query Staff {\n    staff { id title isActive user { id fullName phone email } roles { code name } }\n    roles { code name isSystem }\n    levels { id arms { id label } levelSubjects { subject { id name } } }\n    subjectAssignments { id arm { label } subject { name } teacher { user { fullName } } }\n  }\n": types.StaffDocument,
     "\n  mutation AddStaff($firstName: String!, $lastName: String!, $phone: String, $email: String, $roleCodes: [String!]!) {\n    addStaff(firstName: $firstName, lastName: $lastName, phone: $phone, email: $email, roleCodes: $roleCodes) { id }\n  }\n": types.AddStaffDocument,
     "\n  mutation SetStaffRoles($id: ID!, $roleCodes: [String!]!, $isActive: Boolean!) {\n    setStaffRoles(membershipId: $id, roleCodes: $roleCodes, isActive: $isActive) { id }\n  }\n": types.SetStaffRolesDocument,
     "\n  mutation AssignSubjectTeacher($armId: ID!, $subjectId: ID!, $teacherId: ID!) {\n    assignSubjectTeacher(armId: $armId, subjectId: $subjectId, teacherId: $teacherId) { id }\n  }\n": types.AssignSubjectTeacherDocument,
-    "\n  query StudentProfile($id: ID!, $withFees: Boolean!, $withSubjects: Boolean!) {\n    student(id: $id) {\n      id fullName firstName lastName admissionNumber gender dateOfBirth admittedOn status examNumbers\n      medicalNotes emergencyContactName emergencyContactPhone\n      currentArm { id label }\n      guardianLinks { relationship isPrimary guardian { id title firstName lastName phone email } }\n    }\n    ledger(studentId: $id) @include(if: $withFees) { balanceKobo chargedKobo paidKobo }\n    studentSubjects(studentId: $id) @include(if: $withSubjects) { id name }\n  }\n": types.StudentProfileDocument,
+    "\n  query StudentProfile($id: ID!, $withFees: Boolean!, $withSubjects: Boolean!) {\n    student(id: $id) {\n      id fullName firstName middleName lastName admissionNumber gender dateOfBirth admittedOn status examNumbers photoUrl\n      medicalNotes emergencyContactName emergencyContactPhone\n      currentArm { id label levelId }\n      guardianLinks { relationship isPrimary guardian { id title firstName lastName phone email } }\n    }\n    ledger(studentId: $id) @include(if: $withFees) { balanceKobo chargedKobo paidKobo }\n    studentSubjects(studentId: $id) @include(if: $withSubjects) { id name }\n  }\n": types.StudentProfileDocument,
+    "\n  query LevelElectives {\n    levels { id hasSubjectSelection levelSubjects { category subject { id name } } }\n  }\n": types.LevelElectivesDocument,
     "\n  mutation ChangeStudentStatus($id: ID!, $status: String!, $reason: String!) {\n    changeStudentStatus(id: $id, status: $status, reason: $reason) { id status }\n  }\n": types.ChangeStudentStatusDocument,
     "\n  mutation CreateStudent($data: StudentInput!, $guardians: [GuardianInput!]!) {\n    createStudent(data: $data, guardians: $guardians) { id }\n  }\n": types.CreateStudentDocument,
     "\n  query Students($armId: ID, $search: String, $status: String, $offset: Int!) {\n    students(armId: $armId, search: $search, status: $status, offset: $offset, limit: 50) {\n      total\n      items { id fullName admissionNumber gender status currentArm { id label } }\n    }\n  }\n": types.StudentsDocument,
     "\n  mutation RequestReset($identifier: String!) {\n    requestPasswordReset(identifier: $identifier)\n  }\n": types.RequestResetDocument,
     "\n  mutation ResetPassword($identifier: String!, $code: String!, $newPassword: String!) {\n    resetPassword(identifier: $identifier, code: $code, newPassword: $newPassword)\n  }\n": types.ResetPasswordDocument,
     "\n  mutation Login($identifier: String!, $password: String!) {\n    login(identifier: $identifier, password: $password) {\n      permissions\n      isPlatformAdmin\n    }\n  }\n": types.LoginDocument,
+    "\n  query PublicPrivacyNotice {\n    privacyNotice { version body publishedAt schoolName }\n  }\n": types.PublicPrivacyNoticeDocument,
     "\n  mutation SignUpSchool(\n    $name: String!\n    $slug: String!\n    $adminFirstName: String!\n    $adminLastName: String!\n    $adminPhone: String!\n    $adminEmail: String\n    $password: String!\n    $sections: [String!]!\n    $accept: Boolean!\n  ) {\n    signUpSchool(\n      name: $name\n      slug: $slug\n      adminFirstName: $adminFirstName\n      adminLastName: $adminLastName\n      adminPhone: $adminPhone\n      adminEmail: $adminEmail\n      password: $password\n      sections: $sections\n      acceptDataProcessingAgreement: $accept\n    ) {\n      slug\n      schoolUrl\n    }\n  }\n": types.SignUpSchoolDocument,
     "\n  mutation Logout {\n    logout\n  }\n": types.LogoutDocument,
+    "\n  mutation SaveLevel(\n    $id: ID\n    $name: String!\n    $section: String!\n    $gradingScaleId: ID\n    $nextLevelId: ID\n    $hasSubjectSelection: Boolean!\n    $reportTemplate: String!\n  ) {\n    saveLevel(\n      id: $id\n      name: $name\n      section: $section\n      gradingScaleId: $gradingScaleId\n      nextLevelId: $nextLevelId\n      hasSubjectSelection: $hasSubjectSelection\n      reportTemplate: $reportTemplate\n    ) {\n      id\n    }\n  }\n": types.SaveLevelDocument,
+    "mutation SaveSubject($name: String!) { saveSubject(name: $name) { id name } }": types.SaveSubjectDocument,
+    "\n  mutation SetLevelSubjects($levelId: ID!, $subjects: [LevelSubjectInput!]!) { setLevelSubjects(levelId: $levelId, subjects: $subjects) { id } }\n": types.SetLevelSubjectsDocument,
+    "\n  mutation SaveGradingScale($id: ID, $name: String!, $bands: [BandInput!]!) { saveGradingScale(id: $id, name: $name, bands: $bands) { id } }\n": types.SaveGradingScaleDocument,
+    "\n  query StudentConsent($studentId: ID!) {\n    studentConsent(studentId: $studentId) {\n      noticeVersion\n      guardians { guardianId guardianName relationship consent { id source givenAt recordedBy } }\n      history { id guardianName noticeVersion source givenAt recordedBy withdrawnAt withdrawalReason }\n    }\n  }\n": types.StudentConsentDocument,
+    "\n  mutation RecordPaperConsent($studentId: ID!, $guardianId: ID!, $givenOn: Date!) {\n    recordPaperConsent(studentId: $studentId, guardianId: $guardianId, givenOn: $givenOn)\n  }\n": types.RecordPaperConsentDocument,
+    "\n  mutation RecordConsentWithdrawal($consentId: ID!, $reason: String!) { recordConsentWithdrawal(consentId: $consentId, reason: $reason) }\n": types.RecordConsentWithdrawalDocument,
+    "\n  mutation UpdateStudent($id: ID!, $data: StudentInput!) { updateStudent(id: $id, data: $data) { id } }\n": types.UpdateStudentDocument,
+    "\n  mutation AddGuardian($studentId: ID!, $guardian: GuardianInput!) { addGuardian(studentId: $studentId, guardian: $guardian) { id } }\n": types.AddGuardianDocument,
+    "\n  mutation SetStudentSubjects($studentId: ID!, $subjectIds: [ID!]!) { setStudentSubjects(studentId: $studentId, subjectIds: $subjectIds) { id } }\n": types.SetStudentSubjectsDocument,
     "\n  query Arms {\n    arms { id label levelId studentCount }\n  }\n": types.ArmsDocument,
     "\n  query Terms {\n    terms { id label number isCurrent session { id name } }\n  }\n": types.TermsDocument,
     "\n  query StudentSearch($search: String!) {\n    students(search: $search, limit: 8) { items { id fullName admissionNumber currentArm { label } } }\n  }\n": types.StudentSearchDocument,
+    "\n  query MyConsent {\n    myConsent {\n      pending\n      notice { version body publishedAt schoolName }\n      children { consented givenAt source student { id fullName firstName currentArm { label } } }\n    }\n  }\n": types.MyConsentDocument,
     "\n  query Me {\n    me {\n      permissions\n      roles\n      accessMode\n      isPlatformAdmin\n      viaSupport\n      mustChangePassword\n      user { id fullName firstName phone email }\n      membership { id }\n    }\n    school { name slug motto address phone email primaryColor secondaryColor logoUrl }\n    currentTerm { id label number isCurrent session { id name } }\n  }\n": types.MeDocument,
 };
 
@@ -268,6 +304,10 @@ export function graphql(source: "\n  mutation AddBillItem($billId: ID!, $descrip
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
+export function graphql(source: "\n  mutation RemoveBillItem($lineId: ID!, $reason: String!) { removeBillItem(lineId: $lineId, reason: $reason) { id } }\n"): typeof import('./graphql').RemoveBillItemDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
 export function graphql(source: "\n  mutation ReversePayment($paymentId: ID!, $reason: String!) { reversePayment(paymentId: $paymentId, reason: $reason) { id status } }\n"): typeof import('./graphql').ReversePaymentDocument;
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
@@ -289,6 +329,14 @@ export function graphql(source: "\n  query ChildResult($studentId: ID!, $termId:
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function graphql(source: "\n  query ChildLedger($studentId: ID!) {\n    ledger(studentId: $studentId) {\n      balanceKobo\n      student { fullName admissionNumber currentArm { label } }\n      payments { id amountKobo method status receiptNumber paidAt }\n    }\n  }\n"): typeof import('./graphql').ChildLedgerDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  mutation GiveConsent($studentIds: [ID!]!) { giveConsent(studentIds: $studentIds) { pending } }\n"): typeof import('./graphql').GiveConsentDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  mutation WithdrawMyConsent($studentId: ID!, $reason: String!) { withdrawMyConsent(studentId: $studentId, reason: $reason) { pending } }\n"): typeof import('./graphql').WithdrawMyConsentDocument;
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
@@ -360,7 +408,7 @@ export function graphql(source: "\n  query AllClassesAndSubjects {\n    levels {
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
-export function graphql(source: "\n  query AcademicSetup {\n    sessions { id name startDate endDate isCurrent }\n    terms { id number label startDate endDate daysOpened nextTermBegins isCurrent session { id } }\n    levels {\n      id name section hasSubjectSelection\n      gradingScale { id name }\n      nextLevel { name }\n      arms { id name label studentCount classTeacher { id user { fullName } } }\n      components { id name maxScore }\n      levelSubjects { category subject { id name } }\n    }\n    staff { id user { fullName } }\n  }\n"): typeof import('./graphql').AcademicSetupDocument;
+export function graphql(source: "\n  query AcademicSetup {\n    sessions { id name startDate endDate isCurrent }\n    terms { id number label startDate endDate daysOpened nextTermBegins isCurrent session { id } }\n    levels {\n      id name section order hasSubjectSelection reportTemplate\n      gradingScale { id name }\n      nextLevel { id name }\n      arms { id name label studentCount classTeacher { id user { fullName } } }\n      components { id name maxScore }\n      levelSubjects { category subject { id name } }\n    }\n    staff { id user { fullName } }\n    gradingScales { id name bands { grade minScore maxScore remark } }\n    subjects { id name }\n  }\n"): typeof import('./graphql').AcademicSetupDocument;
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
@@ -388,7 +436,7 @@ export function graphql(source: "\n  mutation PromoteClass($armId: ID!, $from: I
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
-export function graphql(source: "\n  query SchoolSettings {\n    school { name motto address phone email primaryColor secondaryColor }\n    schoolSettings {\n      showClassPosition admissionNumberFormat admissionNumberPrefix resultDebtThresholdKobo transactionChargeBearer\n      smsSenderId smsSenderStatus notifyParentOnAbsence reportTemplate principalTitle\n    }\n    supportGrants { id reason expiresAt grantedBy }\n  }\n"): typeof import('./graphql').SchoolSettingsDocument;
+export function graphql(source: "\n  query SchoolSettings {\n    school { name motto address phone email primaryColor secondaryColor }\n    schoolSettings {\n      showClassPosition admissionNumberFormat admissionNumberPrefix resultDebtThresholdKobo transactionChargeBearer\n      smsSenderId smsSenderStatus notifyParentOnAbsence reportTemplate principalTitle\n    }\n    supportGrants { id reason expiresAt grantedBy }\n    schoolBranding { logoUrl signatureUrl stampUrl }\n  }\n"): typeof import('./graphql').SchoolSettingsDocument;
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
@@ -401,6 +449,14 @@ export function graphql(source: "mutation GrantSupport($reason: String!, $hours:
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function graphql(source: "mutation RevokeSupport($id: ID!) { revokeSupportAccess(grantId: $id) }"): typeof import('./graphql').RevokeSupportDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  query ConsentOverview {\n    consentOverview(limit: 50) {\n      notice { version body publishedAt }\n      activeStudents withConsent dpaVersion dpaAcceptedAt dpaAcceptedBy\n      missing { id fullName admissionNumber currentArm { label } }\n    }\n  }\n"): typeof import('./graphql').ConsentOverviewDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  mutation PublishPrivacyNotice($body: String!) { publishPrivacyNotice(body: $body) { version } }\n"): typeof import('./graphql').PublishPrivacyNoticeDocument;
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
@@ -420,7 +476,11 @@ export function graphql(source: "\n  mutation AssignSubjectTeacher($armId: ID!, 
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
-export function graphql(source: "\n  query StudentProfile($id: ID!, $withFees: Boolean!, $withSubjects: Boolean!) {\n    student(id: $id) {\n      id fullName firstName lastName admissionNumber gender dateOfBirth admittedOn status examNumbers\n      medicalNotes emergencyContactName emergencyContactPhone\n      currentArm { id label }\n      guardianLinks { relationship isPrimary guardian { id title firstName lastName phone email } }\n    }\n    ledger(studentId: $id) @include(if: $withFees) { balanceKobo chargedKobo paidKobo }\n    studentSubjects(studentId: $id) @include(if: $withSubjects) { id name }\n  }\n"): typeof import('./graphql').StudentProfileDocument;
+export function graphql(source: "\n  query StudentProfile($id: ID!, $withFees: Boolean!, $withSubjects: Boolean!) {\n    student(id: $id) {\n      id fullName firstName middleName lastName admissionNumber gender dateOfBirth admittedOn status examNumbers photoUrl\n      medicalNotes emergencyContactName emergencyContactPhone\n      currentArm { id label levelId }\n      guardianLinks { relationship isPrimary guardian { id title firstName lastName phone email } }\n    }\n    ledger(studentId: $id) @include(if: $withFees) { balanceKobo chargedKobo paidKobo }\n    studentSubjects(studentId: $id) @include(if: $withSubjects) { id name }\n  }\n"): typeof import('./graphql').StudentProfileDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  query LevelElectives {\n    levels { id hasSubjectSelection levelSubjects { category subject { id name } } }\n  }\n"): typeof import('./graphql').LevelElectivesDocument;
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
@@ -448,11 +508,55 @@ export function graphql(source: "\n  mutation Login($identifier: String!, $passw
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
+export function graphql(source: "\n  query PublicPrivacyNotice {\n    privacyNotice { version body publishedAt schoolName }\n  }\n"): typeof import('./graphql').PublicPrivacyNoticeDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
 export function graphql(source: "\n  mutation SignUpSchool(\n    $name: String!\n    $slug: String!\n    $adminFirstName: String!\n    $adminLastName: String!\n    $adminPhone: String!\n    $adminEmail: String\n    $password: String!\n    $sections: [String!]!\n    $accept: Boolean!\n  ) {\n    signUpSchool(\n      name: $name\n      slug: $slug\n      adminFirstName: $adminFirstName\n      adminLastName: $adminLastName\n      adminPhone: $adminPhone\n      adminEmail: $adminEmail\n      password: $password\n      sections: $sections\n      acceptDataProcessingAgreement: $accept\n    ) {\n      slug\n      schoolUrl\n    }\n  }\n"): typeof import('./graphql').SignUpSchoolDocument;
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function graphql(source: "\n  mutation Logout {\n    logout\n  }\n"): typeof import('./graphql').LogoutDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  mutation SaveLevel(\n    $id: ID\n    $name: String!\n    $section: String!\n    $gradingScaleId: ID\n    $nextLevelId: ID\n    $hasSubjectSelection: Boolean!\n    $reportTemplate: String!\n  ) {\n    saveLevel(\n      id: $id\n      name: $name\n      section: $section\n      gradingScaleId: $gradingScaleId\n      nextLevelId: $nextLevelId\n      hasSubjectSelection: $hasSubjectSelection\n      reportTemplate: $reportTemplate\n    ) {\n      id\n    }\n  }\n"): typeof import('./graphql').SaveLevelDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "mutation SaveSubject($name: String!) { saveSubject(name: $name) { id name } }"): typeof import('./graphql').SaveSubjectDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  mutation SetLevelSubjects($levelId: ID!, $subjects: [LevelSubjectInput!]!) { setLevelSubjects(levelId: $levelId, subjects: $subjects) { id } }\n"): typeof import('./graphql').SetLevelSubjectsDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  mutation SaveGradingScale($id: ID, $name: String!, $bands: [BandInput!]!) { saveGradingScale(id: $id, name: $name, bands: $bands) { id } }\n"): typeof import('./graphql').SaveGradingScaleDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  query StudentConsent($studentId: ID!) {\n    studentConsent(studentId: $studentId) {\n      noticeVersion\n      guardians { guardianId guardianName relationship consent { id source givenAt recordedBy } }\n      history { id guardianName noticeVersion source givenAt recordedBy withdrawnAt withdrawalReason }\n    }\n  }\n"): typeof import('./graphql').StudentConsentDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  mutation RecordPaperConsent($studentId: ID!, $guardianId: ID!, $givenOn: Date!) {\n    recordPaperConsent(studentId: $studentId, guardianId: $guardianId, givenOn: $givenOn)\n  }\n"): typeof import('./graphql').RecordPaperConsentDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  mutation RecordConsentWithdrawal($consentId: ID!, $reason: String!) { recordConsentWithdrawal(consentId: $consentId, reason: $reason) }\n"): typeof import('./graphql').RecordConsentWithdrawalDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  mutation UpdateStudent($id: ID!, $data: StudentInput!) { updateStudent(id: $id, data: $data) { id } }\n"): typeof import('./graphql').UpdateStudentDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  mutation AddGuardian($studentId: ID!, $guardian: GuardianInput!) { addGuardian(studentId: $studentId, guardian: $guardian) { id } }\n"): typeof import('./graphql').AddGuardianDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  mutation SetStudentSubjects($studentId: ID!, $subjectIds: [ID!]!) { setStudentSubjects(studentId: $studentId, subjectIds: $subjectIds) { id } }\n"): typeof import('./graphql').SetStudentSubjectsDocument;
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
@@ -465,6 +569,10 @@ export function graphql(source: "\n  query Terms {\n    terms { id label number 
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function graphql(source: "\n  query StudentSearch($search: String!) {\n    students(search: $search, limit: 8) { items { id fullName admissionNumber currentArm { label } } }\n  }\n"): typeof import('./graphql').StudentSearchDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  query MyConsent {\n    myConsent {\n      pending\n      notice { version body publishedAt schoolName }\n      children { consented givenAt source student { id fullName firstName currentArm { label } } }\n    }\n  }\n"): typeof import('./graphql').MyConsentDocument;
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */

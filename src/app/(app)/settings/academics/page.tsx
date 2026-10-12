@@ -3,6 +3,7 @@
 import { Fragment, useState } from "react";
 
 import { IconChevronRight, IconClose, IconPlus } from "@/components/icons";
+import { GradingScaleDialog, LevelDialog, LevelSubjectsDialog, SECTIONS, type LevelForm, type ScaleForm } from "@/components/setup/AcademicDialogs";
 import { SettingsNav } from "@/components/SettingsNav";
 import { Badge, Button, Card, Dialog, ErrorNote, Field, IconButton, Input, Loading, Notice, PageHeader, Select, Table, TD, TH, cx } from "@/components/ui";
 import { graphql } from "@/gql";
@@ -14,14 +15,16 @@ const AcademicSetupDocument = graphql(`
     sessions { id name startDate endDate isCurrent }
     terms { id number label startDate endDate daysOpened nextTermBegins isCurrent session { id } }
     levels {
-      id name section hasSubjectSelection
+      id name section order hasSubjectSelection reportTemplate
       gradingScale { id name }
-      nextLevel { name }
+      nextLevel { id name }
       arms { id name label studentCount classTeacher { id user { fullName } } }
       components { id name maxScore }
       levelSubjects { category subject { id name } }
     }
     staff { id user { fullName } }
+    gradingScales { id name bands { grade minScore maxScore remark } }
+    subjects { id name }
   }
 `);
 
@@ -109,6 +112,9 @@ export default function AcademicSetupPage() {
   const [promo, setPromo] = useState({ armId: "", from: "", to: "" });
   const [busy, setBusy] = useState(false);
   const [dialogErr, setDialogErr] = useState<string | null>(null);
+  const [levelForm, setLevelForm] = useState<LevelForm | null>(null);
+  const [subjectsLevelId, setSubjectsLevelId] = useState<string | null>(null);
+  const [scaleForm, setScaleForm] = useState<ScaleForm | null>(null);
 
   if (isLoading) return <Loading />;
   if (!data) return <ErrorNote error={error} />;
@@ -206,7 +212,10 @@ export default function AcademicSetupPage() {
         )}
       </Card>
 
-      <Card flush title="Classes, assessment and subjects" description="Expand a level to assign class teachers, add arms and set its assessment.">
+      <Card flush title="Classes, assessment and subjects" description="Expand a level to assign class teachers, add arms, and set its subjects and assessment."
+        actions={<Button size="sm" variant="secondary" icon={<IconPlus size={15} />} onClick={() => setLevelForm({
+          name: "", section: "primary", gradingScaleId: data.gradingScales[0]?.id ?? "", nextLevelId: "", hasSubjectSelection: false, reportTemplate: "",
+        })}>Add level</Button>}>
         {data.levels.map((level) => (
           <details key={level.id} className="group border-b border-line last:border-b-0">
             <summary className="flex cursor-pointer list-none items-center justify-between gap-4 px-5 py-3.5 hover:bg-subtle/50 [&::-webkit-details-marker]:hidden">
@@ -219,7 +228,16 @@ export default function AcademicSetupPage() {
               <IconChevronRight size={16} className="flex-none text-muted transition group-open:rotate-90" />
             </summary>
             <div className="space-y-5 border-t border-line bg-subtle/30 px-5 py-5">
-              <div>
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div className="text-[13px] text-muted">
+                  {SECTIONS.find(([k]) => k === level.section)?.[1]} · grading {level.gradingScale?.name ?? "not set"} · report {level.reportTemplate || "school default"}
+                </div>
+                <Button size="sm" variant="secondary" onClick={() => setLevelForm({
+                  id: level.id, name: level.name, section: level.section, gradingScaleId: level.gradingScale?.id ?? "",
+                  nextLevelId: level.nextLevel?.id ?? "", hasSubjectSelection: level.hasSubjectSelection, reportTemplate: level.reportTemplate,
+                })}>Edit level</Button>
+              </div>
+              <div className="border-t border-line pt-4">
                 <div className="mb-2 text-[13px] font-medium text-ink">Arms and class teachers</div>
                 <div className="space-y-2">
                   {level.arms.map((arm) => (
@@ -257,7 +275,10 @@ export default function AcademicSetupPage() {
                 />
               </div>
               <div className="border-t border-line pt-4">
-                <div className="mb-2 text-[13px] font-medium text-ink">Subjects{level.hasSubjectSelection && <span className="font-normal text-muted"> · students choose electives individually</span>}</div>
+                <div className="mb-2 flex flex-wrap items-center justify-between gap-3">
+                  <div className="text-[13px] font-medium text-ink">{level.levelSubjects.length} subjects{level.hasSubjectSelection && <span className="font-normal text-muted"> · students choose electives individually</span>}</div>
+                  <Button size="sm" variant="secondary" onClick={() => setSubjectsLevelId(level.id)}>Edit subjects</Button>
+                </div>
                 <div className="flex flex-wrap gap-1.5">
                   {level.levelSubjects.map((ls) => <Badge key={ls.subject.id}>{ls.subject.name}{ls.category !== "core" && <span className="text-muted/80"> · {ls.category}</span>}</Badge>)}
                 </div>
@@ -267,10 +288,45 @@ export default function AcademicSetupPage() {
         ))}
       </Card>
 
+      <Card flush title="Grading scales" description="Assign a scale to each level with Edit level. Changes apply to results the next time they are viewed."
+        actions={<Button size="sm" variant="secondary" icon={<IconPlus size={15} />} onClick={() => setScaleForm({
+          name: "", bands: [{ grade: "A", minScore: "70", remark: "Excellent" }, { grade: "B", minScore: "60", remark: "Very good" }, { grade: "C", minScore: "50", remark: "Good" }, { grade: "F", minScore: "0", remark: "Fail" }],
+        })}>New scale</Button>}>
+        {data.gradingScales.map((scale) => {
+          const usedBy = data.levels.filter((l) => l.gradingScale?.id === scale.id).map((l) => l.name);
+          return (
+            <div key={scale.id} className="flex flex-wrap items-center justify-between gap-3 border-b border-line px-5 py-3.5 last:border-b-0">
+              <div className="min-w-0">
+                <div className="text-sm font-medium text-ink">{scale.name}</div>
+                <div className="mt-0.5 text-[13px] text-muted">
+                  {scale.bands.map((b) => `${b.grade} ${Math.floor(Number(b.minScore))}–${Math.floor(Number(b.maxScore))}`).join(" · ")}
+                </div>
+                <div className="mt-0.5 text-xs text-muted">{usedBy.length ? `Used by ${usedBy.join(", ")}` : "Not used by any level"}</div>
+              </div>
+              <Button size="sm" variant="secondary" onClick={() => setScaleForm({
+                id: scale.id, name: scale.name,
+                bands: scale.bands.map((b) => ({ grade: b.grade, minScore: String(Number(b.minScore)), remark: b.remark })),
+              })}>Edit</Button>
+            </div>
+          );
+        })}
+      </Card>
+
       <Card title="End-of-session promotion" description="Moves every active student in a class to the next level. Students in the final level graduate."
         actions={<Button size="sm" variant="secondary" onClick={() => { setDialogErr(null); setDialog("promote"); }}>Promote a class</Button>}>
         <p className="text-sm leading-relaxed text-muted">Run this once the third term&apos;s results are published. Students who should repeat can be moved back afterwards from their profile.</p>
       </Card>
+
+      {levelForm && (
+        <LevelDialog open onClose={() => setLevelForm(null)} initial={levelForm} levels={data.levels} scales={data.gradingScales}
+          onSaved={(m) => { setMsg(m); void mutate(); }} />
+      )}
+      <LevelSubjectsDialog open={subjectsLevelId !== null} onClose={() => setSubjectsLevelId(null)}
+        level={data.levels.find((l) => l.id === subjectsLevelId) ?? null} allSubjects={data.subjects}
+        onSaved={(m) => { setMsg(m); void mutate(); }} />
+      {scaleForm && (
+        <GradingScaleDialog open onClose={() => setScaleForm(null)} initial={scaleForm} onSaved={(m) => { setMsg(m); void mutate(); }} />
+      )}
 
       <Dialog open={dialog === "session"} onClose={() => setDialog(null)} title="New session" description="A school year, usually September to July."
         footer={<><Button variant="secondary" onClick={() => setDialog(null)}>Cancel</Button><Button busy={busy} onClick={() => runDialog(async () => { await gql(SaveSessionDocument, session); return `${session.name} session created.`; })}>Create session</Button></>}>

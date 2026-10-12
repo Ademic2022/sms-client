@@ -11,6 +11,7 @@ const ITEMS = [
   { href: "/settings", label: "School", perms: ["school.manage"] },
   { href: "/settings/academics", label: "Academic setup", perms: ["academics.manage"] },
   { href: "/settings/staff", label: "Staff and roles", perms: ["staff.manage"] },
+  { href: "/settings/privacy", label: "Privacy", perms: ["school.manage"] },
 ];
 
 /** Sub-navigation shared by the settings pages. */

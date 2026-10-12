@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 
+import { ImageUpload } from "@/components/ImageUpload";
 import { SettingsNav } from "@/components/SettingsNav";
 import { Button, Card, Checkbox, ErrorNote, Field, FormActions, FormSection, Input, Loading, Notice, PageHeader, Select, StatusBadge, Textarea } from "@/components/ui";
 import { graphql } from "@/gql";
@@ -18,6 +19,7 @@ const SettingsDocument = graphql(`
       smsSenderId smsSenderStatus notifyParentOnAbsence reportTemplate principalTitle
     }
     supportGrants { id reason expiresAt grantedBy }
+    schoolBranding { logoUrl signatureUrl stampUrl }
   }
 `);
 
@@ -120,6 +122,16 @@ export default function SettingsPage() {
                 <Input value={school.primaryColor} onChange={set("primaryColor")} className="w-32 font-mono uppercase" maxLength={7} />
               </div>
             </Field>
+          </div>
+        </FormSection>
+        <FormSection title="Logo, signature and stamp" description="Printed on every report card and receipt. Images save as soon as you upload them.">
+          <div className="grid gap-6 sm:grid-cols-2">
+            <ImageUpload label="School logo" hint="Square works best. Also shown in the sidebar and on the sign-in page." url={data?.schoolBranding.logoUrl}
+              endpoint="/files/school/logo/" onChange={() => { void mutate(); void refresh(); }} emptyText="No logo" />
+            <ImageUpload label="Principal's signature" hint="Sign on white paper and photograph it, or upload a scan." url={data?.schoolBranding.signatureUrl}
+              endpoint="/files/school/signature/" onChange={() => void mutate()} shape="wide" emptyText="No signature" />
+            <ImageUpload label="School stamp" hint="A clear photo or scan of the official stamp." url={data?.schoolBranding.stampUrl}
+              endpoint="/files/school/stamp/" onChange={() => void mutate()} shape="circle" emptyText="No stamp" />
           </div>
         </FormSection>
         <FormSection title="Results and report cards" description="Applies to every class unless a level has its own template.">

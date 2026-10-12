@@ -89,3 +89,17 @@ export async function uploadFile(path: string, file: File) {
   const body = await response.json().catch(() => ({ error: "Unexpected response from the server." }));
   return { ok: response.ok, status: response.status, body };
 }
+
+/** DELETE a file endpoint (for removing an uploaded image). */
+export async function deleteFile(path: string) {
+  await ensureCsrf();
+  let response: Response;
+  try {
+    response = await fetch(path, { method: "DELETE", credentials: "include", headers: csrfHeaders() });
+  } catch {
+    throw new NetworkError("No connection. Try again when you are back online.");
+  }
+  const body = await response.json().catch(() => ({ error: "Unexpected response from the server." }));
+  if (!response.ok) throw new ApiError(body.error ?? "Could not remove the file.");
+  return body;
+}

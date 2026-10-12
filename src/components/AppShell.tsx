@@ -5,8 +5,9 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState, type ComponentType, type ReactNode } from "react";
 
 import { graphql } from "@/gql";
-import { gql } from "@/lib/api";
+import { gql, useGql } from "@/lib/api";
 import { discard, flush, useOnline, useOutbox } from "@/lib/outbox";
+import { MyConsentDocument } from "@/lib/queries";
 import { SITE } from "@/lib/site";
 import { useSession, type School } from "@/lib/session";
 
@@ -49,6 +50,7 @@ const NAV: { section: string; items: NavItem[] }[] = [
     items: [
       { href: "/dashboard", label: "Overview", perms: [], icon: IconHome },
       { href: "/parent", label: "My children", perms: ["portal.parent"], icon: IconChild },
+      { href: "/parent/consent", label: "Privacy and consent", perms: ["portal.parent"], icon: IconShield },
     ],
   },
   {
@@ -155,6 +157,14 @@ export function AppShell({ children }: { children: ReactNode }) {
   const [openOn, setOpenOn] = useState<string | null>(null);
   const drawerOpen = openOn === pathname;
 
+  // Parents must respond to the school's privacy notice before using the parent pages.
+  const gated = Boolean(me?.permissions.includes("portal.parent")) && pathname.startsWith("/parent") && !pathname.startsWith("/parent/consent");
+  const consent = useGql(MyConsentDocument, gated ? {} : null);
+  const consentPending = gated && consent.data?.myConsent.pending;
+  useEffect(() => {
+    if (consentPending) router.replace("/parent/consent?first=1");
+  }, [consentPending, router]);
+
   useEffect(() => {
     if (!loading && !me) router.replace(`/login?next=${encodeURIComponent(pathname)}`);
   }, [loading, me, pathname, router]);
@@ -163,7 +173,7 @@ export function AppShell({ children }: { children: ReactNode }) {
     if (school?.primaryColor) document.documentElement.style.setProperty("--brand", school.primaryColor);
   }, [school?.primaryColor]);
 
-  if (loading || !me) {
+  if (loading || !me || (gated && (consent.isLoading || consentPending))) {
     return (
       <div className="mx-auto max-w-6xl px-6 py-10">
         <Loading />
@@ -203,7 +213,9 @@ export function AppShell({ children }: { children: ReactNode }) {
             {s.section && <div className="mb-1.5 px-3 text-[11px] font-semibold uppercase tracking-[0.1em] text-muted/80">{s.section}</div>}
             <ul className="space-y-0.5">
               {s.items.map((item) => {
-                const active = pathname === item.href || (item.href !== "/dashboard" && pathname.startsWith(item.href));
+                const active =
+                  pathname === item.href ||
+                  (item.href !== "/dashboard" && pathname.startsWith(item.href) && !(item.href === "/parent" && pathname.startsWith("/parent/consent")));
                 const Icon = item.icon;
                 return (
                   <li key={item.href}>

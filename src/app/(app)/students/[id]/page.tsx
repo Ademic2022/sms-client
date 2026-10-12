@@ -4,22 +4,32 @@ import { useParams } from "next/navigation";
 import { useState, type ReactNode } from "react";
 
 import { IconLock, IconWallet } from "@/components/icons";
+import { ImageUpload } from "@/components/ImageUpload";
+import { ConsentCard } from "@/components/students/ConsentCard";
+import { AddGuardianDialog, EditStudentDialog, ElectivesDialog } from "@/components/students/StudentDialogs";
 import { ActionDialog, Badge, Button, ButtonLink, Card, ErrorNote, Loading, Notice, PageHeader, StatusBadge } from "@/components/ui";
 import { graphql } from "@/gql";
 import { gql, useGql } from "@/lib/api";
 import { localPhone, naira } from "@/lib/money";
+import { ArmsDocument } from "@/lib/queries";
 import { useSession } from "@/lib/session";
 
 const StudentDocument = graphql(`
   query StudentProfile($id: ID!, $withFees: Boolean!, $withSubjects: Boolean!) {
     student(id: $id) {
-      id fullName firstName lastName admissionNumber gender dateOfBirth admittedOn status examNumbers
+      id fullName firstName middleName lastName admissionNumber gender dateOfBirth admittedOn status examNumbers photoUrl
       medicalNotes emergencyContactName emergencyContactPhone
-      currentArm { id label }
+      currentArm { id label levelId }
       guardianLinks { relationship isPrimary guardian { id title firstName lastName phone email } }
     }
     ledger(studentId: $id) @include(if: $withFees) { balanceKobo chargedKobo paidKobo }
     studentSubjects(studentId: $id) @include(if: $withSubjects) { id name }
+  }
+`);
+
+const LevelElectivesDocument = graphql(`
+  query LevelElectives {
+    levels { id hasSubjectSelection levelSubjects { category subject { id name } } }
   }
 `);
 
@@ -55,7 +65,10 @@ export default function StudentPage() {
   const { id } = useParams<{ id: string }>();
   const { can } = useSession();
   const { data, error, isLoading, mutate } = useGql(StudentDocument, { id, withFees: can("fees.view"), withSubjects: can("students.view") });
-  const [dialog, setDialog] = useState<null | "withdrawn" | "transferred" | "active">(null);
+  const [dialog, setDialog] = useState<null | "withdrawn" | "transferred" | "active" | "edit" | "guardian" | "electives">(null);
+  const manage = can("students.manage");
+  const levels = useGql(LevelElectivesDocument, can("students.view") ? {} : null);
+  const arms = useGql(ArmsDocument, manage ? {} : null);
 
   if (isLoading) return <Loading />;
   if (error) return <ErrorNote error={error} />;
@@ -64,6 +77,10 @@ export default function StudentPage() {
 
   const exams = Object.entries((s.examNumbers ?? {}) as Record<string, string>);
   const age = ageInYears(s.dateOfBirth);
+  const level = levels.data?.levels.find((l) => l.id === s.currentArm?.levelId);
+  const electives = level?.hasSubjectSelection ? level.levelSubjects.filter((ls) => ls.category !== "core") : [];
+  const electiveIds = new Set(electives.map((e) => e.subject.id));
+  const chosenElectives = (data?.studentSubjects ?? []).filter((sub) => electiveIds.has(sub.id));
 
   return (
     <>
@@ -74,6 +91,7 @@ export default function StudentPage() {
         actions={
           <>
             {can("fees.view") && <ButtonLink href={`/fees/student/${s.id}`} variant="secondary" icon={<IconWallet size={16} />}>Fees account</ButtonLink>}
+            {manage && <Button variant="secondary" onClick={() => setDialog("edit")}>Edit details</Button>}
             {can("students.manage") && s.status === "active" && (
               <>
                 <Button variant="secondary" onClick={() => setDialog("transferred")}>Transfer out</Button>
@@ -89,7 +107,7 @@ export default function StudentPage() {
 
       <div className="grid gap-5 lg:grid-cols-[1.3fr_1fr]">
         <div className="space-y-5">
-          <Card title="Personal details">
+          <Card title="Personal details" actions={manage && <Button size="sm" variant="ghost" onClick={() => setDialog("edit")}>Edit</Button>}>
             <dl className="-my-3">
               <Row label="Full name">{s.fullName}</Row>
               <Row label="Gender">{s.gender === "F" ? "Female" : "Male"}</Row>
@@ -109,13 +127,23 @@ export default function StudentPage() {
           )}
         </div>
         <div className="space-y-5">
+          {(manage || s.photoUrl) && (
+            <Card title="Passport photograph" description={manage ? "Printed on the report card. Re-sized and cleaned of location data on upload." : undefined}>
+              {manage ? (
+                <ImageUpload label="Photo" url={s.photoUrl} endpoint={`/files/students/${s.id}/photo/`} onChange={() => void mutate()} shape="portrait" emptyText="No photo" />
+              ) : (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={s.photoUrl!} alt={s.fullName} className="h-32 w-26 rounded-xl border border-line object-cover" />
+              )}
+            </Card>
+          )}
           {data?.ledger && (
             <Card title="Fees">
               <div className="font-display text-[30px] font-medium leading-none tabular-nums text-ink">{naira(data.ledger.balanceKobo)}</div>
               <div className="mt-2 text-sm text-muted">Balance · {naira(data.ledger.paidKobo)} paid of {naira(data.ledger.chargedKobo)} billed</div>
             </Card>
           )}
-          <Card title="Parents and guardians" flush>
+          <Card title="Parents and guardians" flush actions={manage && <Button size="sm" variant="ghost" onClick={() => setDialog("guardian")}>Add</Button>}>
             {s.guardianLinks.map(({ guardian: g, relationship, isPrimary }) => (
               <div key={g.id} className="border-b border-line px-5 py-4 last:border-b-0">
                 <div className="flex items-center gap-2 text-sm font-medium text-ink">
@@ -130,6 +158,17 @@ export default function StudentPage() {
               </div>
             ))}
           </Card>
+          {can("students.view") && <ConsentCard studentId={s.id} canManage={manage} />}
+          {level?.hasSubjectSelection && (
+            <Card title="Electives" description={`${chosenElectives.length} chosen for this session`}
+              actions={manage && electives.length > 0 && <Button size="sm" variant="ghost" onClick={() => setDialog("electives")}>{chosenElectives.length ? "Change" : "Choose"}</Button>}>
+              {chosenElectives.length ? (
+                <div className="flex flex-wrap gap-1.5">{chosenElectives.map((sub) => <Badge key={sub.id} tone="brand">{sub.name}</Badge>)}</div>
+              ) : (
+                <p className="text-sm text-muted">No electives chosen yet. Until they are, only compulsory subjects appear on this student&apos;s score sheets and report card.</p>
+              )}
+            </Card>
+          )}
           {data?.studentSubjects && data.studentSubjects.length > 0 && (
             <Card title="Subjects this term" description={`${data.studentSubjects.length} subjects`}>
               <div className="flex flex-wrap gap-1.5">{data.studentSubjects.map((sub) => <Badge key={sub.id}>{sub.name}</Badge>)}</div>
@@ -137,6 +176,25 @@ export default function StudentPage() {
           )}
         </div>
       </div>
+
+      {dialog === "edit" && (
+        <EditStudentDialog
+          open
+          onClose={() => setDialog(null)}
+          studentId={s.id}
+          arms={arms.data?.arms ?? (s.currentArm ? [s.currentArm] : [])}
+          initial={{
+            firstName: s.firstName, middleName: s.middleName, lastName: s.lastName, gender: s.gender, dateOfBirth: s.dateOfBirth ?? "",
+            armId: s.currentArm?.id ?? "", admissionNumber: s.admissionNumber, examNumbers: (s.examNumbers ?? {}) as Record<string, string>,
+          }}
+          onSaved={() => void mutate()}
+        />
+      )}
+      <AddGuardianDialog open={dialog === "guardian"} onClose={() => setDialog(null)} studentId={s.id} studentName={s.firstName} onSaved={() => void mutate()} />
+      {dialog === "electives" && (
+        <ElectivesDialog open onClose={() => setDialog(null)} studentId={s.id} studentName={s.firstName} electives={electives}
+          chosen={chosenElectives.map((c) => c.id)} onSaved={() => void mutate()} />
+      )}
 
       <ActionDialog
         open={dialog === "withdrawn" || dialog === "transferred"}
