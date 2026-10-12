@@ -1,9 +1,10 @@
 "use client";
 
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 
-import { Button, ButtonLink, Card, Empty, ErrorNote, Loading, Notice, PageHeader, Select, Stat, Textarea } from "@/components/ui";
+import { IconDownload, IconMessage, IconPlus, IconSettings, IconWallet } from "@/components/icons";
+import { ActionDialog, Button, ButtonLink, Card, Dialog, Empty, ErrorNote, Field, Loading, Notice, PageHeader, Select, Stat, Table, TD, TH, Textarea } from "@/components/ui";
 import { graphql } from "@/gql";
 import { gql, useGql } from "@/lib/api";
 import { naira } from "@/lib/money";
@@ -29,107 +30,135 @@ const RemindDocument = graphql(`
 
 export default function FeesPage() {
   const { term, can, school } = useSession();
+  const router = useRouter();
   const [armId, setArmId] = useState("");
   const arms = useGql(ArmsDocument, {});
   const { data, error, isLoading, mutate } = useGql(FeesOverviewDocument, term ? { termId: term.id, armId: armId || null } : null);
-  const [busy, setBusy] = useState<string | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
-  const [err, setErr] = useState<string | null>(null);
-  const [reminder, setReminder] = useState(`Dear parent, {student_name}'s school fees balance is {balance}. Kindly pay. Thank you. - ${school?.name ?? ""}`.slice(0, 160));
-  const [showReminder, setShowReminder] = useState(false);
+  const [dialog, setDialog] = useState<null | "bills" | "remind">(null);
+  const [reminder, setReminder] = useState(`Dear parent, {student_name}'s school fees balance is {balance}. Kindly make payment. Thank you. ${school?.name ?? ""}`.trim());
+  const [remindBusy, setRemindBusy] = useState(false);
+  const [remindErr, setRemindErr] = useState<string | null>(null);
 
-  if (!term) return <Notice tone="warning">Set the current term first.</Notice>;
-
-  async function run(name: string, fn: () => Promise<string>) {
-    setBusy(name);
-    setErr(null);
-    setMsg(null);
-    try {
-      setMsg(await fn());
-      await mutate();
-    } catch (e) {
-      setErr((e as Error).message);
-    } finally {
-      setBusy(null);
-    }
-  }
+  if (!term) return <Notice tone="warning" title="No current term">Set the current term in Settings before managing fees.</Notice>;
 
   const f = data?.termFeeSummary;
+  const rate = f && f.expectedKobo ? Math.round((f.collectedKobo / f.expectedKobo) * 100) : 0;
+  const debtors = data?.debtors ?? [];
+  const debtorTotal = debtors.reduce((n, d) => n + d.balanceKobo, 0);
+
   return (
     <>
       <PageHeader
-        title="Fees"
-        subtitle={term.label}
+        eyebrow={term.label}
+        title="Fees and payments"
         actions={
           <>
-            {can("payments.record") && <ButtonLink href="/fees/payments">Record payment</ButtonLink>}
-            {can("fees.manage") && <ButtonLink href="/fees/setup" variant="secondary">Fee setup</ButtonLink>}
+            {can("fees.manage") && <ButtonLink href="/fees/setup" variant="secondary" icon={<IconSettings size={16} />}>Fee setup</ButtonLink>}
+            {can("fees.view") && <ButtonLink href="/fees/payments" variant="secondary" icon={<IconWallet size={16} />}>Payments</ButtonLink>}
+            {can("payments.record") && <ButtonLink href="/fees/payments#record" icon={<IconPlus size={16} />}>Record payment</ButtonLink>}
           </>
         }
       />
-      <ErrorNote error={error ?? err} />
+      <ErrorNote error={error} />
       {msg && <Notice tone="success">{msg}</Notice>}
       {f && (
-        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-          <Stat label="Expected" value={naira(f.expectedKobo)} />
-          <Stat label="Collected" value={naira(f.collectedKobo)} hint={`${naira(f.collectedOnlineKobo)} online`} />
-          <Stat label="Outstanding" value={naira(f.outstandingKobo)} />
-          <Stat label="Debtors" value={f.debtorCount} />
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <Stat label="Billed this term" value={naira(f.expectedKobo)} />
+          <Stat label="Collected" value={naira(f.collectedKobo)} hint={`${rate}% of billed`} />
+          <Stat label="Collected online" value={naira(f.collectedOnlineKobo)} hint="Card, transfer and USSD" />
+          <Stat label="Outstanding" value={naira(f.outstandingKobo)} hint={`${f.debtorCount} students owing`} />
         </div>
       )}
+
       {can("fees.manage") && (
-        <Card title="Term bills">
-          <p className="mb-3 text-sm text-muted">Bill every active student for {term.label} from the fee setup, with their discounts. Students who already have a bill are skipped, so it is safe to run again after adding new students.</p>
-          <Button busy={busy === "bills"} onClick={() => run("bills", async () => {
-            const { generateBills } = await gql(GenerateBillsDocument, { termId: term.id });
-            return `${generateBills} new bill(s) created.`;
-          })}>Generate term bills</Button>
+        <Card title="Term bills" description={`Bill every active student for ${term.label} from your fee setup, with their discounts applied.`}
+          actions={<Button size="sm" onClick={() => setDialog("bills")}>Generate bills</Button>}>
+          <p className="text-sm leading-relaxed text-muted">
+            Students who already have a bill for this term are skipped, so it is safe to run again after admitting new students. Optional items such as bus and lessons are added per student from their fees account.
+          </p>
         </Card>
       )}
+
       <Card
-        title="Debtors"
+        flush
+        title="Students owing"
+        description={debtors.length ? `${debtors.length} students · ${naira(debtorTotal)} outstanding` : undefined}
         actions={
-          <div className="flex flex-wrap gap-2">
-            <Select value={armId} onChange={(e) => setArmId(e.target.value)} className="w-auto">
+          <>
+            <Select value={armId} onChange={(e) => setArmId(e.target.value)} className="w-auto" aria-label="Class">
               <option value="">All classes</option>
               {arms.data?.arms.map((a) => <option key={a.id} value={a.id}>{a.label}</option>)}
             </Select>
-            <a className="inline-flex min-h-11 items-center rounded-lg border border-line px-3 text-sm font-semibold" href={`/files/debtors.xlsx${armId ? `?arm=${armId}` : ""}`}>Excel</a>
-            {can("messaging.send") && <Button variant="secondary" onClick={() => setShowReminder(!showReminder)}>SMS reminder</Button>}
-          </div>
+            <ButtonLink href={`/files/debtors.xlsx${armId ? `?arm=${armId}` : ""}`} variant="secondary" size="sm" icon={<IconDownload size={15} />}>Excel</ButtonLink>
+            {can("messaging.send") && debtors.length > 0 && <Button variant="secondary" size="sm" icon={<IconMessage size={15} />} onClick={() => setDialog("remind")}>SMS reminder</Button>}
+          </>
         }
       >
-        {showReminder && (
-          <div className="mb-4 space-y-2 rounded-lg bg-subtle p-3">
-            <Textarea rows={3} value={reminder} onChange={(e) => setReminder(e.target.value)} />
-            <p className="text-xs text-muted">{"{student_name}"} and {"{balance}"} are filled in for each parent. Sent to every debtor&apos;s parents, charged to your SMS wallet.</p>
-            <Button busy={busy === "remind"} onClick={() => run("remind", async () => {
-              const { sendMessage } = await gql(RemindDocument, { body: reminder });
-              setShowReminder(false);
-              return `Reminders queued. ${sendMessage.unitsUsed} SMS units used.`;
-            })}>Send to all debtors</Button>
-          </div>
-        )}
         {isLoading ? (
-          <Loading />
-        ) : !data?.debtors.length ? (
-          <Empty>No one owes fees.</Empty>
+          <div className="p-5"><Loading /></div>
+        ) : !debtors.length ? (
+          <div className="p-5"><Empty title="No outstanding balances" icon={<IconWallet size={18} />}>Every student in this view has paid in full.</Empty></div>
         ) : (
-          <ul className="divide-y divide-line">
-            {data.debtors.map((d) => (
-              <li key={d.student.id}>
-                <Link href={`/fees/student/${d.student.id}`} className="flex min-h-12 items-center justify-between gap-3 py-1 text-sm">
-                  <span className="min-w-0">
-                    <span className="block truncate font-medium">{d.student.fullName}</span>
-                    <span className="text-xs text-muted">{d.student.admissionNumber} · {d.student.currentArm?.label}</span>
-                  </span>
-                  <span className="font-semibold tabular-nums text-red-700 dark:text-red-400">{naira(d.balanceKobo)}</span>
-                </Link>
-              </li>
-            ))}
-          </ul>
+          <Table>
+            <thead><tr><TH>Student</TH><TH>Admission no.</TH><TH>Class</TH><TH align="right">Balance</TH></tr></thead>
+            <tbody>
+              {debtors.map((d) => (
+                <tr key={d.student.id} className="cursor-pointer transition hover:bg-subtle/60" onClick={() => router.push(`/fees/student/${d.student.id}`)}>
+                  <TD className="font-medium">{d.student.fullName}</TD>
+                  <TD className="tabular-nums text-muted">{d.student.admissionNumber}</TD>
+                  <TD>{d.student.currentArm?.label}</TD>
+                  <TD align="right" className="font-semibold tabular-nums">{naira(d.balanceKobo)}</TD>
+                </tr>
+              ))}
+            </tbody>
+          </Table>
         )}
       </Card>
+
+      <ActionDialog
+        open={dialog === "bills"}
+        onClose={() => setDialog(null)}
+        title={`Generate bills for ${term.label}?`}
+        description="Every active student without a bill this term is charged the compulsory items for their level, less their discounts. Each parent's balance updates immediately."
+        confirmLabel="Generate bills"
+        onConfirm={async () => {
+          const { generateBills } = await gql(GenerateBillsDocument, { termId: term.id });
+          setMsg(generateBills ? `${generateBills} new bill${generateBills === 1 ? "" : "s"} created.` : "Every student already has a bill for this term.");
+          await mutate();
+        }}
+      />
+      <Dialog
+        open={dialog === "remind"}
+        onClose={() => setDialog(null)}
+        title="Send a fee reminder"
+        description={`Sent by SMS to the parents of all ${f?.debtorCount ?? debtors.length} students owing, charged to your SMS wallet.`}
+        footer={
+          <>
+            <Button variant="secondary" onClick={() => setDialog(null)}>Cancel</Button>
+            <Button icon={<IconMessage size={15} />} busy={remindBusy} disabled={!reminder.trim()} onClick={async () => {
+              setRemindBusy(true);
+              setRemindErr(null);
+              try {
+                const { sendMessage } = await gql(RemindDocument, { body: reminder });
+                setMsg(`Reminders are on their way. ${sendMessage.unitsUsed} SMS units used.`);
+                setDialog(null);
+              } catch (e) {
+                setRemindErr((e as Error).message);
+              } finally {
+                setRemindBusy(false);
+              }
+            }}>Send reminders</Button>
+          </>
+        }
+      >
+        <div className="space-y-3">
+          <ErrorNote error={remindErr} />
+          <Field label="Message" hint={<>{"{student_name}"} and {"{balance}"} are filled in for each family. {reminder.length} characters.</>}>
+            <Textarea rows={4} value={reminder} onChange={(e) => setReminder(e.target.value)} />
+          </Field>
+        </div>
+      </Dialog>
     </>
   );
 }

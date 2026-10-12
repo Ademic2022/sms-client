@@ -2,7 +2,8 @@
 
 import { useDeferredValue, useState } from "react";
 
-import { Badge, Button, Card, ErrorNote, Field, Input, Loading, Notice, PageHeader, Select, Textarea } from "@/components/ui";
+import { IconMessage, IconSend } from "@/components/icons";
+import { Badge, Button, Card, Checkbox, Empty, ErrorNote, Field, Input, Loading, Notice, PageHeader, Select, Textarea, cx } from "@/components/ui";
 import { graphql } from "@/gql";
 import { gql, useGql } from "@/lib/api";
 import { ArmsDocument } from "@/lib/queries";
@@ -31,11 +32,19 @@ const SendDocument = graphql(`
   }
 `);
 
-const AUDIENCES: Record<string, string> = {
-  all_parents: "All parents",
-  class_parents: "Parents in one class",
-  staff: "All staff",
-  debtors: "Parents of students owing fees",
+const AUDIENCES: Record<string, { label: string; text: string }> = {
+  all_parents: { label: "All parents", text: "Every parent with a child in school" },
+  class_parents: { label: "One class", text: "Parents of students in a class" },
+  debtors: { label: "Parents owing fees", text: "Use {balance} for each family's balance" },
+  staff: { label: "All staff", text: "Teachers, bursar and administrators" },
+};
+
+const KIND_LABELS: Record<string, string> = {
+  announcement: "Announcement",
+  fee_reminder: "Fee reminder",
+  receipt: "Payment receipt",
+  result: "Results published",
+  absence: "Absence alert",
 };
 
 export default function MessagesPage() {
@@ -55,7 +64,7 @@ export default function MessagesPage() {
     setMsg(null);
     try {
       const { sendMessage } = await gql(SendDocument, { ...form, armId: form.armId || null });
-      setMsg(`Message sent. ${sendMessage.unitsUsed} SMS units used.`);
+      setMsg(form.sendSms ? `Message sent. ${sendMessage.unitsUsed} SMS units used.` : "Notice posted to the portal.");
       setForm({ ...form, title: "", body: "" });
       await mutate();
     } catch (e) {
@@ -70,72 +79,107 @@ export default function MessagesPage() {
 
   return (
     <>
-      <PageHeader title="Messages" subtitle={data ? <>SMS wallet: <strong>{data.smsWalletBalance}</strong> units</> : undefined} />
-      <Card title="New announcement">
-        <div className="space-y-3">
-          <ErrorNote error={err} />
-          {msg && <Notice tone="success">{msg}</Notice>}
-          <div className="grid gap-3 sm:grid-cols-2">
-            <Field label="Send to">
-              <Select value={form.audience} onChange={(ev) => setForm({ ...form, audience: ev.target.value })}>
-                {Object.entries(AUDIENCES).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
-              </Select>
-            </Field>
+      <PageHeader
+        title="Messages"
+        subtitle="Announcements by SMS and in the portal. SMS is charged to your school's wallet."
+        actions={data && <div className="rounded-lg border border-line bg-surface px-4 py-2 text-right shadow-sm"><div className="text-xs text-muted">SMS wallet</div><div className="font-display text-lg font-medium tabular-nums text-ink">{data.smsWalletBalance.toLocaleString("en-NG")} units</div></div>}
+      />
+      <ErrorNote error={err} />
+      {msg && <Notice tone="success">{msg}</Notice>}
+
+      <div className="grid gap-5 lg:grid-cols-[1.4fr_1fr]">
+        <Card title="New message">
+          <div className="space-y-5">
+            <fieldset>
+              <legend className="mb-2 text-[13px] font-medium text-ink">Send to</legend>
+              <div className="grid gap-2 sm:grid-cols-2">
+                {Object.entries(AUDIENCES).map(([k, a]) => (
+                  <button
+                    key={k}
+                    type="button"
+                    onClick={() => setForm({ ...form, audience: k })}
+                    aria-pressed={form.audience === k}
+                    className={cx("rounded-lg border px-3.5 py-2.5 text-left transition", form.audience === k ? "border-brand bg-brand/5 ring-[3px] ring-brand/10" : "border-line-strong hover:bg-subtle")}
+                  >
+                    <div className="text-sm font-medium text-ink">{a.label}</div>
+                    <div className="text-xs text-muted">{a.text}</div>
+                  </button>
+                ))}
+              </div>
+            </fieldset>
             {form.audience === "class_parents" && (
               <Field label="Class">
                 <Select value={form.armId} onChange={(ev) => setForm({ ...form, armId: ev.target.value })}>
-                  <option value="">Choose…</option>
+                  <option value="">Select a class</option>
                   {arms.data?.arms.map((a) => <option key={a.id} value={a.id}>{a.label}</option>)}
                 </Select>
               </Field>
             )}
+            <Field label="Title" optional hint="Shown with the notice in the portal. Not included in the SMS.">
+              <Input value={form.title} onChange={(ev) => setForm({ ...form, title: ev.target.value })} placeholder="e.g. Mid-term break" />
+            </Field>
+            <Field label="Message" hint={<>Placeholders: {"{student_name}"}, {"{balance}"}, {"{school_name}"}. Up to 160 characters is one SMS per family. <span className="tabular-nums">{form.body.length} characters.</span></>}>
+              <Textarea rows={5} value={form.body} onChange={(ev) => setForm({ ...form, body: ev.target.value })} placeholder="Dear parent, school resumes on Monday, 6 January…" />
+            </Field>
+            <div className="space-y-3">
+              <Checkbox label="Send by SMS" description="Reaches every parent, including those not on the portal." checked={form.sendSms} onChange={(v) => setForm({ ...form, sendSms: v })} />
+              <Checkbox label="Post as a notice in the portal" checked={form.showInApp} onChange={(v) => setForm({ ...form, showInApp: v })} />
+            </div>
+            {e && form.sendSms && (
+              <div className={cx("grid grid-cols-3 divide-x divide-line rounded-lg border text-center", short ? "border-amber-300 bg-amber-50 dark:border-amber-900 dark:bg-amber-950/30" : "border-line bg-subtle/50")}>
+                <div className="px-3 py-2.5"><div className="text-xs text-muted">Recipients</div><div className="font-semibold tabular-nums text-ink">{e.recipients}</div></div>
+                <div className="px-3 py-2.5"><div className="text-xs text-muted">SMS units</div><div className="font-semibold tabular-nums text-ink">{e.units}</div></div>
+                <div className="px-3 py-2.5"><div className="text-xs text-muted">Sender name</div><div className="truncate font-semibold text-ink">{e.senderId}</div></div>
+              </div>
+            )}
+            {short && <Notice tone="warning" title="Not enough SMS units">This message needs {e?.units} units and your wallet has {e?.walletBalance}. Buy more units or send it as a portal notice only.</Notice>}
+            <div className="flex justify-end border-t border-line pt-4">
+              <Button icon={<IconSend size={15} />} busy={busy} onClick={send} disabled={!form.body.trim() || !!short || (!form.sendSms && !form.showInApp) || (form.audience === "class_parents" && !form.armId)}>
+                Send message
+              </Button>
+            </div>
           </div>
-          <Field label="Title (shown in the portal)"><Input value={form.title} onChange={(ev) => setForm({ ...form, title: ev.target.value })} /></Field>
-          <Field label="Message" hint="You can use {student_name}, {balance} and {school_name}. Keep it under 160 characters for one SMS per parent.">
-            <Textarea rows={4} value={form.body} onChange={(ev) => setForm({ ...form, body: ev.target.value })} />
-          </Field>
-          <div className="flex flex-wrap gap-4 text-sm">
-            <label className="flex items-center gap-2"><input type="checkbox" checked={form.sendSms} onChange={(ev) => setForm({ ...form, sendSms: ev.target.checked })} /> Send by SMS</label>
-            <label className="flex items-center gap-2"><input type="checkbox" checked={form.showInApp} onChange={(ev) => setForm({ ...form, showInApp: ev.target.checked })} /> Show as a notice in the portal</label>
-          </div>
-          {e && form.sendSms && (
-            <Notice tone={short ? "warning" : "info"}>
-              {e.recipients} recipients · {e.units} SMS units · sender name {e.senderId}
-              {short && ` · Your wallet has ${e.walletBalance} units. Buy more units first.`}
-            </Notice>
+        </Card>
+
+        <Card flush title="Sent" description="Delivery status for each message">
+          {isLoading ? (
+            <div className="p-5"><Loading /></div>
+          ) : !data?.messages.length ? (
+            <div className="p-5"><Empty title="Nothing sent yet" icon={<IconMessage size={18} />}>Receipts, result alerts and your announcements appear here.</Empty></div>
+          ) : (
+            <ul className="max-h-[720px] overflow-y-auto">
+              {data.messages.map((m) => {
+                const sent = m.delivery.sent + m.delivery.delivered;
+                return (
+                  <li key={m.id} className="border-b border-line px-5 py-4 last:border-b-0">
+                    <div className="flex items-baseline justify-between gap-3">
+                      <span className="truncate text-sm font-medium text-ink">{m.title || KIND_LABELS[m.kind] || m.kind}</span>
+                      <time className="flex-none text-xs text-muted">{new Date(m.createdAt).toLocaleString("en-NG", { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" })}</time>
+                    </div>
+                    <div className="mt-0.5 text-xs text-muted">{AUDIENCES[m.audience]?.label ?? "Individual"}{m.arm && ` · ${m.arm.label}`}</div>
+                    <p className="mt-1.5 line-clamp-2 text-[13px] leading-relaxed text-muted">{m.body}</p>
+                    {m.sendSms && (
+                      <div className="mt-2 flex flex-wrap gap-1.5">
+                        {sent > 0 && <Badge tone="good" dot>{sent} sent</Badge>}
+                        {m.delivery.queued > 0 && <Badge dot>{m.delivery.queued} queued</Badge>}
+                        {m.delivery.failed > 0 && <Badge tone="bad" dot>{m.delivery.failed} failed</Badge>}
+                        {m.delivery.skipped > 0 && <Badge tone="warn" dot>{m.delivery.skipped} not sent: no units</Badge>}
+                        <Badge>{m.unitsUsed} unit{m.unitsUsed === 1 ? "" : "s"}</Badge>
+                      </div>
+                    )}
+                    {m.failedRecipients.length > 0 && (
+                      <details className="mt-2 text-xs">
+                        <summary className="cursor-pointer font-medium text-red-700 dark:text-red-300">Show failed numbers</summary>
+                        <ul className="mt-1 space-y-0.5 text-muted">{m.failedRecipients.map((r) => <li key={r.id}>{r.phone}: {r.error}</li>)}</ul>
+                      </details>
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
           )}
-          <Button busy={busy} onClick={send} disabled={!form.body.trim() || !!short || (form.audience === "class_parents" && !form.armId)}>Send</Button>
-        </div>
-      </Card>
-      <Card title="Sent">
-        {isLoading ? <Loading /> : (
-          <ul className="divide-y divide-line text-sm">
-            {data?.messages.map((m) => (
-              <li key={m.id} className="py-2">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <span className="font-medium">{m.title || AUDIENCES[m.audience] || m.kind}{m.arm && ` · ${m.arm.label}`}</span>
-                  <span className="text-xs text-muted">{new Date(m.createdAt).toLocaleString("en-NG", { dateStyle: "medium", timeStyle: "short" })}</span>
-                </div>
-                <p className="mt-0.5 line-clamp-2 text-muted">{m.body}</p>
-                {m.sendSms && (
-                  <div className="mt-1 flex flex-wrap gap-1.5">
-                    <Badge tone="good">{m.delivery.sent + m.delivery.delivered} sent</Badge>
-                    {m.delivery.queued > 0 && <Badge>{m.delivery.queued} queued</Badge>}
-                    {m.delivery.failed > 0 && <Badge tone="bad">{m.delivery.failed} failed</Badge>}
-                    {m.delivery.skipped > 0 && <Badge tone="warn">{m.delivery.skipped} not sent (no units)</Badge>}
-                    <Badge>{m.unitsUsed} units</Badge>
-                  </div>
-                )}
-                {m.failedRecipients.length > 0 && (
-                  <details className="mt-1 text-xs"><summary className="cursor-pointer text-red-700">Failed numbers</summary>
-                    <ul>{m.failedRecipients.map((r) => <li key={r.id}>{r.phone}: {r.error}</li>)}</ul>
-                  </details>
-                )}
-              </li>
-            ))}
-          </ul>
-        )}
-      </Card>
+        </Card>
+      </div>
     </>
   );
 }

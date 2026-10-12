@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 
-import { Button, Card, ErrorNote, Input, Loading, Notice, PageHeader } from "@/components/ui";
+import { IconPlus } from "@/components/icons";
+import { Badge, Button, Card, ErrorNote, FormActions, Input, Loading, Notice, PageHeader, cx } from "@/components/ui";
 import { graphql } from "@/gql";
 import { gql, useGql } from "@/lib/api";
 import { useDerivedState } from "@/lib/hooks";
@@ -40,7 +41,7 @@ export default function FeeSetupPage() {
   const [msg, setMsg] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
 
-  if (!term) return <Notice tone="warning">Set the current term first.</Notice>;
+  if (!term) return <Notice tone="warning" title="No current term">Set the current term before setting fees.</Notice>;
   if (isLoading) return <Loading />;
   if (!data) return <ErrorNote error={error} />;
 
@@ -91,54 +92,64 @@ export default function FeeSetupPage() {
 
   return (
     <>
-      <PageHeader title="Fee setup" subtitle={`Amounts per level for ${term.label}, in naira`} />
+      <PageHeader back={{ href: "/fees", label: "Fees and payments" }} eyebrow={term.label} title="Fee setup" subtitle="What each level pays this term. Amounts in naira." />
       <ErrorNote error={err} />
       {msg && <Notice tone="success">{msg}</Notice>}
-      <Card title="Fee items">
+      <Card title="Fee items" description="The lines that appear on every bill, in this order.">
         <div className="flex flex-wrap gap-2">
-          {data.feeItems.map((i) => <span key={i.id} className="rounded-full bg-subtle px-3 py-1 text-sm">{i.name}</span>)}
+          {data.feeItems.map((i) => <Badge key={i.id}>{i.name}</Badge>)}
+          {!data.feeItems.length && <span className="text-sm text-muted">No fee items yet. Add tuition first.</span>}
         </div>
-        <div className="mt-3 flex gap-2">
-          <Input value={newItem} onChange={(e) => setNewItem(e.target.value)} placeholder="e.g. Lesson, Uniform, PTA levy" />
-          <Button variant="secondary" onClick={addItem}>Add</Button>
+        <div className="mt-4 flex max-w-md gap-2">
+          <Input value={newItem} onChange={(e) => setNewItem(e.target.value)} onKeyDown={(e) => e.key === "Enter" && void addItem()} placeholder="e.g. Tuition, Books, PTA levy" aria-label="New fee item" />
+          <Button variant="secondary" icon={<IconPlus size={15} />} onClick={addItem}>Add item</Button>
         </div>
       </Card>
       {data.feeItems.length > 0 && (
         <>
-          <div className="overflow-x-auto rounded-xl border border-line bg-surface">
-            <table className="text-sm">
-              <thead className="bg-subtle text-xs text-muted">
-                <tr>
-                  <th className="sticky left-0 bg-subtle px-3 py-2 text-left">Level</th>
-                  {data.feeItems.map((i) => <th key={i.id} className="px-2 py-2">{i.name}</th>)}
-                  <th className="px-3">Compulsory total</th>
-                </tr>
-              </thead>
-              <tbody>
-                {data.levels.map((l) => (
-                  <tr key={l.id} className="border-t border-line">
-                    <td className="sticky left-0 bg-surface px-3 py-1.5 font-medium">{l.name}</td>
-                    {data.feeItems.map((i) => {
-                      const k = `${l.id}:${i.id}`;
-                      const c = cells[k];
-                      return (
-                        <td key={i.id} className="px-1 py-1">
-                          <input inputMode="decimal" className="h-10 w-24 rounded-md border border-line bg-surface px-2 text-right tabular-nums" value={c?.amount ?? ""}
-                            onChange={(e) => set(k, { amount: e.target.value })} aria-label={`${i.name} for ${l.name}`} />
-                          <label className="mt-0.5 flex items-center gap-1 text-[11px] text-muted">
-                            <input type="checkbox" checked={c?.compulsory ?? true} onChange={(e) => set(k, { compulsory: e.target.checked })} /> compulsory
-                          </label>
-                        </td>
-                      );
-                    })}
-                    <td className="px-3 text-right font-semibold tabular-nums">{naira(levelTotal(l.id))}</td>
+          <Card flush title="Amounts by level" description="Untick Compulsory for items like bus or lessons that only some students take.">
+            <div className="overflow-x-auto">
+              <table className="w-full border-collapse text-sm">
+                <thead>
+                  <tr className="border-b border-line bg-subtle/60 text-xs text-muted">
+                    <th className="sticky left-0 z-10 bg-subtle px-5 py-2.5 text-left font-medium">Level</th>
+                    {data.feeItems.map((i) => <th key={i.id} className="px-2 py-2.5 text-left font-medium">{i.name}</th>)}
+                    <th className="px-5 py-2.5 text-right font-medium">Compulsory total</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          <p className="text-xs text-muted">Optional items (bus, lesson) are not added to bills automatically. Add them to a student&apos;s bill from their fees account.</p>
-          <Button busy={busy} onClick={save}>Save fees</Button>
+                </thead>
+                <tbody>
+                  {data.levels.map((l) => (
+                    <tr key={l.id} className="border-b border-line last:border-b-0">
+                      <td className="sticky left-0 z-10 bg-surface px-5 py-2.5 font-medium text-ink">{l.name}</td>
+                      {data.feeItems.map((i) => {
+                        const k = `${l.id}:${i.id}`;
+                        const c = cells[k];
+                        const compulsory = c?.compulsory ?? true;
+                        return (
+                          <td key={i.id} className="px-2 py-2 align-top">
+                            <div className="relative">
+                              <span className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-muted">₦</span>
+                              <input inputMode="decimal" className="h-9 w-28 rounded-md border border-line-strong bg-surface pl-6 pr-2 text-right text-sm tabular-nums text-ink shadow-sm outline-none focus:border-brand focus:ring-[3px] focus:ring-brand/15"
+                                value={c?.amount ?? ""} placeholder="0" onChange={(e) => set(k, { amount: e.target.value })} aria-label={`${i.name} for ${l.name}`} />
+                            </div>
+                            <button type="button" onClick={() => set(k, { compulsory: !compulsory })}
+                              className={cx("mt-1 rounded px-1 text-[11px] font-medium", compulsory ? "text-muted hover:text-ink" : "text-amber-700 dark:text-amber-300")}>
+                              {compulsory ? "Compulsory" : "Optional"}
+                            </button>
+                          </td>
+                        );
+                      })}
+                      <td className="px-5 py-2.5 text-right align-top font-semibold tabular-nums text-ink">{naira(levelTotal(l.id))}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </Card>
+          <FormActions>
+            <span className="mr-auto text-sm text-muted">Saving does not charge anyone. Generate term bills from the Fees page.</span>
+            <Button busy={busy} onClick={save}>Save fees</Button>
+          </FormActions>
         </>
       )}
     </>

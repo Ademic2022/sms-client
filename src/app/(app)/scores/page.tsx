@@ -1,10 +1,10 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
-import { Button, Card, Empty, Field, Loading, PageHeader, Select } from "@/components/ui";
+import { IconPencilGrid } from "@/components/icons";
+import { Button, Card, Empty, Field, Loading, PageHeader, RowLink, Select } from "@/components/ui";
 import { graphql } from "@/gql";
 import { useGql } from "@/lib/api";
 import { useSession } from "@/lib/session";
@@ -28,50 +28,47 @@ function AnyClassPicker() {
   const [subjectId, setSubjectId] = useState("");
   const level = data?.levels.find((l) => l.arms.some((a) => a.id === armId));
   return (
-    <Card title="Any class and subject">
-      <div className="grid gap-3 sm:grid-cols-[1fr_1fr_auto] sm:items-end">
+    <Card title="Any class and subject" description="As an administrator you can open any score sheet.">
+      <div className="grid gap-4 sm:grid-cols-[1fr_1fr_auto] sm:items-end">
         <Field label="Class">
           <Select value={armId} onChange={(e) => { setArmId(e.target.value); setSubjectId(""); }}>
-            <option value="">Choose…</option>
+            <option value="">Select a class</option>
             {data?.levels.flatMap((l) => l.arms).map((a) => <option key={a.id} value={a.id}>{a.label}</option>)}
           </Select>
         </Field>
         <Field label="Subject">
           <Select value={subjectId} onChange={(e) => setSubjectId(e.target.value)} disabled={!level}>
-            <option value="">Choose…</option>
+            <option value="">Select a subject</option>
             {level?.levelSubjects.map((ls) => <option key={ls.subject.id} value={ls.subject.id}>{ls.subject.name}</option>)}
           </Select>
         </Field>
-        <Button disabled={!armId || !subjectId} onClick={() => router.push(`/scores/${armId}/${subjectId}`)}>Open</Button>
+        <Button disabled={!armId || !subjectId} onClick={() => router.push(`/scores/${armId}/${subjectId}`)}>Open score sheet</Button>
       </div>
     </Card>
   );
 }
 
 export default function ScoresPage() {
-  const { can } = useSession();
+  const { can, term } = useSession();
   const { data, isLoading } = useGql(ScoreTargetsDocument, {});
   const assignments = data?.myClasses.subjectAssignments ?? [];
   return (
     <>
-      <PageHeader title="Enter scores" subtitle="Scores save as you type, and keep saving when the network drops." />
+      <PageHeader eyebrow={term?.label} title="Score entry" subtitle="Scores save as you type and keep saving when the network drops." />
       {isLoading ? (
         <Loading />
       ) : assignments.length ? (
-        <Card title="My subjects">
-          <ul className="divide-y divide-line">
-            {assignments.map((a) => (
-              <li key={a.id}>
-                <Link href={`/scores/${a.arm.id}/${a.subject.id}`} className="flex min-h-12 items-center justify-between text-sm">
-                  <span><span className="font-medium">{a.subject.name}</span> · {a.arm.label}</span>
-                  <span className="text-brand">Open →</span>
-                </Link>
-              </li>
-            ))}
-          </ul>
+        <Card title="My subjects" description={`${assignments.length} class${assignments.length === 1 ? "" : "es"} this session`} flush>
+          {assignments.map((a) => (
+            <RowLink key={a.id} href={`/scores/${a.arm.id}/${a.subject.id}`} title={a.subject.name} meta={a.arm.label} right={<span className="text-[13px] font-medium text-brand-ink">Open sheet</span>} />
+          ))}
         </Card>
       ) : (
-        !can("scores.manage") && <Empty>You have not been assigned any subjects this session. Ask the school admin.</Empty>
+        !can("scores.manage") && (
+          <Empty title="No subjects assigned" icon={<IconPencilGrid size={18} />}>
+            You have not been assigned to teach any subject this session. Ask the school admin to assign your classes.
+          </Empty>
+        )
       )}
       {can("scores.manage") && <AnyClassPicker />}
     </>

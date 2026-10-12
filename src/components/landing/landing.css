@@ -11,11 +11,7 @@
   --lp-rule: #ddd3c0;
   background: var(--lp-paper);
   color: var(--lp-ink);
-  font-family: var(--font-lp-body), ui-sans-serif, system-ui, sans-serif;
-}
-.lp .font-display {
-  font-family: var(--font-lp-display), Georgia, serif;
-  font-optical-sizing: auto;
+  font-family: var(--font-sans);
 }
 /* Fine paper grain over the whole page. */
 .lp-grain {

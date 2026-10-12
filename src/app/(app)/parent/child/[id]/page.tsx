@@ -3,7 +3,8 @@
 import { useParams } from "next/navigation";
 import { useState } from "react";
 
-import { Badge, Card, ErrorNote, Loading, Notice, PageHeader, Select } from "@/components/ui";
+import { IconDownload } from "@/components/icons";
+import { Badge, ButtonLink, Card, ErrorNote, Loading, Notice, PageHeader, Select, Stat, Table, TD, TH } from "@/components/ui";
 import { graphql } from "@/gql";
 import { useGql } from "@/lib/api";
 import { naira, ordinal } from "@/lib/money";
@@ -54,53 +55,68 @@ export default function ChildPage() {
 
   return (
     <>
-      <PageHeader title={l?.student.fullName ?? ""} subtitle={`${l?.student.currentArm?.label ?? ""} · ${l?.student.admissionNumber ?? ""}`} />
-      <Card title="Results" actions={
-        <Select value={termId} onChange={(e) => setTermId(e.target.value)} className="w-auto">
-          {terms.data?.terms.map((t) => <option key={t.id} value={t.id}>{t.label}</option>)}
-        </Select>
-      }>
-        {result.isLoading ? <Loading /> : !r ? null : !r.visible ? (
-          <Notice tone={r.reason === "fees_outstanding" ? "warning" : "info"}>{REASONS[r.reason] ?? "Results are not available."}</Notice>
-        ) : r.result && (
-          <div className="space-y-3">
-            <div className="grid grid-cols-3 gap-2 text-center">
-              <div className="rounded-lg bg-subtle p-2"><div className="text-xs text-muted">Average</div><div className="text-lg font-bold">{r.result.average}</div></div>
-              <div className="rounded-lg bg-subtle p-2"><div className="text-xs text-muted">Class average</div><div className="text-lg font-bold">{r.classAverage}</div></div>
-              <div className="rounded-lg bg-subtle p-2"><div className="text-xs text-muted">Position</div><div className="text-lg font-bold">{r.result.position ? `${ordinal(r.result.position)} of ${r.classSize}` : "–"}</div></div>
-            </div>
-            <ul className="divide-y divide-line text-sm">
-              {r.result.subjects.map((s) => (
-                <li key={s.subjectId} className="flex items-center justify-between py-2">
-                  <span>{s.subjectName}</span>
-                  <span className="flex items-center gap-2 tabular-nums">
-                    {s.total ? Number(s.total) : "–"} <Badge tone="brand">{s.cumulativeGrade || s.grade}</Badge>
-                  </span>
-                </li>
-              ))}
-            </ul>
-            {r.reportCardUrl && (
-              <a href={r.reportCardUrl} target="_blank" rel="noreferrer" className="inline-flex min-h-11 items-center rounded-lg bg-brand px-4 text-sm font-semibold text-white">
-                Download report card
-              </a>
-            )}
+      <PageHeader
+        back={{ href: "/parent", label: "My children" }}
+        title={l?.student.fullName ?? ""}
+        subtitle={<><span>{l?.student.currentArm?.label}</span><span aria-hidden>·</span><span className="tabular-nums">{l?.student.admissionNumber}</span></>}
+        actions={
+          <Select value={termId} onChange={(e) => setTermId(e.target.value)} className="w-auto" aria-label="Term">
+            {terms.data?.terms.map((t) => <option key={t.id} value={t.id}>{t.label}</option>)}
+          </Select>
+        }
+      />
+      {result.isLoading ? (
+        <Loading />
+      ) : !r ? null : !r.visible ? (
+        <Notice tone={r.reason === "fees_outstanding" ? "warning" : "info"} title={r.reason === "fees_outstanding" ? "Results on hold" : "Results not available yet"}>
+          {REASONS[r.reason] ?? "Results are not available."}
+        </Notice>
+      ) : r.result && (
+        <>
+          <div className="grid gap-4 sm:grid-cols-3">
+            <Stat label="Average" value={r.result.average ?? "–"} hint={`Class average ${r.classAverage ?? "–"}`} />
+            <Stat label="Position" value={r.result.position ? ordinal(r.result.position) : "–"} hint={r.result.position ? `Out of ${r.classSize} students` : "Not shown by the school"} />
+            <Stat label="Subjects" value={r.result.subjects.length} hint={`Total score ${Number(r.result.total)}`} />
           </div>
-        )}
-      </Card>
+          <Card
+            flush
+            title="Subject results"
+            actions={r.reportCardUrl && <ButtonLink href={r.reportCardUrl} size="sm" icon={<IconDownload size={15} />}>Report card</ButtonLink>}
+          >
+            <Table>
+              <thead><tr><TH>Subject</TH><TH align="right">Score</TH><TH align="center">Grade</TH><TH>Remark</TH></tr></thead>
+              <tbody>
+                {r.result.subjects.map((s) => (
+                  <tr key={s.subjectId}>
+                    <TD className="font-medium">{s.subjectName}</TD>
+                    <TD align="right" className="tabular-nums">{s.total ? Number(s.total) : "–"}</TD>
+                    <TD align="center"><Badge tone="brand">{s.cumulativeGrade || s.grade || "–"}</Badge></TD>
+                    <TD className="text-muted">{s.remark}</TD>
+                  </tr>
+                ))}
+              </tbody>
+            </Table>
+          </Card>
+        </>
+      )}
       {l && (
-        <Card title={`Payments · balance ${naira(l.balanceKobo)}`}>
-          {l.payments.length === 0 ? <p className="text-sm text-muted">No payments yet.</p> : (
-            <ul className="divide-y divide-line text-sm">
-              {l.payments.map((p) => (
-                <li key={p.id} className="flex justify-between py-2">
-                  <span>{new Date(p.paidAt).toLocaleDateString("en-NG")} · {p.receiptNumber}</span>
-                  <span className="flex gap-3">
-                    <span className="font-semibold tabular-nums">{naira(p.amountKobo)}</span>
-                    <a className="text-brand" href={`/files/receipt/${p.id}/`} target="_blank" rel="noreferrer">Receipt</a>
-                  </span>
-                </li>
-              ))}
-            </ul>
+        <Card flush title="Payments" description={`Balance ${naira(l.balanceKobo)}`}>
+          {l.payments.length === 0 ? (
+            <p className="px-5 py-4 text-sm text-muted">No payments yet.</p>
+          ) : (
+            <Table>
+              <thead><tr><TH>Date</TH><TH>Receipt</TH><TH align="right">Amount</TH><TH /></tr></thead>
+              <tbody>
+                {l.payments.map((p) => (
+                  <tr key={p.id}>
+                    <TD className="text-muted">{new Date(p.paidAt).toLocaleDateString("en-NG", { day: "numeric", month: "short", year: "numeric" })}</TD>
+                    <TD className="tabular-nums">{p.receiptNumber}</TD>
+                    <TD align="right" className="font-semibold tabular-nums">{naira(p.amountKobo)}</TD>
+                    <TD align="right"><a className="text-[13px] font-medium text-brand-ink hover:underline" href={`/files/receipt/${p.id}/`} target="_blank" rel="noreferrer">Receipt</a></TD>
+                  </tr>
+                ))}
+              </tbody>
+            </Table>
           )}
         </Card>
       )}

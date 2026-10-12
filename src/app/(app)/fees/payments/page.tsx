@@ -2,8 +2,9 @@
 
 import { useState, type FormEvent } from "react";
 
+import { IconReceipt } from "@/components/icons";
 import { StudentPicker, type PickedStudent } from "@/components/StudentPicker";
-import { Badge, Button, Card, ErrorNote, Field, Input, Loading, Notice, PageHeader, Select, statusTone } from "@/components/ui";
+import { Button, Card, Empty, ErrorNote, Field, IconButton, Input, Loading, Notice, PageHeader, Select, StatusBadge, Table, TD, TH } from "@/components/ui";
 import { graphql } from "@/gql";
 import { gql, useGql } from "@/lib/api";
 import { naira, toKobo } from "@/lib/money";
@@ -33,23 +34,28 @@ const BalanceDocument = graphql(`
 
 const METHODS: Record<string, string> = { cash: "Cash", pos: "POS", bank: "Bank deposit or transfer", online: "Online" };
 
+function localDateTime() {
+  const d = new Date();
+  return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+}
+
 export default function PaymentsPage() {
   const { can } = useSession();
   const [method, setMethod] = useState("");
   const payments = useGql(RecentPaymentsDocument, { method: method || null });
   const [student, setStudent] = useState<PickedStudent | null>(null);
   const balance = useGql(BalanceDocument, student ? { studentId: student.id } : null);
-  const [form, setForm] = useState({ amount: "", method: "cash", reference: "", note: "", paidAt: new Date().toISOString().slice(0, 16) });
+  const [form, setForm] = useState({ amount: "", method: "cash", reference: "", note: "", paidAt: localDateTime() });
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
-  const [done, setDone] = useState<{ id: string; receipt: string } | null>(null);
+  const [done, setDone] = useState<{ id: string; receipt: string; amount: number; name: string } | null>(null);
 
   async function submit(e: FormEvent) {
     e.preventDefault();
     if (!student) return;
     const amountKobo = toKobo(form.amount);
     if (!amountKobo) {
-      setErr("Enter a valid amount.");
+      setErr("Enter a valid amount, for example 85,000.");
       return;
     }
     setBusy(true);
@@ -58,9 +64,9 @@ export default function PaymentsPage() {
       const { recordPayment } = await gql(RecordPaymentDocument, {
         studentId: student.id, amountKobo, method: form.method, paidAt: new Date(form.paidAt).toISOString(), reference: form.reference, note: form.note,
       });
-      setDone({ id: recordPayment.id, receipt: recordPayment.receiptNumber });
+      setDone({ id: recordPayment.id, receipt: recordPayment.receiptNumber, amount: amountKobo, name: student.fullName });
       setStudent(null);
-      setForm((f) => ({ ...f, amount: "", reference: "", note: "" }));
+      setForm({ amount: "", method: "cash", reference: "", note: "", paidAt: localDateTime() });
       void payments.mutate();
     } catch (e2) {
       setErr((e2 as Error).message);
@@ -71,59 +77,99 @@ export default function PaymentsPage() {
 
   return (
     <>
-      <PageHeader title="Payments" />
+      <PageHeader back={{ href: "/fees", label: "Fees and payments" }} title="Payments" subtitle="Online payments appear here automatically. Record cash, POS and bank tellers by hand." />
+
       {can("payments.record") && (
-        <Card title="Record a cash, POS or bank payment">
-          {done && <Notice tone="success">Saved as receipt {done.receipt}. The parent gets an SMS receipt. <a className="font-semibold underline" target="_blank" rel="noreferrer" href={`/files/receipt/${done.id}/`}>Print receipt</a></Notice>}
-          <form onSubmit={submit} className="mt-3 space-y-3">
-            <ErrorNote error={err} />
-            {student ? (
-              <div className="flex items-center justify-between rounded-lg bg-subtle px-3 py-2 text-sm">
-                <span><span className="font-medium">{student.fullName}</span> · {student.admissionNumber} · balance <strong>{naira(balance.data?.ledger.balanceKobo)}</strong></span>
-                <button type="button" className="text-brand" onClick={() => setStudent(null)}>Change</button>
+        <div id="record" className="scroll-mt-6">
+          <Card title="Record a payment" description="The parent receives an SMS receipt as soon as you save.">
+            {done && (
+              <div className="mb-5">
+                <Notice tone="success" title={`${naira(done.amount)} recorded for ${done.name}`}>
+                  Receipt {done.receipt}.{" "}
+                  <a className="font-semibold underline underline-offset-2" target="_blank" rel="noreferrer" href={`/files/receipt/${done.id}/`}>Print receipt</a>
+                </Notice>
               </div>
-            ) : (
-              <Field label="Student"><StudentPicker onPick={setStudent} /></Field>
             )}
-            <div className="grid gap-3 sm:grid-cols-2">
-              <Field label="Amount (₦)"><Input inputMode="decimal" value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} required placeholder="50,000" /></Field>
-              <Field label="Method">
-                <Select value={form.method} onChange={(e) => setForm({ ...form, method: e.target.value })}>
-                  <option value="cash">Cash</option><option value="pos">POS</option><option value="bank">Bank deposit or transfer</option>
-                </Select>
+            <form onSubmit={submit} className="space-y-4">
+              <ErrorNote error={err} />
+              <Field label="Student">
+                {student ? (
+                  <div className="flex items-center justify-between gap-3 rounded-lg border border-line-strong bg-subtle/50 px-3 py-2.5">
+                    <div className="min-w-0 text-sm">
+                      <div className="truncate font-medium text-ink">{student.fullName}</div>
+                      <div className="text-[13px] text-muted">{student.admissionNumber} · Balance {balance.data ? <strong className="text-ink">{naira(balance.data.ledger.balanceKobo)}</strong> : "…"}</div>
+                    </div>
+                    <Button type="button" size="sm" variant="secondary" onClick={() => setStudent(null)}>Change</Button>
+                  </div>
+                ) : (
+                  <StudentPicker onPick={setStudent} />
+                )}
               </Field>
-              <Field label="Teller or reference number" hint={form.method === "cash" ? "Optional for cash." : "Required for POS and bank payments."}>
-                <Input value={form.reference} onChange={(e) => setForm({ ...form, reference: e.target.value })} required={form.method !== "cash"} />
-              </Field>
-              <Field label="Date paid"><Input type="datetime-local" value={form.paidAt} onChange={(e) => setForm({ ...form, paidAt: e.target.value })} required /></Field>
-            </div>
-            <Field label="Note (optional)"><Input value={form.note} onChange={(e) => setForm({ ...form, note: e.target.value })} /></Field>
-            <Button type="submit" busy={busy} disabled={!student}>Save payment</Button>
-          </form>
-        </Card>
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                <Field label="Amount">
+                  <div className="relative">
+                    <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted">₦</span>
+                    <Input inputMode="decimal" value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} required placeholder="85,000" className="pl-7 tabular-nums" />
+                  </div>
+                </Field>
+                <Field label="Method">
+                  <Select value={form.method} onChange={(e) => setForm({ ...form, method: e.target.value })}>
+                    <option value="cash">Cash</option>
+                    <option value="pos">POS</option>
+                    <option value="bank">Bank deposit or transfer</option>
+                  </Select>
+                </Field>
+                <Field label="Teller or reference" optional={form.method === "cash"}>
+                  <Input value={form.reference} onChange={(e) => setForm({ ...form, reference: e.target.value })} required={form.method !== "cash"} />
+                </Field>
+                <Field label="Date paid">
+                  <Input type="datetime-local" value={form.paidAt} onChange={(e) => setForm({ ...form, paidAt: e.target.value })} required />
+                </Field>
+              </div>
+              <Field label="Note" optional><Input value={form.note} onChange={(e) => setForm({ ...form, note: e.target.value })} /></Field>
+              <div className="flex justify-end border-t border-line pt-4">
+                <Button type="submit" busy={busy} disabled={!student}>Save payment</Button>
+              </div>
+            </form>
+          </Card>
+        </div>
       )}
-      <Card title="Recent payments" actions={
-        <Select value={method} onChange={(e) => setMethod(e.target.value)} className="w-auto">
-          <option value="">All methods</option>
-          {Object.entries(METHODS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
-        </Select>
-      }>
-        {payments.isLoading ? <Loading /> : (
-          <ul className="divide-y divide-line text-sm">
-            {payments.data?.payments.map((p) => (
-              <li key={p.id} className="flex flex-wrap items-center justify-between gap-2 py-2">
-                <span className="min-w-0">
-                  <span className="block truncate font-medium">{p.student.fullName}</span>
-                  <span className="text-xs text-muted">{p.receiptNumber} · {METHODS[p.method]}{p.reference && ` · ${p.reference}`} · {new Date(p.paidAt).toLocaleDateString("en-NG")}{p.recordedBy && ` · ${p.recordedBy.fullName}`}</span>
-                </span>
-                <span className="flex items-center gap-2">
-                  {p.status !== "success" && <Badge tone={statusTone[p.status]}>{p.status}</Badge>}
-                  <span className="font-semibold tabular-nums">{naira(p.amountKobo)}</span>
-                  <a className="text-brand" target="_blank" rel="noreferrer" href={`/files/receipt/${p.id}/`}>Receipt</a>
-                </span>
-              </li>
-            ))}
-          </ul>
+
+      <Card
+        flush
+        title="Recent payments"
+        actions={
+          <Select value={method} onChange={(e) => setMethod(e.target.value)} className="w-auto" aria-label="Method">
+            <option value="">All methods</option>
+            {Object.entries(METHODS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+          </Select>
+        }
+      >
+        {payments.isLoading ? (
+          <div className="p-5"><Loading /></div>
+        ) : !payments.data?.payments.length ? (
+          <div className="p-5"><Empty title="No payments yet" icon={<IconReceipt size={18} />}>Payments recorded here or made online by parents will appear in this list.</Empty></div>
+        ) : (
+          <Table>
+            <thead>
+              <tr><TH>Date</TH><TH>Student</TH><TH>Receipt</TH><TH>Method</TH><TH>Status</TH><TH align="right">Amount</TH><TH /></tr>
+            </thead>
+            <tbody>
+              {payments.data.payments.map((p) => (
+                <tr key={p.id}>
+                  <TD className="whitespace-nowrap text-muted">{new Date(p.paidAt).toLocaleDateString("en-NG", { day: "numeric", month: "short", year: "numeric" })}</TD>
+                  <TD><div className="font-medium">{p.student.fullName}</div><div className="text-xs text-muted">{p.student.admissionNumber}</div></TD>
+                  <TD className="tabular-nums text-muted">{p.receiptNumber}</TD>
+                  <TD><div>{METHODS[p.method]}</div>{(p.reference || p.recordedBy) && <div className="text-xs text-muted">{[p.reference, p.recordedBy?.fullName].filter(Boolean).join(" · ")}</div>}</TD>
+                  <TD><StatusBadge status={p.status} /></TD>
+                  <TD align="right" className="font-semibold tabular-nums">{naira(p.amountKobo)}</TD>
+                  <TD align="right">
+                    <a href={`/files/receipt/${p.id}/`} target="_blank" rel="noreferrer"><IconButton label="Open receipt" tabIndex={-1}><IconReceipt size={16} /></IconButton></a>
+                  </TD>
+                </tr>
+              ))}
+            </tbody>
+          </Table>
         )}
       </Card>
     </>

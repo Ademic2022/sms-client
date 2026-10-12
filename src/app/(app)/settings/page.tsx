@@ -1,13 +1,13 @@
 "use client";
 
-import Link from "next/link";
 import { useState } from "react";
 
-import { Button, Card, ErrorNote, Field, Input, Loading, Notice, PageHeader, Select, Textarea } from "@/components/ui";
+import { SettingsNav } from "@/components/SettingsNav";
+import { Button, Card, Checkbox, ErrorNote, Field, FormActions, FormSection, Input, Loading, Notice, PageHeader, Select, StatusBadge, Textarea } from "@/components/ui";
 import { graphql } from "@/gql";
 import { gql, useGql } from "@/lib/api";
 import { useDerivedState } from "@/lib/hooks";
-import { naira, toKobo } from "@/lib/money";
+import { toKobo } from "@/lib/money";
 import { useSession } from "@/lib/session";
 
 const SettingsDocument = graphql(`
@@ -55,14 +55,15 @@ export default function SettingsPage() {
   const [err, setErr] = useState<string | null>(null);
   const [supportReason, setSupportReason] = useState("");
 
-  const links = (
-    <div className="grid gap-3 sm:grid-cols-2">
-      {can("academics.manage") && <Link href="/settings/academics" className="rounded-xl border border-line bg-surface p-4 hover:bg-subtle"><div className="font-semibold">Academic setup</div><div className="text-sm text-muted">Sessions and terms, classes, subjects, assessment, grading, promotion</div></Link>}
-      {can("staff.manage") && <Link href="/settings/staff" className="rounded-xl border border-line bg-surface p-4 hover:bg-subtle"><div className="font-semibold">Staff and roles</div><div className="text-sm text-muted">Add teachers, the bursar and admins; assign classes and subjects</div></Link>}
-    </div>
-  );
-
-  if (!canSchool) return <><PageHeader title="Settings" />{links}</>;
+  if (!canSchool) {
+    return (
+      <>
+        <PageHeader title="Settings" />
+        <SettingsNav />
+        <Notice>Choose a section above.</Notice>
+      </>
+    );
+  }
   if (isLoading) return <Loading />;
   if (error) return <ErrorNote error={error} />;
 
@@ -96,70 +97,100 @@ export default function SettingsPage() {
 
   const set = (k: keyof typeof school) => (e: { target: { value: string } }) => setSchool({ ...school, [k]: e.target.value });
 
+  const grants = data?.supportGrants ?? [];
+  const senderStatus = data?.schoolSettings.smsSenderStatus ?? "none";
+
   return (
     <>
-      <PageHeader title="Settings" />
-      {links}
+      <PageHeader title="Settings" subtitle="How your school appears, and how results, fees and messages behave." />
+      <SettingsNav />
       <ErrorNote error={err} />
       {msg && <Notice tone="success">{msg}</Notice>}
-      <Card title="School profile">
-        <div className="grid gap-3 sm:grid-cols-2">
-          <Field label="Name"><Input value={school.name} onChange={set("name")} /></Field>
-          <Field label="Motto"><Input value={school.motto} onChange={set("motto")} /></Field>
-          <Field label="Phone"><Input value={school.phone} onChange={set("phone")} /></Field>
-          <Field label="Email"><Input value={school.email} onChange={set("email")} /></Field>
-          <Field label="Brand colour"><Input type="color" value={school.primaryColor} onChange={set("primaryColor")} className="h-11 p-1" /></Field>
-        </div>
-        <div className="mt-3"><Field label="Address"><Textarea rows={2} value={school.address} onChange={set("address")} /></Field></div>
-      </Card>
-      <Card title="Results and report cards">
-        <div className="grid gap-3 sm:grid-cols-2">
-          <label className="flex min-h-11 items-center gap-2 text-sm"><input type="checkbox" checked={s.showClassPosition} onChange={(e) => setS({ ...s, showClassPosition: e.target.checked })} /> Show class position on reports</label>
-          <Field label="Report card template">
-            <Select value={s.reportTemplate} onChange={(e) => setS({ ...s, reportTemplate: e.target.value })}>
-              <option value="classic">Classic (with highest and lowest)</option>
-              <option value="compact">Compact</option>
-            </Select>
-          </Field>
-          <Field label="Head's title on reports"><Input value={s.principalTitle} onChange={(e) => setS({ ...s, principalTitle: e.target.value })} /></Field>
-          <Field label="Hold results when a student owes more than (₦)" hint={`Leave blank to never hold results.${s.debt ? ` Currently ${naira(toKobo(s.debt) ?? 0)}.` : ""}`}>
-            <Input inputMode="decimal" value={s.debt} onChange={(e) => setS({ ...s, debt: e.target.value })} />
-          </Field>
-        </div>
-      </Card>
-      <Card title="Students, payments and SMS">
-        <div className="grid gap-3 sm:grid-cols-2">
-          <Field label="Admission number format" hint="Use {prefix}, {year}, {yy} and {seq:04d}, e.g. {prefix}/{year}/{seq:04d}">
-            <Input value={s.admissionNumberFormat} onChange={(e) => setS({ ...s, admissionNumberFormat: e.target.value })} />
-          </Field>
-          <Field label="Admission number prefix"><Input value={s.admissionNumberPrefix} onChange={(e) => setS({ ...s, admissionNumberPrefix: e.target.value })} /></Field>
-          <Field label="Online payment charge paid by">
-            <Select value={s.bearer} onChange={(e) => setS({ ...s, bearer: e.target.value })}>
-              <option value="school">The school</option>
-              <option value="parent">The parent (added as a convenience fee)</option>
-            </Select>
-          </Field>
-          <Field label="SMS sender name" hint={`Up to 11 letters. Networks must approve it; until then messages use the shared name. Status: ${data?.schoolSettings.smsSenderStatus}`}>
-            <Input maxLength={11} value={s.sender} onChange={(e) => setS({ ...s, sender: e.target.value })} />
-          </Field>
-          <label className="flex min-h-11 items-center gap-2 text-sm"><input type="checkbox" checked={s.notifyAbsence} onChange={(e) => setS({ ...s, notifyAbsence: e.target.checked })} /> SMS parents when a child is marked absent</label>
-        </div>
-      </Card>
-      <Button busy={busy} onClick={save}>Save settings</Button>
-
-      <Card title="Support access">
-        <p className="mb-2 text-sm text-muted">Let the platform support team into your account for a limited time. Everything they do is recorded in your audit log.</p>
-        {data?.supportGrants.map((g) => (
-          <div key={g.id} className="mb-2 flex items-center justify-between rounded-lg bg-subtle px-3 py-2 text-sm">
-            <span>{g.reason} · until {new Date(g.expiresAt).toLocaleString("en-NG")}</span>
-            <Button variant="ghost" onClick={async () => { await gql(RevokeDocument, { id: g.id }); await mutate(); }}>Revoke</Button>
+      <Card>
+        <FormSection title="School profile" description="Shown on report cards, receipts, the sign-in page and SMS messages.">
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field label="School name"><Input value={school.name} onChange={set("name")} /></Field>
+            <Field label="Motto" optional><Input value={school.motto} onChange={set("motto")} /></Field>
+            <Field label="Phone"><Input value={school.phone} onChange={set("phone")} inputMode="tel" /></Field>
+            <Field label="Email"><Input type="email" value={school.email} onChange={set("email")} /></Field>
+            <div className="sm:col-span-2"><Field label="Address"><Textarea rows={2} value={school.address} onChange={set("address")} /></Field></div>
+            <Field label="Brand colour" hint="Used for buttons, the sign-in page and report card headings.">
+              <div className="flex items-center gap-3">
+                <input type="color" value={school.primaryColor} onChange={set("primaryColor")} className="h-10 w-14 cursor-pointer rounded-lg border border-line-strong bg-surface p-1" aria-label="Brand colour" />
+                <Input value={school.primaryColor} onChange={set("primaryColor")} className="w-32 font-mono uppercase" maxLength={7} />
+              </div>
+            </Field>
           </div>
-        ))}
-        <div className="flex gap-2">
-          <Input placeholder="What do you need help with?" value={supportReason} onChange={(e) => setSupportReason(e.target.value)} />
-          <Button variant="secondary" disabled={!supportReason.trim()} onClick={async () => {
-            try { await gql(GrantDocument, { reason: supportReason, hours: 24 }); setSupportReason(""); await mutate(); } catch (e) { setErr((e as Error).message); }
-          }}>Allow for 24 hours</Button>
+        </FormSection>
+        <FormSection title="Results and report cards" description="Applies to every class unless a level has its own template.">
+          <div className="space-y-4">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Field label="Report card template">
+                <Select value={s.reportTemplate} onChange={(e) => setS({ ...s, reportTemplate: e.target.value })}>
+                  <option value="classic">Classic, with highest and lowest scores</option>
+                  <option value="compact">Compact</option>
+                </Select>
+              </Field>
+              <Field label="Title of the head of school"><Input value={s.principalTitle} onChange={(e) => setS({ ...s, principalTitle: e.target.value })} placeholder="Principal, Head Teacher, Proprietress" /></Field>
+            </div>
+            <Checkbox label="Show class position" description="Position in class and in each subject, on report cards and in the parent portal." checked={s.showClassPosition} onChange={(v) => setS({ ...s, showClassPosition: v })} />
+          </div>
+        </FormSection>
+        <FormSection title="Fees" description="Who pays the online payment charge, and when results are held for unpaid fees.">
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field label="Online payment charge paid by">
+              <Select value={s.bearer} onChange={(e) => setS({ ...s, bearer: e.target.value })}>
+                <option value="school">The school</option>
+                <option value="parent">The parent, as a convenience fee</option>
+              </Select>
+            </Field>
+            <Field label="Hold results when a student owes more than" optional hint="Leave empty to never hold results.">
+              <div className="relative">
+                <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted">₦</span>
+                <Input inputMode="decimal" value={s.debt} onChange={(e) => setS({ ...s, debt: e.target.value })} className="pl-7 tabular-nums" placeholder="50,000" />
+              </div>
+            </Field>
+          </div>
+        </FormSection>
+        <FormSection title="Students" description="Admission numbers are generated in this format for new students.">
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field label="Admission number format" hint={<>Use {"{prefix}"}, {"{year}"}, {"{yy}"} and {"{seq:04d}"}.</>}>
+              <Input value={s.admissionNumberFormat} onChange={(e) => setS({ ...s, admissionNumberFormat: e.target.value })} className="font-mono" />
+            </Field>
+            <Field label="Prefix" optional><Input value={s.admissionNumberPrefix} onChange={(e) => setS({ ...s, admissionNumberPrefix: e.target.value })} placeholder="GHS" /></Field>
+          </div>
+        </FormSection>
+        <FormSection title="SMS" description="Your own sender name must be approved by the mobile networks. Until then, messages go out under the shared platform name.">
+          <div className="space-y-4">
+            <Field label="Sender name" hint="Up to 11 letters or numbers.">
+              <div className="flex flex-wrap items-center gap-3">
+                <Input maxLength={11} value={s.sender} onChange={(e) => setS({ ...s, sender: e.target.value })} className="w-48" />
+                {senderStatus !== "none" && <StatusBadge status={senderStatus === "approved" ? "active" : senderStatus === "rejected" ? "failed" : "pending"} />}
+              </div>
+            </Field>
+            <Checkbox label="Text parents when a child is marked absent" description="Uses one SMS unit per parent per absence." checked={s.notifyAbsence} onChange={(v) => setS({ ...s, notifyAbsence: v })} />
+          </div>
+        </FormSection>
+      </Card>
+      <FormActions><Button busy={busy} onClick={save}>Save settings</Button></FormActions>
+
+      <Card title="Support access" description="Let the platform support team into your account for 24 hours. Everything they do is recorded in your audit log.">
+        <div className="space-y-3">
+          {grants.map((g) => (
+            <div key={g.id} className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-line bg-subtle/50 px-4 py-3 text-sm">
+              <div>
+                <div className="font-medium text-ink">{g.reason}</div>
+                <div className="text-[13px] text-muted">Granted by {g.grantedBy} · until {new Date(g.expiresAt).toLocaleString("en-NG", { dateStyle: "medium", timeStyle: "short" })}</div>
+              </div>
+              <Button size="sm" variant="secondary" onClick={async () => { await gql(RevokeDocument, { id: g.id }); await mutate(); }}>Revoke access</Button>
+            </div>
+          ))}
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <Input placeholder="What do you need help with?" value={supportReason} onChange={(e) => setSupportReason(e.target.value)} />
+            <Button variant="secondary" disabled={!supportReason.trim()} onClick={async () => {
+              try { await gql(GrantDocument, { reason: supportReason, hours: 24 }); setSupportReason(""); await mutate(); } catch (e) { setErr((e as Error).message); }
+            }}>Allow access</Button>
+          </div>
         </div>
       </Card>
     </>

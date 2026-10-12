@@ -4,7 +4,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 
-import { Card, Empty, ErrorNote, Loading, Notice, PageHeader, Stat } from "@/components/ui";
+import { IconAward, IconCalendarCheck, IconMessage, IconPencilGrid, IconUsers, IconWallet } from "@/components/icons";
+import { ButtonLink, Card, Empty, ErrorNote, Loading, Notice, PageHeader, RowLink, Stat } from "@/components/ui";
 import { graphql } from "@/gql";
 import { useGql } from "@/lib/api";
 import { naira } from "@/lib/money";
@@ -44,28 +45,71 @@ const NoticesDocument = graphql(`
   }
 `);
 
+function percent(part: number, whole: number) {
+  return whole ? Math.round((part / whole) * 100) : 0;
+}
+
+function Progress({ value }: { value: number }) {
+  return (
+    <div className="h-1.5 overflow-hidden rounded-full bg-subtle" role="progressbar" aria-valuenow={value} aria-valuemin={0} aria-valuemax={100}>
+      <div className="h-full rounded-full bg-brand transition-[width]" style={{ width: `${Math.min(100, value)}%` }} />
+    </div>
+  );
+}
+
+function FeeTiles({ f }: { f: { expectedKobo: number; collectedKobo: number; collectedOnlineKobo: number; outstandingKobo: number; debtorCount: number } }) {
+  const rate = percent(f.collectedKobo, f.expectedKobo);
+  return (
+    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <Stat label="Billed this term" value={naira(f.expectedKobo)} hint="All compulsory and added items" />
+      <Stat
+        label="Collected"
+        value={naira(f.collectedKobo)}
+        hint={
+          <div className="space-y-1.5">
+            <Progress value={rate} />
+            <div>{rate}% of billed · {naira(f.collectedOnlineKobo)} online</div>
+          </div>
+        }
+      />
+      <Stat label="Outstanding" value={naira(f.outstandingKobo)} hint={<Link className="font-medium text-brand-ink hover:underline" href="/fees">{f.debtorCount} students owing</Link>} />
+      <Stat label="Paid online" value={`${percent(f.collectedOnlineKobo, f.collectedKobo)}%`} hint="Share of collections made through the portal" />
+    </div>
+  );
+}
+
 function OwnerPanel() {
   const { data, error, isLoading } = useGql(OwnerDashboardDocument, {});
   if (isLoading) return <Loading />;
   if (error) return <ErrorNote error={error} />;
   const d = data?.ownerDashboard;
-  if (!d) return <Notice>Set the current term in Settings to see this term&apos;s figures.</Notice>;
-  const rate = d.fees.expectedKobo ? Math.round((d.fees.collectedKobo / d.fees.expectedKobo) * 100) : 0;
+  if (!d) return null;
+  const max = Math.max(1, ...d.studentsByLevel.map((l) => l.students));
   return (
-    <div className="space-y-3">
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <Stat label="Expected this term" value={naira(d.fees.expectedKobo)} />
-        <Stat label="Collected" value={naira(d.fees.collectedKobo)} hint={`${rate}% · ${naira(d.fees.collectedOnlineKobo)} online`} />
-        <Stat label="Outstanding" value={naira(d.fees.outstandingKobo)} hint={<Link className="text-brand" href="/fees">{d.fees.debtorCount} debtors</Link>} />
-        <Stat label="Students" value={d.activeStudents} hint={`Results published: ${d.classesPublished} of ${d.classesTotal} classes`} />
+    <div className="space-y-5">
+      <FeeTiles f={d.fees} />
+      <div className="grid gap-5 lg:grid-cols-[1.4fr_1fr]">
+        <Card title="Enrolment by level" description={`${d.activeStudents} active students`}>
+          <ul className="space-y-2.5">
+            {d.studentsByLevel.map((l) => (
+              <li key={l.level} className="grid grid-cols-[96px_1fr_40px] items-center gap-3 text-sm">
+                <span className="truncate text-muted">{l.level}</span>
+                <span className="h-2 overflow-hidden rounded-full bg-subtle">
+                  <span className="block h-full rounded-full bg-brand/80" style={{ width: `${(l.students / max) * 100}%` }} />
+                </span>
+                <span className="text-right font-medium tabular-nums text-ink">{l.students}</span>
+              </li>
+            ))}
+          </ul>
+        </Card>
+        <Card title="Results this term" description={`${d.classesPublished} of ${d.classesTotal} classes published`}>
+          <Progress value={percent(d.classesPublished, d.classesTotal)} />
+          <p className="mt-4 text-sm leading-relaxed text-muted">
+            Check missing scores per class, approve and lock, then publish to parents on the date you choose.
+          </p>
+          <ButtonLink href="/results" variant="secondary" size="sm" className="mt-4">Review results</ButtonLink>
+        </Card>
       </div>
-      <Card title="Enrolment by level">
-        <ul className="grid grid-cols-2 gap-x-6 gap-y-1 text-sm sm:grid-cols-3">
-          {d.studentsByLevel.map((l) => (
-            <li key={l.level} className="flex justify-between border-b border-line py-1"><span>{l.level}</span><span className="tabular-nums">{l.students}</span></li>
-          ))}
-        </ul>
-      </Card>
     </div>
   );
 }
@@ -78,34 +122,28 @@ function TeacherPanel() {
   const subjects = data?.myClasses.subjectAssignments ?? [];
   if (!arms.length && !subjects.length) return null;
   return (
-    <div className="grid gap-3 md:grid-cols-2">
+    <div className="grid gap-5 lg:grid-cols-2">
       {arms.length > 0 && (
-        <Card title="My class">
-          <ul className="space-y-2">
-            {arms.map((a) => (
-              <li key={a.id} className="flex flex-wrap items-center justify-between gap-2">
-                <span className="font-medium">{a.label} <span className="text-sm text-muted">· {a.studentCount} students</span></span>
-                <span className="flex gap-3 text-sm">
-                  {can("attendance.mark", "attendance.manage") && <Link className="text-brand" href={`/attendance/${a.id}`}>Register</Link>}
-                  <Link className="text-brand" href={`/results/${a.id}`}>Broadsheet</Link>
-                </span>
-              </li>
-            ))}
-          </ul>
+        <Card title="My class" description="Daily register, broadsheet, comments and ratings" flush>
+          {arms.map((a) => (
+            <div key={a.id} className="flex flex-wrap items-center justify-between gap-3 border-b border-line px-5 py-3.5 last:border-b-0">
+              <div>
+                <div className="text-sm font-medium text-ink">{a.label}</div>
+                <div className="text-[13px] text-muted">{a.studentCount} students</div>
+              </div>
+              <div className="flex gap-2">
+                {can("attendance.mark", "attendance.manage") && <ButtonLink href={`/attendance/${a.id}`} size="sm" icon={<IconCalendarCheck size={15} />}>Register</ButtonLink>}
+                <ButtonLink href={`/results/${a.id}`} size="sm" variant="secondary" icon={<IconAward size={15} />}>Broadsheet</ButtonLink>
+              </div>
+            </div>
+          ))}
         </Card>
       )}
       {subjects.length > 0 && (
-        <Card title="My subjects">
-          <ul className="divide-y divide-line">
-            {subjects.map((s) => (
-              <li key={s.id}>
-                <Link href={`/scores/${s.arm.id}/${s.subject.id}`} className="flex min-h-11 items-center justify-between text-sm">
-                  <span>{s.subject.name} · {s.arm.label}</span>
-                  <span className="text-brand">Enter scores →</span>
-                </Link>
-              </li>
-            ))}
-          </ul>
+        <Card title="My subjects" description="Enter or upload scores for this term" flush>
+          {subjects.map((s) => (
+            <RowLink key={s.id} href={`/scores/${s.arm.id}/${s.subject.id}`} title={s.subject.name} meta={s.arm.label} right={<span className="text-[13px] font-medium text-brand-ink">Enter scores</span>} />
+          ))}
         </Card>
       )}
     </div>
@@ -113,15 +151,28 @@ function TeacherPanel() {
 }
 
 function BursarPanel({ termId }: { termId: string }) {
-  const { data } = useGql(BursarSummaryDocument, { termId });
-  const f = data?.termFeeSummary;
-  if (!f) return null;
+  const { data, isLoading } = useGql(BursarSummaryDocument, { termId });
+  if (isLoading) return <Loading />;
+  return data ? <FeeTiles f={data.termFeeSummary} /> : null;
+}
+
+function QuickActions() {
+  const { can } = useSession();
+  const actions = [
+    can("payments.record") && { href: "/fees/payments", label: "Record a payment", icon: IconWallet },
+    can("students.manage") && { href: "/students/new", label: "Add a student", icon: IconUsers },
+    can("scores.enter", "scores.manage") && { href: "/scores", label: "Enter scores", icon: IconPencilGrid },
+    can("messaging.send") && { href: "/messages", label: "Send an announcement", icon: IconMessage },
+  ].filter(Boolean) as { href: string; label: string; icon: typeof IconWallet }[];
+  if (!actions.length) return null;
   return (
     <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-      <Stat label="Expected" value={naira(f.expectedKobo)} />
-      <Stat label="Collected" value={naira(f.collectedKobo)} />
-      <Stat label="Outstanding" value={naira(f.outstandingKobo)} />
-      <Stat label="Debtors" value={f.debtorCount} hint={<Link className="text-brand" href="/fees">View list</Link>} />
+      {actions.map(({ href, label, icon: Icon }) => (
+        <Link key={href} href={href} className="group flex items-center gap-3 rounded-xl border border-line bg-surface px-4 py-3.5 text-sm font-medium text-ink shadow-sm transition hover:border-line-strong hover:shadow-md">
+          <span className="grid h-8 w-8 flex-none place-items-center rounded-lg bg-brand/10 text-brand-ink"><Icon size={16} /></span>
+          {label}
+        </Link>
+      ))}
     </div>
   );
 }
@@ -131,7 +182,6 @@ export default function DashboardPage() {
   const router = useRouter();
   const notices = useGql(NoticesDocument, {});
   const parentOnly = me && me.permissions.length === 1 && me.permissions[0] === "portal.parent";
-
   const platformOnly = !school && me?.isPlatformAdmin;
 
   useEffect(() => {
@@ -141,27 +191,38 @@ export default function DashboardPage() {
 
   if (!me || parentOnly || platformOnly) return <Loading />;
 
+  const hour = new Date().getHours();
+  const greeting = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
+  const today = new Date().toLocaleDateString("en-NG", { weekday: "long", day: "numeric", month: "long" });
+
   return (
     <>
-      <PageHeader title={`Welcome, ${me.user.firstName || me.user.fullName}`} subtitle={term ? term.label : "No current term set"} />
+      <PageHeader eyebrow={today} title={`${greeting}, ${me.user.firstName || me.user.fullName}`} subtitle={term ? term.label : "No current term is set"} />
       {!term && can("academics.manage") && (
-        <Notice tone="warning">Create this session and its terms, then mark the current term. <Link className="font-semibold underline" href="/settings/academics">Go to academic setup</Link></Notice>
+        <Notice tone="warning" title="Set up the current term">
+          Create this session and its terms, then mark the current term. <Link className="font-semibold underline underline-offset-2" href="/settings/academics">Open academic setup</Link>
+        </Notice>
       )}
+      <QuickActions />
       {can("dashboard.owner") ? <OwnerPanel /> : can("fees.view") && term ? <BursarPanel termId={term.id} /> : null}
       <TeacherPanel />
-      <Card title="Notices">
-        {notices.data?.notices.length ? (
-          <ul className="space-y-3">
+      <Card title="Notices" description="Announcements from the school">
+        {notices.isLoading ? (
+          <Loading />
+        ) : notices.data?.notices.length ? (
+          <ul className="divide-y divide-line">
             {notices.data.notices.map((n) => (
-              <li key={n.id} className="text-sm">
-                {n.title && <div className="font-semibold">{n.title}</div>}
-                <p className="whitespace-pre-line text-muted">{n.body}</p>
-                <div className="text-xs text-muted">{new Date(n.createdAt).toLocaleDateString("en-NG", { day: "numeric", month: "short" })}</div>
+              <li key={n.id} className="py-3 first:pt-0 last:pb-0">
+                <div className="flex items-baseline justify-between gap-4">
+                  <div className="text-sm font-medium text-ink">{n.title || "Announcement"}</div>
+                  <time className="flex-none text-xs text-muted">{new Date(n.createdAt).toLocaleDateString("en-NG", { day: "numeric", month: "short" })}</time>
+                </div>
+                <p className="mt-1 whitespace-pre-line text-sm leading-relaxed text-muted">{n.body}</p>
               </li>
             ))}
           </ul>
         ) : (
-          <Empty>No notices yet.</Empty>
+          <Empty title="No notices yet" icon={<IconMessage size={18} />}>Announcements sent from Messages appear here.</Empty>
         )}
       </Card>
     </>

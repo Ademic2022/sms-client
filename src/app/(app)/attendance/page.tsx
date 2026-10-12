@@ -1,8 +1,7 @@
 "use client";
 
-import Link from "next/link";
-
-import { Card, Empty, Loading, PageHeader } from "@/components/ui";
+import { IconCalendarCheck } from "@/components/icons";
+import { Card, Empty, Loading, PageHeader, RowLink } from "@/components/ui";
 import { graphql } from "@/gql";
 import { useGql } from "@/lib/api";
 import { useSession } from "@/lib/session";
@@ -19,26 +18,22 @@ export default function AttendancePage() {
   const all = can("attendance.manage");
   const { data, isLoading } = useGql(AttendanceClassesDocument, { all });
   const arms = all ? data?.arms ?? [] : data?.myClasses.classArms ?? [];
+  const today = new Date().toLocaleDateString("en-NG", { weekday: "long", day: "numeric", month: "long" });
   return (
     <>
-      <PageHeader title="Attendance" subtitle="Mark today's register in under a minute." />
+      <PageHeader eyebrow={today} title="Attendance" subtitle="Choose a class to take today's register." />
       {isLoading ? (
         <Loading />
       ) : arms.length ? (
-        <Card>
-          <ul className="divide-y divide-line">
-            {arms.map((a) => (
-              <li key={a.id}>
-                <Link href={`/attendance/${a.id}`} className="flex min-h-12 items-center justify-between text-sm">
-                  <span className="font-medium">{a.label}</span>
-                  <span className="text-muted">{a.studentCount} students →</span>
-                </Link>
-              </li>
-            ))}
-          </ul>
+        <Card flush>
+          {arms.map((a) => (
+            <RowLink key={a.id} href={`/attendance/${a.id}`} title={a.label} meta={`${a.studentCount} students`} right={<span className="text-[13px] font-medium text-brand-ink">Take register</span>} />
+          ))}
         </Card>
       ) : (
-        <Empty>You are not the class teacher of any class.</Empty>
+        <Empty title="No class assigned" icon={<IconCalendarCheck size={18} />}>
+          Registers are taken by each class&apos;s class teacher. Ask the school admin to assign you to a class.
+        </Empty>
       )}
     </>
   );

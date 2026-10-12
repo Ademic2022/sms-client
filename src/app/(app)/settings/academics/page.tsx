@@ -1,8 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { Fragment, useState } from "react";
 
-import { Badge, Button, Card, ErrorNote, Field, Input, Loading, Notice, PageHeader, Select } from "@/components/ui";
+import { IconChevronRight, IconClose, IconPlus } from "@/components/icons";
+import { SettingsNav } from "@/components/SettingsNav";
+import { Badge, Button, Card, Dialog, ErrorNote, Field, IconButton, Input, Loading, Notice, PageHeader, Select, Table, TD, TH, cx } from "@/components/ui";
 import { graphql } from "@/gql";
 import { gql, useGql } from "@/lib/api";
 import { useSession } from "@/lib/session";
@@ -38,16 +40,75 @@ const PromoteDocument = graphql(`
   mutation PromoteClass($armId: ID!, $from: ID!, $to: ID!) { promoteClass(armId: $armId, fromSessionId: $from, toSessionId: $to) { promoted repeated graduated } }
 `);
 
+function fmt(iso: string | null | undefined) {
+  return iso ? new Date(`${iso}T12:00:00`).toLocaleDateString("en-NG", { day: "numeric", month: "short", year: "numeric" }) : "–";
+}
+
+type ComponentRow = { name: string; maxScore: string };
+
+function AssessmentEditor({ levelName, initial, onSave }: { levelName: string; initial: ComponentRow[]; onSave: (rows: ComponentRow[]) => Promise<unknown> }) {
+  const [open, setOpen] = useState(false);
+  const [rows, setRows] = useState<ComponentRow[]>(initial);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const total = rows.reduce((n, r) => n + (Number(r.maxScore) || 0), 0);
+  return (
+    <>
+      <Button size="sm" variant="secondary" onClick={() => { setRows(initial); setError(null); setOpen(true); }}>Edit assessment</Button>
+      <Dialog
+        open={open}
+        onClose={() => setOpen(false)}
+        title={`Assessment for ${levelName}`}
+        description="The score columns teachers fill in. Maximums must add up to 100."
+        footer={
+          <>
+            <Button variant="secondary" onClick={() => setOpen(false)}>Cancel</Button>
+            <Button busy={busy} disabled={total !== 100 || rows.some((r) => !r.name.trim())} onClick={async () => {
+              setBusy(true);
+              setError(null);
+              try {
+                await onSave(rows.map((r) => ({ name: r.name.trim(), maxScore: r.maxScore })));
+                setOpen(false);
+              } catch (e) {
+                setError((e as Error).message);
+              } finally {
+                setBusy(false);
+              }
+            }}>Save assessment</Button>
+          </>
+        }
+      >
+        <div className="space-y-3">
+          <ErrorNote error={error} />
+          {rows.map((r, i) => (
+            <div key={i} className="grid grid-cols-[1fr_100px_36px] items-center gap-2">
+              <Input value={r.name} onChange={(e) => setRows(rows.map((x, j) => (j === i ? { ...x, name: e.target.value } : x)))} placeholder="e.g. CA1" aria-label="Component name" />
+              <Input inputMode="numeric" value={r.maxScore} onChange={(e) => setRows(rows.map((x, j) => (j === i ? { ...x, maxScore: e.target.value } : x)))} className="text-right tabular-nums" aria-label="Maximum score" />
+              <IconButton label="Remove" onClick={() => setRows(rows.filter((_, j) => j !== i))} disabled={rows.length <= 1}><IconClose size={15} /></IconButton>
+            </div>
+          ))}
+          <div className="flex items-center justify-between">
+            <Button size="sm" variant="ghost" icon={<IconPlus size={15} />} onClick={() => setRows([...rows, { name: "", maxScore: "" }])}>Add column</Button>
+            <span className={cx("text-sm font-medium tabular-nums", total === 100 ? "text-emerald-700 dark:text-emerald-300" : "text-red-600")}>Total {total} / 100</span>
+          </div>
+        </div>
+      </Dialog>
+    </>
+  );
+}
+
 export default function AcademicSetupPage() {
   const { refresh } = useSession();
   const { data, error, isLoading, mutate } = useGql(AcademicSetupDocument, {});
   const [err, setErr] = useState<string | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
+  const [dialog, setDialog] = useState<null | "session" | "term" | "promote">(null);
   const [session, setSession] = useState({ name: "", startDate: "", endDate: "" });
-  const [term, setTerm] = useState({ sessionId: "", number: "1", startDate: "", endDate: "", daysOpened: "0", nextTermBegins: "" });
-  const [components, setComponents] = useState<Record<string, string>>({});
+  const [term, setTerm] = useState({ sessionId: "", number: "1", startDate: "", endDate: "", daysOpened: "", nextTermBegins: "" });
   const [newArm, setNewArm] = useState<Record<string, string>>({});
   const [promo, setPromo] = useState({ armId: "", from: "", to: "" });
+  const [busy, setBusy] = useState(false);
+  const [dialogErr, setDialogErr] = useState<string | null>(null);
 
   if (isLoading) return <Loading />;
   if (!data) return <ErrorNote error={error} />;
@@ -64,146 +125,223 @@ export default function AcademicSetupPage() {
     }
   }
 
+  async function runDialog(fn: () => Promise<string>) {
+    setBusy(true);
+    setDialogErr(null);
+    try {
+      const done = await fn();
+      setMsg(done);
+      setDialog(null);
+      await Promise.all([mutate(), refresh()]);
+    } catch (e) {
+      setDialogErr((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const setup = data;
+
+  function editTerm(t?: (typeof setup.terms)[number]) {
+    setDialogErr(null);
+    setTerm(t
+      ? { sessionId: t.session.id, number: String(t.number), startDate: t.startDate, endDate: t.endDate, daysOpened: String(t.daysOpened), nextTermBegins: t.nextTermBegins ?? "" }
+      : { sessionId: setup.sessions[0]?.id ?? "", number: "1", startDate: "", endDate: "", daysOpened: "", nextTermBegins: "" });
+    setDialog("term");
+  }
+
+  const allArms = data.levels.flatMap((l) => l.arms);
+
   return (
     <>
-      <PageHeader title="Academic setup" />
+      <PageHeader title="Settings" subtitle="Sessions, classes, assessment and promotion." />
+      <SettingsNav />
       <ErrorNote error={err} />
       {msg && <Notice tone="success">{msg}</Notice>}
 
-      <Card title="Sessions and terms">
-        <ul className="mb-4 space-y-3 text-sm">
-          {data.sessions.map((s) => (
-            <li key={s.id}>
-              <div className="font-semibold">{s.name} {s.isCurrent && <Badge tone="brand">current</Badge>}</div>
-              <ul className="mt-1 space-y-1">
-                {data.terms.filter((t) => t.session.id === s.id).map((t) => (
-                  <li key={t.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-subtle px-3 py-1.5">
-                    <span>{t.label}: {t.startDate} to {t.endDate} · {t.daysOpened} school days</span>
-                    {t.isCurrent ? <Badge tone="good">current term</Badge> : (
-                      <Button variant="ghost" onClick={() => run(() => gql(SetCurrentTermDocument, { termId: t.id }), `${t.label} is now the current term.`)}>Make current</Button>
-                    )}
-                  </li>
-                ))}
-              </ul>
-            </li>
-          ))}
-        </ul>
-        <div className="grid gap-3 border-t border-line pt-3 sm:grid-cols-4 sm:items-end">
-          <Field label="New session"><Input placeholder="2026/2027" value={session.name} onChange={(e) => setSession({ ...session, name: e.target.value })} /></Field>
-          <Field label="Starts"><Input type="date" value={session.startDate} onChange={(e) => setSession({ ...session, startDate: e.target.value })} /></Field>
-          <Field label="Ends"><Input type="date" value={session.endDate} onChange={(e) => setSession({ ...session, endDate: e.target.value })} /></Field>
-          <Button variant="secondary" onClick={() => run(() => gql(SaveSessionDocument, session), "Session created.")}>Add session</Button>
-        </div>
-        <div className="mt-3 grid gap-3 border-t border-line pt-3 sm:grid-cols-3 lg:grid-cols-7 lg:items-end">
-          <Field label="Session">
-            <Select value={term.sessionId} onChange={(e) => setTerm({ ...term, sessionId: e.target.value })}>
-              <option value="">Choose…</option>
-              {data.sessions.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
-            </Select>
-          </Field>
-          <Field label="Term">
-            <Select value={term.number} onChange={(e) => setTerm({ ...term, number: e.target.value })}>
-              <option value="1">First</option><option value="2">Second</option><option value="3">Third</option>
-            </Select>
-          </Field>
-          <Field label="Starts"><Input type="date" value={term.startDate} onChange={(e) => setTerm({ ...term, startDate: e.target.value })} /></Field>
-          <Field label="Ends"><Input type="date" value={term.endDate} onChange={(e) => setTerm({ ...term, endDate: e.target.value })} /></Field>
-          <Field label="School days"><Input inputMode="numeric" value={term.daysOpened} onChange={(e) => setTerm({ ...term, daysOpened: e.target.value })} /></Field>
-          <Field label="Next term begins"><Input type="date" value={term.nextTermBegins} onChange={(e) => setTerm({ ...term, nextTermBegins: e.target.value })} /></Field>
-          <Button variant="secondary" disabled={!term.sessionId} onClick={() => {
-            const existing = data.terms.find((t) => t.session.id === term.sessionId && t.number === Number(term.number));
-            void run(() => gql(SaveTermDocument, {
-              id: existing?.id ?? null, sessionId: term.sessionId, number: Number(term.number), startDate: term.startDate, endDate: term.endDate,
-              daysOpened: Number(term.daysOpened) || 0, nextTermBegins: term.nextTermBegins || null,
-            }), existing ? "Term updated." : "Term created.");
-          }}>Save term</Button>
-        </div>
+      <Card
+        flush
+        title="Sessions and terms"
+        description="Exactly one term is current. Attendance, scores and bills are recorded against it."
+        actions={
+          <>
+            <Button size="sm" variant="secondary" onClick={() => { setDialogErr(null); setSession({ name: "", startDate: "", endDate: "" }); setDialog("session"); }}>New session</Button>
+            <Button size="sm" icon={<IconPlus size={15} />} disabled={!data.sessions.length} onClick={() => editTerm()}>Add term</Button>
+          </>
+        }
+      >
+        {data.sessions.length === 0 ? (
+          <p className="px-5 py-4 text-sm text-muted">No sessions yet. Create this session, then add its three terms.</p>
+        ) : (
+          <Table>
+            <thead><tr><TH>Term</TH><TH>Dates</TH><TH align="right">School days</TH><TH>Next term begins</TH><TH /></tr></thead>
+            <tbody>
+              {data.sessions.map((s) => (
+                <Fragment key={s.id}>
+                  <tr className="bg-subtle/50">
+                    <TD className="font-semibold" ><span className="flex items-center gap-2">{s.name} session {s.isCurrent && <Badge tone="brand">Current</Badge>}</span></TD>
+                    <TD className="text-muted">{fmt(s.startDate)} to {fmt(s.endDate)}</TD>
+                    <TD /><TD /><TD />
+                  </tr>
+                  {data.terms.filter((t) => t.session.id === s.id).map((t) => (
+                    <tr key={t.id}>
+                      <TD className="pl-8">{t.label.split(",")[0]}</TD>
+                      <TD className="text-muted">{fmt(t.startDate)} to {fmt(t.endDate)}</TD>
+                      <TD align="right" className="tabular-nums">{t.daysOpened || "–"}</TD>
+                      <TD className="text-muted">{fmt(t.nextTermBegins)}</TD>
+                      <TD align="right">
+                        <div className="flex justify-end gap-2">
+                          {t.isCurrent ? <Badge tone="good" dot>Current term</Badge> : (
+                            <Button size="sm" variant="ghost" onClick={() => run(() => gql(SetCurrentTermDocument, { termId: t.id }), `${t.label} is now the current term.`)}>Make current</Button>
+                          )}
+                          <Button size="sm" variant="secondary" onClick={() => editTerm(t)}>Edit</Button>
+                        </div>
+                      </TD>
+                    </tr>
+                  ))}
+                </Fragment>
+              ))}
+            </tbody>
+          </Table>
+        )}
       </Card>
 
-      <Card title="Classes, assessment and subjects">
-        <div className="space-y-4">
-          {data.levels.map((level) => {
-            const draft = components[level.id] ?? level.components.map((c) => `${c.name} ${Number(c.maxScore)}`).join(", ");
-            return (
-              <details key={level.id} className="rounded-lg border border-line p-3">
-                <summary className="cursor-pointer">
-                  <span className="font-semibold">{level.name}</span>{" "}
-                  <span className="text-sm text-muted">· {level.arms.map((a) => a.label).join(", ")} · {level.gradingScale?.name} · next: {level.nextLevel?.name ?? "graduates"}</span>
-                </summary>
-                <div className="mt-3 space-y-3 text-sm">
-                  <div>
-                    <div className="mb-1 font-medium">Arms and class teachers</div>
-                    {level.arms.map((arm) => (
-                      <div key={arm.id} className="flex flex-wrap items-center gap-2 py-1">
-                        <span className="w-24">{arm.label} ({arm.studentCount})</span>
-                        <Select className="w-auto min-w-48" value={arm.classTeacher?.id ?? ""} onChange={(e) =>
-                          run(() => gql(SaveArmDocument, { id: arm.id, levelId: level.id, name: arm.name, classTeacherId: e.target.value || null }), `Class teacher for ${arm.label} updated.`)}>
-                          <option value="">No class teacher</option>
-                          {data.staff.map((m) => <option key={m.id} value={m.id}>{m.user.fullName}</option>)}
-                        </Select>
-                      </div>
-                    ))}
-                    <div className="mt-1 flex gap-2">
-                      <Input className="w-32" placeholder="Arm, e.g. B" value={newArm[level.id] ?? ""} onChange={(e) => setNewArm({ ...newArm, [level.id]: e.target.value })} />
-                      <Button variant="secondary" disabled={!newArm[level.id]} onClick={() => run(() => gql(SaveArmDocument, { levelId: level.id, name: newArm[level.id] }), "Arm added.")}>Add arm</Button>
-                    </div>
-                  </div>
-                  <div>
-                    <Field label="Assessment components (name and maximum, totalling 100)" hint="For example: CA1 20, CA2 20, Exam 60">
-                      <div className="flex gap-2">
-                        <Input value={draft} onChange={(e) => setComponents({ ...components, [level.id]: e.target.value })} />
-                        <Button variant="secondary" onClick={() => {
-                          const parsed = draft.split(",").map((part) => part.trim()).filter(Boolean).map((part) => {
-                            const m = part.match(/^(.*\S)\s+(\d+(?:\.\d+)?)$/);
-                            return m ? { name: m[1], maxScore: m[2] } : null;
-                          });
-                          if (parsed.some((p) => p === null)) return setErr("Write each component as a name followed by its maximum, e.g. CA1 20.");
-                          void run(() => gql(SetComponentsDocument, { levelId: level.id, components: parsed as { name: string; maxScore: string }[] }), `Assessment for ${level.name} saved.`);
-                        }}>Save</Button>
-                      </div>
-                    </Field>
-                  </div>
-                  <div>
-                    <div className="mb-1 font-medium">Subjects{level.hasSubjectSelection && " (students choose electives individually)"}</div>
-                    <div className="flex flex-wrap gap-1.5">
-                      {level.levelSubjects.map((ls) => <Badge key={ls.subject.id} tone={ls.category === "core" ? "brand" : "neutral"}>{ls.subject.name}{ls.category !== "core" && ` · ${ls.category}`}</Badge>)}
-                    </div>
-                  </div>
+      <Card flush title="Classes, assessment and subjects" description="Expand a level to assign class teachers, add arms and set its assessment.">
+        {data.levels.map((level) => (
+          <details key={level.id} className="group border-b border-line last:border-b-0">
+            <summary className="flex cursor-pointer list-none items-center justify-between gap-4 px-5 py-3.5 hover:bg-subtle/50 [&::-webkit-details-marker]:hidden">
+              <div className="min-w-0">
+                <div className="text-sm font-medium text-ink">{level.name}</div>
+                <div className="truncate text-[13px] text-muted">
+                  {level.arms.length} arm{level.arms.length === 1 ? "" : "s"} · {level.components.map((c) => `${c.name} ${Number(c.maxScore)}`).join(", ")} · {level.gradingScale?.name} · then {level.nextLevel?.name ?? "graduates"}
                 </div>
-              </details>
-            );
-          })}
-        </div>
+              </div>
+              <IconChevronRight size={16} className="flex-none text-muted transition group-open:rotate-90" />
+            </summary>
+            <div className="space-y-5 border-t border-line bg-subtle/30 px-5 py-5">
+              <div>
+                <div className="mb-2 text-[13px] font-medium text-ink">Arms and class teachers</div>
+                <div className="space-y-2">
+                  {level.arms.map((arm) => (
+                    <div key={arm.id} className="grid items-center gap-3 sm:grid-cols-[160px_1fr]">
+                      <span className="text-sm text-ink">{arm.label} <span className="text-muted">· {arm.studentCount} students</span></span>
+                      <Select className="max-w-xs" value={arm.classTeacher?.id ?? ""} aria-label={`Class teacher for ${arm.label}`}
+                        onChange={(e) => run(() => gql(SaveArmDocument, { id: arm.id, levelId: level.id, name: arm.name, classTeacherId: e.target.value || null }), `Class teacher for ${arm.label} updated.`)}>
+                        <option value="">No class teacher</option>
+                        {data.staff.map((m) => <option key={m.id} value={m.id}>{m.user.fullName}</option>)}
+                      </Select>
+                    </div>
+                  ))}
+                </div>
+                <div className="mt-3 flex max-w-sm gap-2">
+                  <Input placeholder="New arm, e.g. B or Gold" value={newArm[level.id] ?? ""} onChange={(e) => setNewArm({ ...newArm, [level.id]: e.target.value })} aria-label="New arm name" />
+                  <Button variant="secondary" disabled={!newArm[level.id]?.trim()} onClick={() => run(async () => {
+                    await gql(SaveArmDocument, { levelId: level.id, name: newArm[level.id].trim() });
+                    setNewArm({ ...newArm, [level.id]: "" });
+                  }, "Arm added.")}>Add arm</Button>
+                </div>
+              </div>
+              <div className="flex flex-wrap items-center justify-between gap-3 border-t border-line pt-4">
+                <div>
+                  <div className="text-[13px] font-medium text-ink">Assessment</div>
+                  <div className="text-[13px] text-muted">{level.components.map((c) => `${c.name} (${Number(c.maxScore)})`).join(" + ")}</div>
+                </div>
+                <AssessmentEditor
+                  levelName={level.name}
+                  initial={level.components.map((c) => ({ name: c.name, maxScore: String(Number(c.maxScore)) }))}
+                  onSave={async (rows) => {
+                    await gql(SetComponentsDocument, { levelId: level.id, components: rows });
+                    setMsg(`Assessment for ${level.name} saved.`);
+                    await mutate();
+                  }}
+                />
+              </div>
+              <div className="border-t border-line pt-4">
+                <div className="mb-2 text-[13px] font-medium text-ink">Subjects{level.hasSubjectSelection && <span className="font-normal text-muted"> · students choose electives individually</span>}</div>
+                <div className="flex flex-wrap gap-1.5">
+                  {level.levelSubjects.map((ls) => <Badge key={ls.subject.id} tone={ls.category === "core" ? "brand" : "neutral"}>{ls.subject.name}{ls.category !== "core" && ` · ${ls.category}`}</Badge>)}
+                </div>
+              </div>
+            </div>
+          </details>
+        ))}
       </Card>
 
-      <Card title="End-of-session promotion">
-        <p className="mb-3 text-sm text-muted">Moves every active student in a class to the next level. Students in the final level graduate. Change individual students afterwards from their profile.</p>
-        <div className="grid gap-3 sm:grid-cols-4 sm:items-end">
+      <Card title="End-of-session promotion" description="Moves every active student in a class to the next level. Students in the final level graduate."
+        actions={<Button size="sm" variant="secondary" onClick={() => { setDialogErr(null); setDialog("promote"); }}>Promote a class</Button>}>
+        <p className="text-sm leading-relaxed text-muted">Run this once the third term&apos;s results are published. Students who should repeat can be moved back afterwards from their profile.</p>
+      </Card>
+
+      <Dialog open={dialog === "session"} onClose={() => setDialog(null)} title="New session" description="A school year, usually September to July."
+        footer={<><Button variant="secondary" onClick={() => setDialog(null)}>Cancel</Button><Button busy={busy} onClick={() => runDialog(async () => { await gql(SaveSessionDocument, session); return `${session.name} session created.`; })}>Create session</Button></>}>
+        <div className="space-y-4">
+          <ErrorNote error={dialogErr} />
+          <Field label="Name"><Input placeholder="2026/2027" value={session.name} onChange={(e) => setSession({ ...session, name: e.target.value })} /></Field>
+          <div className="grid grid-cols-2 gap-4">
+            <Field label="Starts"><Input type="date" value={session.startDate} onChange={(e) => setSession({ ...session, startDate: e.target.value })} /></Field>
+            <Field label="Ends"><Input type="date" value={session.endDate} onChange={(e) => setSession({ ...session, endDate: e.target.value })} /></Field>
+          </div>
+        </div>
+      </Dialog>
+
+      <Dialog open={dialog === "term"} onClose={() => setDialog(null)} title="Term" description="School days are shown on report cards as days present out of days opened."
+        footer={<><Button variant="secondary" onClick={() => setDialog(null)}>Cancel</Button><Button busy={busy} disabled={!term.sessionId} onClick={() => runDialog(async () => {
+          const existing = data.terms.find((t) => t.session.id === term.sessionId && t.number === Number(term.number));
+          await gql(SaveTermDocument, {
+            id: existing?.id ?? null, sessionId: term.sessionId, number: Number(term.number), startDate: term.startDate, endDate: term.endDate,
+            daysOpened: Number(term.daysOpened) || 0, nextTermBegins: term.nextTermBegins || null,
+          });
+          return existing ? "Term updated." : "Term created.";
+        })}>Save term</Button></>}>
+        <div className="space-y-4">
+          <ErrorNote error={dialogErr} />
+          <div className="grid grid-cols-2 gap-4">
+            <Field label="Session">
+              <Select value={term.sessionId} onChange={(e) => setTerm({ ...term, sessionId: e.target.value })}>
+                {data.sessions.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+              </Select>
+            </Field>
+            <Field label="Term">
+              <Select value={term.number} onChange={(e) => setTerm({ ...term, number: e.target.value })}>
+                <option value="1">First term</option><option value="2">Second term</option><option value="3">Third term</option>
+              </Select>
+            </Field>
+            <Field label="Starts"><Input type="date" value={term.startDate} onChange={(e) => setTerm({ ...term, startDate: e.target.value })} /></Field>
+            <Field label="Ends"><Input type="date" value={term.endDate} onChange={(e) => setTerm({ ...term, endDate: e.target.value })} /></Field>
+            <Field label="School days"><Input inputMode="numeric" value={term.daysOpened} onChange={(e) => setTerm({ ...term, daysOpened: e.target.value })} placeholder="60" /></Field>
+            <Field label="Next term begins" optional><Input type="date" value={term.nextTermBegins} onChange={(e) => setTerm({ ...term, nextTermBegins: e.target.value })} /></Field>
+          </div>
+        </div>
+      </Dialog>
+
+      <Dialog open={dialog === "promote"} onClose={() => setDialog(null)} title="Promote a class" description="Every active student moves to the same arm in the next level. Final-year students graduate."
+        footer={<><Button variant="secondary" onClick={() => setDialog(null)}>Cancel</Button><Button busy={busy} disabled={!promo.armId || !promo.from || !promo.to}
+          onClick={() => runDialog(async () => {
+            const { promoteClass: r } = await gql(PromoteDocument, { armId: promo.armId, from: promo.from, to: promo.to });
+            return `Promotion complete: ${r.promoted} promoted, ${r.repeated} repeating, ${r.graduated} graduated.`;
+          })}>Promote class</Button></>}>
+        <div className="space-y-4">
+          <ErrorNote error={dialogErr} />
           <Field label="Class">
             <Select value={promo.armId} onChange={(e) => setPromo({ ...promo, armId: e.target.value })}>
-              <option value="">Choose…</option>
-              {data.levels.flatMap((l) => l.arms).map((a) => <option key={a.id} value={a.id}>{a.label}</option>)}
+              <option value="">Select a class</option>
+              {allArms.map((a) => <option key={a.id} value={a.id}>{a.label}</option>)}
             </Select>
           </Field>
-          <Field label="From session">
-            <Select value={promo.from} onChange={(e) => setPromo({ ...promo, from: e.target.value })}>
-              <option value="">Choose…</option>{data.sessions.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
-            </Select>
-          </Field>
-          <Field label="Into session">
-            <Select value={promo.to} onChange={(e) => setPromo({ ...promo, to: e.target.value })}>
-              <option value="">Choose…</option>{data.sessions.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
-            </Select>
-          </Field>
-          <Button disabled={!promo.armId || !promo.from || !promo.to} onClick={() => {
-            if (!window.confirm("Promote this whole class now?")) return;
-            void run(async () => {
-              const { promoteClass: r } = await gql(PromoteDocument, { armId: promo.armId, from: promo.from, to: promo.to });
-              setMsg(`Promoted ${r.promoted}, repeated ${r.repeated}, graduated ${r.graduated}.`);
-            }, "Promotion complete.");
-          }}>Promote</Button>
+          <div className="grid grid-cols-2 gap-4">
+            <Field label="From session">
+              <Select value={promo.from} onChange={(e) => setPromo({ ...promo, from: e.target.value })}>
+                <option value="">Select</option>{data.sessions.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+              </Select>
+            </Field>
+            <Field label="Into session">
+              <Select value={promo.to} onChange={(e) => setPromo({ ...promo, to: e.target.value })}>
+                <option value="">Select</option>{data.sessions.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+              </Select>
+            </Field>
+          </div>
         </div>
-      </Card>
+      </Dialog>
     </>
   );
 }

@@ -3,7 +3,8 @@
 import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 
-import { ButtonLink, Card, ErrorNote, Loading, Notice } from "@/components/ui";
+import { IconAlert, IconCheck, IconClock } from "@/components/icons";
+import { ButtonLink, Card, ErrorNote, Loading } from "@/components/ui";
 import { graphql } from "@/gql";
 import { gql } from "@/lib/api";
 import { naira } from "@/lib/money";
@@ -43,15 +44,26 @@ function PaymentReturn() {
 
   if (!reference) return <ErrorNote error="No payment reference was returned." />;
   if (error) return <ErrorNote error={error} />;
-  if (!result) return <Loading label="Confirming your payment…" />;
+  if (!result) return <Loading label="Confirming your payment" />;
+
+  const view = {
+    success: { tone: "bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300", icon: <IconCheck size={26} strokeWidth={2.2} />, title: "Payment received", text: `${naira(result.amountKobo)} has been paid to the school. A receipt has been sent to your phone by SMS.` },
+    pending: { tone: "bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300", icon: <IconClock size={26} />, title: "Waiting for your bank", text: "Your bank has not confirmed the payment yet. You can leave this page. Your balance updates as soon as it is confirmed." },
+    failed: { tone: "bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300", icon: <IconAlert size={26} />, title: "Payment not completed", text: "The payment did not go through and no money was taken. You can try again." },
+  }[result.status === "success" ? "success" : result.status === "pending" ? "pending" : "failed"];
 
   return (
-    <Card>
-      {result.status === "success" && <Notice tone="success">Payment of {naira(result.amountKobo)} received. A receipt has been sent to your phone.</Notice>}
-      {result.status === "pending" && <Notice>We are still waiting for the bank to confirm. You can leave this page; the balance will update once it is confirmed.</Notice>}
-      {(result.status === "failed" || result.status === "abandoned") && <Notice tone="warning">The payment did not go through. No money was taken. You can try again.</Notice>}
-      <ButtonLink href="/parent" className="mt-4">Back to my children</ButtonLink>
-    </Card>
+    <div className="mx-auto max-w-md py-8">
+      <Card>
+        <div className="flex flex-col items-center px-2 py-6 text-center">
+          <span className={`grid h-14 w-14 place-items-center rounded-full ${view.tone}`}>{view.icon}</span>
+          <h1 className="mt-5 font-display text-2xl font-medium text-ink">{view.title}</h1>
+          <p className="mt-2 text-sm leading-relaxed text-muted">{view.text}</p>
+          <div className="mt-2 text-xs tabular-nums text-muted">Reference {reference}</div>
+          <ButtonLink href="/parent" className="mt-6">Back to my children</ButtonLink>
+        </div>
+      </Card>
+    </div>
   );
 }
 

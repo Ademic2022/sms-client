@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState, type ButtonHTMLAttributes, type InputHTMLAttributes, type ReactNode } from "react";
+import { createContext, useContext, useId, useState, type ButtonHTMLAttributes, type InputHTMLAttributes, type ReactNode } from "react";
 
 import { localPhone } from "@/lib/money";
 import { SITE } from "@/lib/site";
@@ -32,7 +32,7 @@ function Crest({ school, size = 56 }: { school: School | null; size?: number }) 
   }
   if (school) {
     return (
-      <span className="grid place-items-center rounded-xl bg-white/15 font-[family-name:var(--font-auth-display)] font-semibold ring-1 ring-inset ring-white/25" style={{ width: size, height: size, fontSize: size * 0.38 }}>
+      <span className="grid place-items-center rounded-xl bg-white/15 font-display font-semibold ring-1 ring-inset ring-white/25" style={{ width: size, height: size, fontSize: size * 0.38 }}>
         {initials(school.name)}
       </span>
     );
@@ -47,7 +47,7 @@ function Crest({ school, size = 56 }: { school: School | null; size?: number }) 
 }
 
 /** Split-screen frame for sign-in pages: the school's identity on one side, the form on the other. */
-export function AuthShell({ title, subtitle, children, footer }: { title: string; subtitle?: ReactNode; children: ReactNode; footer?: ReactNode }) {
+export function AuthShell({ title, subtitle, children, footer, wide, aside }: { title: string; subtitle?: ReactNode; children: ReactNode; footer?: ReactNode; wide?: boolean; aside?: { heading: string; text: string; points?: string[] } }) {
   const { school, loading } = useSession();
   const brand = school?.primaryColor || PLATFORM_GREEN;
   const ink = textOn(brand);
@@ -67,21 +67,32 @@ export function AuthShell({ title, subtitle, children, footer }: { title: string
           <div className="flex items-center gap-4">
             <Crest school={school} size={48} />
             <div className="min-w-0">
-              <div className="truncate font-[family-name:var(--font-auth-display)] text-lg font-semibold leading-tight sm:text-xl">{name}</div>
+              <div className="truncate font-display text-lg font-semibold leading-tight sm:text-xl">{name}</div>
               {school?.motto && <div className="truncate text-sm italic opacity-75">{school.motto}</div>}
             </div>
           </div>
 
           <div className="mt-auto hidden lg:block">
             <div className="h-px w-12 bg-current opacity-40" />
-            <p className="mt-6 max-w-sm font-[family-name:var(--font-auth-display)] text-[34px] font-medium leading-[1.15] tracking-[-0.01em]">
-              {school ? "Results, fees and school notices in one secure portal." : "Platform administration for schools on " + SITE.name + "."}
+            <p className="mt-6 max-w-sm font-display text-[34px] font-medium leading-[1.15] tracking-[-0.01em]">
+              {aside?.heading ?? (school ? "Results, fees and school notices in one secure portal." : "Platform administration for schools on " + SITE.name + ".")}
             </p>
             <p className="mt-4 max-w-sm text-[15px] leading-relaxed opacity-75">
-              {school
-                ? "For staff, parents and students of " + school.name + ". Sign in with the phone number or email address the school has on record."
-                : "Restricted to platform staff. School users should sign in from their school's own web address."}
+              {aside?.text ??
+                (school
+                  ? "For staff, parents and students of " + school.name + ". Sign in with the phone number or email address the school has on record."
+                  : "Restricted to platform staff. School users should sign in from their school's own web address.")}
             </p>
+            {aside?.points && (
+              <ul className="mt-8 space-y-3 text-[15px]">
+                {aside.points.map((p) => (
+                  <li key={p} className="flex gap-3">
+                    <svg viewBox="0 0 16 16" className="mt-1 h-4 w-4 flex-none opacity-80" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden><path d="m3 8.5 3.2 3L13 5" /></svg>
+                    <span className="opacity-90">{p}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
 
           <div className="mt-auto hidden pt-10 text-[13px] opacity-70 lg:block">
@@ -96,8 +107,8 @@ export function AuthShell({ title, subtitle, children, footer }: { title: string
       {/* Form panel */}
       <main className="flex flex-col px-6 sm:px-10">
         <div className="flex flex-1 items-center justify-center py-10 lg:py-16">
-          <div className="w-full max-w-[400px]">
-            <h1 className="font-[family-name:var(--font-auth-display)] text-[32px] font-medium leading-tight tracking-[-0.01em] text-ink">{title}</h1>
+          <div className={wide ? "w-full max-w-[560px]" : "w-full max-w-[400px]"}>
+            <h1 className="font-display text-[32px] font-medium leading-tight tracking-[-0.01em] text-ink">{title}</h1>
             {subtitle && <p className="mt-2 text-[15px] leading-relaxed text-muted">{subtitle}</p>}
             <div className="mt-8">{children}</div>
             {footer && <div className="mt-8 border-t border-line pt-6 text-sm text-muted">{footer}</div>}
@@ -117,14 +128,17 @@ export function AuthShell({ title, subtitle, children, footer }: { title: string
   );
 }
 
+const FieldId = createContext<string | undefined>(undefined);
+
 export function AuthField({ label, action, hint, children }: { label: string; action?: ReactNode; hint?: string; children: ReactNode }) {
+  const id = useId();
   return (
     <div>
       <div className="mb-1.5 flex items-baseline justify-between gap-3">
-        <label className="text-sm font-medium text-ink">{label}</label>
+        <label htmlFor={id} className="text-sm font-medium text-ink">{label}</label>
         {action}
       </div>
-      {children}
+      <FieldId.Provider value={id}>{children}</FieldId.Provider>
       {hint && <p className="mt-1.5 text-xs text-muted">{hint}</p>}
     </div>
   );
@@ -134,14 +148,16 @@ const inputClass =
   "block h-12 w-full rounded-lg border border-line bg-surface px-3.5 text-[15px] text-ink shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)] outline-none transition placeholder:text-muted/60 focus:border-brand focus:ring-4 focus:ring-brand/15 dark:focus:border-[color-mix(in_srgb,var(--brand),white_40%)]";
 
 export function AuthInput(props: InputHTMLAttributes<HTMLInputElement>) {
-  return <input {...props} className={`${inputClass} ${props.className ?? ""}`} />;
+  const id = useContext(FieldId);
+  return <input id={id} {...props} className={`${inputClass} ${props.className ?? ""}`} />;
 }
 
 export function PasswordInput(props: Omit<InputHTMLAttributes<HTMLInputElement>, "type">) {
   const [visible, setVisible] = useState(false);
+  const id = useContext(FieldId);
   return (
     <div className="relative">
-      <input {...props} type={visible ? "text" : "password"} className={`${inputClass} pr-16`} />
+      <input id={id} {...props} type={visible ? "text" : "password"} className={`${inputClass} pr-16`} />
       <button
         type="button"
         onClick={() => setVisible(!visible)}

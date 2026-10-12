@@ -1,42 +1,60 @@
 @import "tailwindcss";
 
-/* Colour tokens. --brand is overridden at runtime with the school's own colour. */
+/* Design tokens. --brand is replaced at runtime with the school's own colour. */
 :root {
-  --brand: #1d4ed8;
-  --background: #f6f7f9;
+  --brand: #0f3d2e;
+  --background: #f6f6f3;
   --surface: #ffffff;
-  --subtle: #f1f3f6;
-  --line: #e2e5ea;
-  --ink: #111827;
-  --muted: #5b6472;
+  --subtle: #f1f1ed;
+  --line: #e5e5df;
+  --line-strong: #d3d3cb;
+  --ink: #15181a;
+  --muted: #62676c;
+  --shadow-sm: 0 1px 2px rgba(16, 24, 20, 0.05);
+  --shadow-md: 0 1px 2px rgba(16, 24, 20, 0.04), 0 4px 12px -2px rgba(16, 24, 20, 0.06);
+  --shadow-lg: 0 24px 48px -12px rgba(16, 24, 20, 0.18);
+  /* A readable tint of the brand colour for links and accents on dark surfaces. */
+  --brand-ink: var(--brand);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0d1117;
-    --surface: #161b22;
-    --subtle: #1f2630;
-    --line: #2b333e;
-    --ink: #e6e8eb;
-    --muted: #9aa3ae;
+    --background: #0e1111;
+    --surface: #161a1a;
+    --subtle: #1d2222;
+    --line: #2a3030;
+    --line-strong: #394040;
+    --ink: #e8eae8;
+    --muted: #9ba3a0;
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+    --shadow-md: 0 1px 2px rgba(0, 0, 0, 0.3), 0 4px 12px -2px rgba(0, 0, 0, 0.4);
+    --shadow-lg: 0 24px 48px -12px rgba(0, 0, 0, 0.6);
+    --brand-ink: color-mix(in srgb, var(--brand), white 55%);
   }
 }
 
 @theme inline {
   --color-brand: var(--brand);
+  --color-brand-ink: var(--brand-ink);
   --color-background: var(--background);
   --color-surface: var(--surface);
   --color-subtle: var(--subtle);
   --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
   --color-ink: var(--ink);
   --color-muted: var(--muted);
-  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --shadow-sm: var(--shadow-sm);
+  --shadow-md: var(--shadow-md);
+  --shadow-lg: var(--shadow-lg);
+  --font-sans: var(--ff-body), ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-display: var(--ff-display), Georgia, "Times New Roman", serif;
 }
 
 body {
   background: var(--background);
   color: var(--ink);
   font-family: var(--font-sans);
+  font-feature-settings: "ss01", "cv11";
   -webkit-tap-highlight-color: transparent;
 }
 
@@ -48,4 +66,23 @@ input[type="number"]::-webkit-inner-spin-button {
 }
 input[type="number"] {
   -moz-appearance: textfield;
+}
+
+/* Numbers line up in tables and money columns. */
+.tabular-nums { font-variant-numeric: tabular-nums; }
+
+@keyframes ui-fade-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes ui-pop-in { from { opacity: 0; transform: translateY(8px) scale(0.98); } to { opacity: 1; transform: none; } }
+@keyframes ui-slide-in { from { transform: translateX(-100%); } to { transform: none; } }
+@keyframes ui-shimmer { 0% { background-position: -400px 0; } 100% { background-position: 400px 0; } }
+.ui-fade-in { animation: ui-fade-in 0.15s ease-out both; }
+.ui-pop-in { animation: ui-pop-in 0.18s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+.ui-slide-in { animation: ui-slide-in 0.22s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+.ui-skeleton {
+  background: linear-gradient(90deg, var(--subtle) 0px, var(--line) 120px, var(--subtle) 240px);
+  background-size: 800px 100%;
+  animation: ui-shimmer 1.4s linear infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .ui-fade-in, .ui-pop-in, .ui-slide-in, .ui-skeleton { animation: none; }
 }
