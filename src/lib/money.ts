@@ -26,3 +26,10 @@ export function todayIso(): string {
   const d = new Date();
   return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
 }
+
+/** "+2348031234567" -> "0803 123 4567", the way Nigerians write phone numbers. */
+export function localPhone(phone: string | null | undefined): string {
+  if (!phone) return "";
+  const m = phone.match(/^\+234(\d{3})(\d{3})(\d{4})$/);
+  return m ? `0${m[1]}\u00a0${m[2]}\u00a0${m[3]}` : phone; // non-breaking spaces keep it on one line
+}
