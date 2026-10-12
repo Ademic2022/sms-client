@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 
 import { IconAward, IconCalendarCheck, IconMessage, IconPencilGrid, IconUsers, IconWallet } from "@/components/icons";
+import { BillingAlertNotice } from "@/components/BillingAlert";
 import { ButtonLink, Card, Empty, ErrorNote, Loading, Notice, PageHeader, Stat } from "@/components/ui";
 import { graphql } from "@/gql";
 import { useGql } from "@/lib/api";
@@ -223,6 +224,7 @@ export default function DashboardPage() {
           Create this session and its terms, then mark the current term. <Link className="font-semibold underline underline-offset-2" href="/settings/academics">Open academic setup</Link>
         </Notice>
       )}
+      <BillingAlertNotice alert={me.billingAlert} kinds={["due", "trial_ending"]} />
       <QuickActions />
       {can("dashboard.owner") ? <OwnerPanel /> : can("fees.view") && term ? <BursarPanel termId={term.id} /> : null}
       <TeacherPanel />

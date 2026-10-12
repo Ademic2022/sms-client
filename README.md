@@ -38,13 +38,13 @@ Each school opens the app on its own address, for example `greenfield.akada.ng`,
 | Role | Screens |
 | --- | --- |
 | School owner | Overview: fees billed, collected and outstanding, enrolment by level, results progress |
-| Administrator | Students (search, add, Excel import, profiles, withdraw or transfer), academic setup, staff and roles, school settings, privacy notice and consent coverage, paper consent forms on student profiles, support access, audit log |
+| Administrator | Students (search, add, Excel import, profiles, withdraw or transfer), academic setup, staff and roles, school settings, billing (invoices, online payment, invoice PDFs, buying SMS units), privacy notice and consent coverage, paper consent forms on student profiles, support access, audit log |
 | Class teacher | One-tap daily register, class broadsheet, report card comments, behaviour and skills ratings |
 | Subject teacher | Score grid with autosave, offline queueing, limits per assessment column, and Excel download and upload |
 | Principal | Missing scores per class, approve and lock, publish on a chosen date, generate report cards for a whole class |
 | Bursar | Fee setup, term bills, discounts, cash, POS and bank payments, receipts, students owing, SMS fee reminders |
 | Parent | Each child's balance and bill, one payment covering several children, results by term, report card and receipt downloads, privacy notice and consent (asked before first use, withdrawable at any time) |
-| Platform admin | Schools, usage, suspension, SMS sender name approval, SMS unit credits |
+| Platform admin | Schools, usage, suspension, SMS sender name approval, SMS unit credits, subscription invoices (raise, record bank transfers, void) |
 
 ## Tech stack
 

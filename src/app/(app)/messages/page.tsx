@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useDeferredValue, useState } from "react";
 
 import { IconMessage, IconSend } from "@/components/icons";
@@ -7,6 +8,7 @@ import { Badge, Button, Card, Checkbox, Empty, ErrorNote, Field, Input, Loading,
 import { graphql } from "@/gql";
 import { gql, useGql } from "@/lib/api";
 import { ArmsDocument } from "@/lib/queries";
+import { useSession } from "@/lib/session";
 
 const MessagesDocument = graphql(`
   query Messages {
@@ -48,6 +50,7 @@ const KIND_LABELS: Record<string, string> = {
 };
 
 export default function MessagesPage() {
+  const { can } = useSession();
   const { data, isLoading, mutate } = useGql(MessagesDocument, {});
   const arms = useGql(ArmsDocument, {});
   const [form, setForm] = useState({ audience: "all_parents", armId: "", title: "", body: "", sendSms: true, showInApp: true });
@@ -82,7 +85,7 @@ export default function MessagesPage() {
       <PageHeader
         title="Messages"
         subtitle="Announcements by SMS and in the portal. SMS is charged to your school's wallet."
-        actions={data && <div className="rounded-lg border border-line bg-surface px-4 py-2 text-right shadow-sm"><div className="text-xs text-muted">SMS wallet</div><div className="font-display text-lg font-medium tabular-nums text-ink">{data.smsWalletBalance.toLocaleString("en-NG")} units</div></div>}
+        actions={data && <div className="rounded-lg border border-line bg-surface px-4 py-2 text-right shadow-sm"><div className="text-xs text-muted">SMS wallet</div><div className="font-display text-lg font-medium tabular-nums text-ink">{data.smsWalletBalance.toLocaleString("en-NG")} units</div>{can("school.manage") && <Link href="/settings/billing" className="text-xs font-medium text-brand hover:underline dark:text-[color-mix(in_srgb,var(--brand),white_55%)]">Buy units</Link>}</div>}
       />
       <ErrorNote error={err} />
       {msg && <Notice tone="success">{msg}</Notice>}
@@ -132,7 +135,12 @@ export default function MessagesPage() {
                 <div className="px-3 py-2.5"><div className="text-xs text-muted">Sender name</div><div className="truncate font-semibold text-ink">{e.senderId}</div></div>
               </div>
             )}
-            {short && <Notice tone="warning" title="Not enough SMS units">This message needs {e?.units} units and your wallet has {e?.walletBalance}. Buy more units or send it as a portal notice only.</Notice>}
+            {short && (
+              <Notice tone="warning" title="Not enough SMS units">
+                This message needs {e?.units} units and your wallet has {e?.walletBalance}.{" "}
+                {can("school.manage") ? <><Link className="font-semibold underline underline-offset-2" href="/settings/billing">Buy more units</Link> or send it as a portal notice only.</> : "Ask the school owner to buy more units, or send it as a portal notice only."}
+              </Notice>
+            )}
             <div className="flex justify-end border-t border-line pt-4">
               <Button icon={<IconSend size={15} />} busy={busy} onClick={send} disabled={!form.body.trim() || !!short || (!form.sendSms && !form.showInApp) || (form.audience === "class_parents" && !form.armId)}>
                 Send message

@@ -531,6 +531,34 @@ export type PromoteClassMutationVariables = Exact<{
 
 export type PromoteClassMutation = { promoteClass: { promoted: number, repeated: number, graduated: number } };
 
+export type BillingQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type BillingQuery = { billing: { accessMode: string, trialEndsAt: string | null, inTrial: boolean, graceDays: number, activeStudents: number, outstandingKobo: number, smsBalance: number, smsUnitPriceKobo: number, smsMinUnits: number, smsMaxUnits: number, billingEmail: string, plan: { name: string, pricePerStudentKobo: number, minimumKobo: number } | null, invoices: Array<{ id: string, number: string, periodLabel: string, studentCount: number, pricePerStudentKobo: number, amountKobo: number, dueDate: string, status: string, paidAt: string | null, paidVia: string, readOnlyFrom: string, isOverdue: boolean, pdfUrl: string }>, smsPurchases: Array<{ id: string, units: number, amountKobo: number, reason: string, createdAt: string }>, bank: { bankName: string, accountNumber: string, accountName: string } | null } };
+
+export type PayInvoiceMutationVariables = Exact<{
+  invoiceId: string | number;
+  returnPath: string;
+}>;
+
+
+export type PayInvoiceMutation = { payInvoice: { authorizationUrl: string } };
+
+export type BuySmsUnitsMutationVariables = Exact<{
+  units: number;
+  returnPath: string;
+}>;
+
+
+export type BuySmsUnitsMutation = { buySmsUnits: { authorizationUrl: string } };
+
+export type ConfirmPlatformPaymentMutationVariables = Exact<{
+  reference: string;
+}>;
+
+
+export type ConfirmPlatformPaymentMutation = { confirmPlatformPayment: { reference: string, status: string, purpose: string, units: number, amountKobo: number, invoiceNumber: string | null, smsBalance: number } };
+
 export type SchoolSettingsQueryVariables = Exact<{ [key: string]: never; }>;
 
 
@@ -700,6 +728,34 @@ export type LogoutMutationVariables = Exact<{ [key: string]: never; }>;
 
 export type LogoutMutation = { logout: boolean };
 
+export type PlatformInvoicesQueryVariables = Exact<{
+  status?: string | null | undefined;
+}>;
+
+
+export type PlatformInvoicesQuery = { platformInvoices: Array<{ schoolName: string, schoolSlug: string, invoice: { id: string, number: string, periodLabel: string, studentCount: number, amountKobo: number, dueDate: string, status: string, paidAt: string | null, paidVia: string, paymentReference: string, voidReason: string, isOverdue: boolean, readOnlyFrom: string } }> };
+
+export type GenerateInvoicesMutationVariables = Exact<{ [key: string]: never; }>;
+
+
+export type GenerateInvoicesMutation = { generateInvoices: Array<{ schoolName: string, invoice: { number: string } }> };
+
+export type MarkInvoicePaidMutationVariables = Exact<{
+  invoiceId: string | number;
+  reference: string;
+}>;
+
+
+export type MarkInvoicePaidMutation = { markInvoicePaid: { id: string, status: string } };
+
+export type VoidInvoiceMutationVariables = Exact<{
+  invoiceId: string | number;
+  reason: string;
+}>;
+
+
+export type VoidInvoiceMutation = { voidInvoice: { id: string, status: string } };
+
 export type SaveLevelMutationVariables = Exact<{
   id?: string | number | null | undefined;
   name: string;
@@ -810,7 +866,7 @@ export type MyConsentQuery = { myConsent: { pending: boolean, notice: { version:
 export type MeQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type MeQuery = { me: { permissions: Array<string>, roles: Array<string>, accessMode: string, isPlatformAdmin: boolean, viaSupport: boolean, mustChangePassword: boolean, user: { id: string, fullName: string, firstName: string, phone: string | null, email: string | null }, membership: { id: string } | null } | null, school: { name: string, slug: string, motto: string, address: string, phone: string, email: string, primaryColor: string, secondaryColor: string, logoUrl: string | null } | null, currentTerm: { id: string, label: string, number: number, isCurrent: boolean, session: { id: string, name: string } } | null };
+export type MeQuery = { me: { permissions: Array<string>, roles: Array<string>, accessMode: string, isPlatformAdmin: boolean, viaSupport: boolean, mustChangePassword: boolean, user: { id: string, fullName: string, firstName: string, phone: string | null, email: string | null }, membership: { id: string } | null, billingAlert: { kind: string, date: string, invoice: { number: string, periodLabel: string, amountKobo: number, studentCount: number } | null } | null } | null, school: { name: string, slug: string, motto: string, address: string, phone: string, email: string, primaryColor: string, secondaryColor: string, logoUrl: string | null } | null, currentTerm: { id: string, label: string, number: number, isCurrent: boolean, session: { id: string, name: string } } | null };
 
 export class TypedDocumentString<TResult, TVariables>
   extends String
@@ -1711,6 +1767,82 @@ export const PromoteClassDocument = new TypedDocumentString(`
   }
 }
     `) as unknown as TypedDocumentString<PromoteClassMutation, PromoteClassMutationVariables>;
+export const BillingDocument = new TypedDocumentString(`
+    query Billing {
+  billing {
+    plan {
+      name
+      pricePerStudentKobo
+      minimumKobo
+    }
+    accessMode
+    trialEndsAt
+    inTrial
+    graceDays
+    activeStudents
+    outstandingKobo
+    invoices {
+      id
+      number
+      periodLabel
+      studentCount
+      pricePerStudentKobo
+      amountKobo
+      dueDate
+      status
+      paidAt
+      paidVia
+      readOnlyFrom
+      isOverdue
+      pdfUrl
+    }
+    smsBalance
+    smsUnitPriceKobo
+    smsMinUnits
+    smsMaxUnits
+    smsPurchases {
+      id
+      units
+      amountKobo
+      reason
+      createdAt
+    }
+    bank {
+      bankName
+      accountNumber
+      accountName
+    }
+    billingEmail
+  }
+}
+    `) as unknown as TypedDocumentString<BillingQuery, BillingQueryVariables>;
+export const PayInvoiceDocument = new TypedDocumentString(`
+    mutation PayInvoice($invoiceId: ID!, $returnPath: String!) {
+  payInvoice(invoiceId: $invoiceId, returnPath: $returnPath) {
+    authorizationUrl
+  }
+}
+    `) as unknown as TypedDocumentString<PayInvoiceMutation, PayInvoiceMutationVariables>;
+export const BuySmsUnitsDocument = new TypedDocumentString(`
+    mutation BuySmsUnits($units: Int!, $returnPath: String!) {
+  buySmsUnits(units: $units, returnPath: $returnPath) {
+    authorizationUrl
+  }
+}
+    `) as unknown as TypedDocumentString<BuySmsUnitsMutation, BuySmsUnitsMutationVariables>;
+export const ConfirmPlatformPaymentDocument = new TypedDocumentString(`
+    mutation ConfirmPlatformPayment($reference: String!) {
+  confirmPlatformPayment(reference: $reference) {
+    reference
+    status
+    purpose
+    units
+    amountKobo
+    invoiceNumber
+    smsBalance
+  }
+}
+    `) as unknown as TypedDocumentString<ConfirmPlatformPaymentMutation, ConfirmPlatformPaymentMutationVariables>;
 export const SchoolSettingsDocument = new TypedDocumentString(`
     query SchoolSettings {
   school {
@@ -2039,6 +2171,55 @@ export const LogoutDocument = new TypedDocumentString(`
   logout
 }
     `) as unknown as TypedDocumentString<LogoutMutation, LogoutMutationVariables>;
+export const PlatformInvoicesDocument = new TypedDocumentString(`
+    query PlatformInvoices($status: String) {
+  platformInvoices(status: $status) {
+    schoolName
+    schoolSlug
+    invoice {
+      id
+      number
+      periodLabel
+      studentCount
+      amountKobo
+      dueDate
+      status
+      paidAt
+      paidVia
+      paymentReference
+      voidReason
+      isOverdue
+      readOnlyFrom
+    }
+  }
+}
+    `) as unknown as TypedDocumentString<PlatformInvoicesQuery, PlatformInvoicesQueryVariables>;
+export const GenerateInvoicesDocument = new TypedDocumentString(`
+    mutation GenerateInvoices {
+  generateInvoices {
+    schoolName
+    invoice {
+      number
+    }
+  }
+}
+    `) as unknown as TypedDocumentString<GenerateInvoicesMutation, GenerateInvoicesMutationVariables>;
+export const MarkInvoicePaidDocument = new TypedDocumentString(`
+    mutation MarkInvoicePaid($invoiceId: ID!, $reference: String!) {
+  markInvoicePaid(invoiceId: $invoiceId, reference: $reference) {
+    id
+    status
+  }
+}
+    `) as unknown as TypedDocumentString<MarkInvoicePaidMutation, MarkInvoicePaidMutationVariables>;
+export const VoidInvoiceDocument = new TypedDocumentString(`
+    mutation VoidInvoice($invoiceId: ID!, $reason: String!) {
+  voidInvoice(invoiceId: $invoiceId, reason: $reason) {
+    id
+    status
+  }
+}
+    `) as unknown as TypedDocumentString<VoidInvoiceMutation, VoidInvoiceMutationVariables>;
 export const SaveLevelDocument = new TypedDocumentString(`
     mutation SaveLevel($id: ID, $name: String!, $section: String!, $gradingScaleId: ID, $nextLevelId: ID, $hasSubjectSelection: Boolean!, $reportTemplate: String!) {
   saveLevel(
@@ -2221,6 +2402,16 @@ export const MeDocument = new TypedDocumentString(`
     }
     membership {
       id
+    }
+    billingAlert {
+      kind
+      date
+      invoice {
+        number
+        periodLabel
+        amountKobo
+        studentCount
+      }
     }
   }
   school {

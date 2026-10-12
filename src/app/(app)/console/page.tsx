@@ -4,6 +4,7 @@ import { useState } from "react";
 
 import { IconBuilding } from "@/components/icons";
 import { ActionDialog, Badge, Button, Card, Empty, ErrorNote, Loading, Notice, PageHeader, SearchInput, Stat, StatusBadge, Table, TD, TH } from "@/components/ui";
+import { InvoicesPanel } from "@/components/console/InvoicesPanel";
 import { graphql } from "@/gql";
 import { gql, useGql } from "@/lib/api";
 
@@ -112,6 +113,8 @@ export default function ConsolePage() {
         )}
       </Card>
 
+      <InvoicesPanel />
+
       <ActionDialog
         open={suspending !== null}
         onClose={() => setSuspending(null)}
@@ -140,7 +143,7 @@ export default function ConsolePage() {
         open={crediting !== null}
         onClose={() => setCrediting(null)}
         title={`Add SMS units to ${crediting?.name ?? ""}`}
-        description="Use after the school has paid for units."
+        description="For units paid for by bank transfer. Schools can also buy units themselves under Settings, Billing."
         confirmLabel="Add units"
         input={{ label: "Number of units", type: "number", placeholder: "5000" }}
         onConfirm={async (value) => {

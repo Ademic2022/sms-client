@@ -18,6 +18,7 @@ export const MeDocument = graphql(`
       mustChangePassword
       user { id fullName firstName phone email }
       membership { id }
+      billingAlert { kind date invoice { number periodLabel amountKobo studentCount } }
     }
     school { name slug motto address phone email primaryColor secondaryColor logoUrl }
     currentTerm { id label number isCurrent session { id name } }

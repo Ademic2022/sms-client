@@ -46,6 +46,12 @@ input BandInput {
   remark: String! = ""
 }
 
+type BankDetails {
+  bankName: String!
+  accountNumber: String!
+  accountName: String!
+}
+
 type BillLineType {
   id: ID!
   kind: String!
@@ -62,6 +68,30 @@ type BillType {
   student: StudentType!
   lines: [BillLineType!]!
   totalKobo: Kobo!
+}
+
+type BillingAlert {
+  kind: String!
+  date: Date!
+  invoice: InvoiceType
+}
+
+type BillingOverview {
+  plan: PlanInfo
+  accessMode: String!
+  trialEndsAt: DateTime
+  inTrial: Boolean!
+  graceDays: Int!
+  activeStudents: Int!
+  invoices: [InvoiceType!]!
+  outstandingKobo: Kobo!
+  smsBalance: Int!
+  smsUnitPriceKobo: Kobo!
+  smsMinUnits: Int!
+  smsMaxUnits: Int!
+  smsPurchases: [SmsPurchase!]!
+  bank: BankDetails
+  billingEmail: String!
 }
 
 type Broadsheet {
@@ -268,6 +298,26 @@ type GuardianType {
   occupation: String!
 }
 
+type InvoiceType {
+  id: ID!
+  number: String!
+  periodLabel: String!
+  planName: String!
+  studentCount: Int!
+  pricePerStudentKobo: Kobo!
+  amountKobo: Kobo!
+  dueDate: Date!
+  status: String!
+  paidAt: DateTime
+  paidVia: String!
+  paymentReference: String!
+  voidReason: String!
+  readOnlyFrom: Date!
+  createdAt: DateTime!
+  isOverdue: Boolean!
+  pdfUrl: String!
+}
+
 """
 The `JSON` scalar type represents JSON values as specified by [ECMA-404](https://ecma-international.org/wp-content/uploads/ECMA-404_2nd_edition_december_2017.pdf).
 """
@@ -327,6 +377,11 @@ type Me {
   viaSupport: Boolean!
   mustChangePassword: Boolean!
   membership: MembershipType
+
+  """
+  Owners and admins: an invoice due or overdue, or the trial ending soon.
+  """
+  billingAlert: BillingAlert
 }
 
 type MembershipType {
@@ -434,6 +489,28 @@ type Mutation {
   Publish a new version of the privacy notice. Every parent is asked to consent again.
   """
   publishPrivacyNotice(body: String!): PrivacyNoticeType!
+
+  """Start paying a subscription invoice online."""
+  payInvoice(invoiceId: ID!, returnPath: String!): PaymentStart!
+
+  """Start buying SMS units online."""
+  buySmsUnits(units: Int!, returnPath: String!): PaymentStart!
+
+  """Check a payment after returning from the payment page."""
+  confirmPlatformPayment(reference: String!): PlatformPaymentResult!
+
+  """
+  Platform admins: record an invoice paid by bank transfer or another way.
+  """
+  markInvoicePaid(invoiceId: ID!, reference: String!, via: String! = "transfer"): InvoiceType!
+
+  """Platform admins: cancel an unpaid invoice raised in error."""
+  voidInvoice(invoiceId: ID!, reason: String!): InvoiceType!
+
+  """
+  Platform admins: raise any invoices that are due now, instead of waiting for the daily job.
+  """
+  generateInvoices: [PlatformInvoiceRow!]!
   setSchoolStatus(schoolId: ID!, status: String!, reason: String! = ""): SchoolRow!
   setSenderIdStatus(schoolId: ID!, status: String!): Boolean!
   creditSmsUnits(schoolId: ID!, units: Int!, reason: String!, amountPaidKobo: Int! = 0): Int!
@@ -473,6 +550,12 @@ input PayFor {
   amountKobo: Kobo!
 }
 
+type PaymentStart {
+  reference: String!
+  authorizationUrl: String!
+  amountKobo: Kobo!
+}
+
 type PaymentType {
   id: ID!
   amountKobo: Kobo!
@@ -485,6 +568,29 @@ type PaymentType {
   reversedReason: String!
   student: StudentType!
   recordedBy: UserType
+}
+
+type PlanInfo {
+  name: String!
+  pricePerStudentKobo: Kobo!
+  minimumKobo: Kobo!
+}
+
+type PlatformInvoiceRow {
+  invoice: InvoiceType!
+  schoolId: ID!
+  schoolName: String!
+  schoolSlug: String!
+}
+
+type PlatformPaymentResult {
+  reference: String!
+  status: String!
+  purpose: String!
+  units: Int!
+  amountKobo: Kobo!
+  invoiceNumber: String
+  smsBalance: Int!
 }
 
 type PrivacyNoticeType {
@@ -568,6 +674,12 @@ type Query {
   myConsent: MyConsent!
   studentConsent(studentId: ID!): StudentConsent!
   consentOverview(limit: Int! = 100): ConsentOverview!
+
+  """The school's plan, invoices and SMS wallet. School owners and admins."""
+  billing: BillingOverview!
+
+  """Platform admins: invoices across all schools."""
+  platformInvoices(status: String = null, limit: Int! = 200): [PlatformInvoiceRow!]!
   platformSchools(search: String = null): [SchoolRow!]!
   auditLog(objectType: String = null, objectId: String = null, actionPrefix: String = null, limit: Int! = 100): [AuditEntry!]!
   supportGrants: [SupportGrantType!]!
@@ -705,6 +817,14 @@ type SmsEstimate {
   units: Int!
   walletBalance: Int!
   senderId: String!
+}
+
+type SmsPurchase {
+  id: ID!
+  units: Int!
+  amountKobo: Kobo!
+  reason: String!
+  createdAt: DateTime!
 }
 
 type StudentConsent {

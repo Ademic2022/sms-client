@@ -29,6 +29,7 @@ import {
   IconWallet,
   IconWifiOff,
 } from "./icons";
+import { BillingAlertNotice } from "./BillingAlert";
 import { IconButton, Loading, Notice, cx } from "./ui";
 
 const LogoutDocument = graphql(`
@@ -287,7 +288,8 @@ export function AppShell({ children }: { children: ReactNode }) {
               You are in this school&apos;s account with the school&apos;s permission. Everything you do is recorded in its audit log.
             </Notice>
           )}
-          {me.accessMode === "read_only" && (
+          {!pathname.startsWith("/settings/billing") && <BillingAlertNotice alert={me.billingAlert} kinds={["read_only", "overdue"]} />}
+          {me.accessMode === "read_only" && me.billingAlert?.kind !== "read_only" && (
             <Notice tone="warning" title="Read-only until the subscription is renewed">
               You can view and export everything, but changes are paused. No data has been removed.
             </Notice>

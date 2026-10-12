@@ -72,6 +72,10 @@ type Documents = {
     "mutation SaveArm($id: ID, $levelId: ID!, $name: String!, $classTeacherId: ID) { saveArm(id: $id, levelId: $levelId, name: $name, classTeacherId: $classTeacherId) { id } }": typeof types.SaveArmDocument,
     "\n  mutation SetComponents($levelId: ID!, $components: [ComponentInput!]!) { setAssessmentComponents(levelId: $levelId, components: $components) { id } }\n": typeof types.SetComponentsDocument,
     "\n  mutation PromoteClass($armId: ID!, $from: ID!, $to: ID!) { promoteClass(armId: $armId, fromSessionId: $from, toSessionId: $to) { promoted repeated graduated } }\n": typeof types.PromoteClassDocument,
+    "\n  query Billing {\n    billing {\n      plan { name pricePerStudentKobo minimumKobo }\n      accessMode trialEndsAt inTrial graceDays activeStudents outstandingKobo\n      invoices { id number periodLabel studentCount pricePerStudentKobo amountKobo dueDate status paidAt paidVia readOnlyFrom isOverdue pdfUrl }\n      smsBalance smsUnitPriceKobo smsMinUnits smsMaxUnits\n      smsPurchases { id units amountKobo reason createdAt }\n      bank { bankName accountNumber accountName }\n      billingEmail\n    }\n  }\n": typeof types.BillingDocument,
+    "\n  mutation PayInvoice($invoiceId: ID!, $returnPath: String!) { payInvoice(invoiceId: $invoiceId, returnPath: $returnPath) { authorizationUrl } }\n": typeof types.PayInvoiceDocument,
+    "\n  mutation BuySmsUnits($units: Int!, $returnPath: String!) { buySmsUnits(units: $units, returnPath: $returnPath) { authorizationUrl } }\n": typeof types.BuySmsUnitsDocument,
+    "\n  mutation ConfirmPlatformPayment($reference: String!) {\n    confirmPlatformPayment(reference: $reference) { reference status purpose units amountKobo invoiceNumber smsBalance }\n  }\n": typeof types.ConfirmPlatformPaymentDocument,
     "\n  query SchoolSettings {\n    school { name motto address phone email primaryColor secondaryColor }\n    schoolSettings {\n      showClassPosition admissionNumberFormat admissionNumberPrefix resultDebtThresholdKobo transactionChargeBearer\n      smsSenderId smsSenderStatus notifyParentOnAbsence reportTemplate principalTitle\n    }\n    supportGrants { id reason expiresAt grantedBy }\n    schoolBranding { logoUrl signatureUrl stampUrl }\n  }\n": typeof types.SchoolSettingsDocument,
     "\n  mutation UpdateSchoolSettings($name: String, $motto: String, $address: String, $phone: String, $email: String, $primaryColor: String, $settingsJson: JSON) {\n    updateSchoolSettings(name: $name, motto: $motto, address: $address, phone: $phone, email: $email, primaryColor: $primaryColor, settingsJson: $settingsJson) {\n      showClassPosition\n    }\n  }\n": typeof types.UpdateSchoolSettingsDocument,
     "mutation GrantSupport($reason: String!, $hours: Int!) { grantSupportAccess(reason: $reason, hours: $hours) { id } }": typeof types.GrantSupportDocument,
@@ -93,6 +97,10 @@ type Documents = {
     "\n  query PublicPrivacyNotice {\n    privacyNotice { version body publishedAt schoolName }\n  }\n": typeof types.PublicPrivacyNoticeDocument,
     "\n  mutation SignUpSchool(\n    $name: String!\n    $slug: String!\n    $adminFirstName: String!\n    $adminLastName: String!\n    $adminPhone: String!\n    $adminEmail: String\n    $password: String!\n    $sections: [String!]!\n    $accept: Boolean!\n  ) {\n    signUpSchool(\n      name: $name\n      slug: $slug\n      adminFirstName: $adminFirstName\n      adminLastName: $adminLastName\n      adminPhone: $adminPhone\n      adminEmail: $adminEmail\n      password: $password\n      sections: $sections\n      acceptDataProcessingAgreement: $accept\n    ) {\n      slug\n      schoolUrl\n    }\n  }\n": typeof types.SignUpSchoolDocument,
     "\n  mutation Logout {\n    logout\n  }\n": typeof types.LogoutDocument,
+    "\n  query PlatformInvoices($status: String) {\n    platformInvoices(status: $status) {\n      schoolName schoolSlug\n      invoice { id number periodLabel studentCount amountKobo dueDate status paidAt paidVia paymentReference voidReason isOverdue readOnlyFrom }\n    }\n  }\n": typeof types.PlatformInvoicesDocument,
+    "mutation GenerateInvoices { generateInvoices { schoolName invoice { number } } }": typeof types.GenerateInvoicesDocument,
+    "\n  mutation MarkInvoicePaid($invoiceId: ID!, $reference: String!) { markInvoicePaid(invoiceId: $invoiceId, reference: $reference) { id status } }\n": typeof types.MarkInvoicePaidDocument,
+    "\n  mutation VoidInvoice($invoiceId: ID!, $reason: String!) { voidInvoice(invoiceId: $invoiceId, reason: $reason) { id status } }\n": typeof types.VoidInvoiceDocument,
     "\n  mutation SaveLevel(\n    $id: ID\n    $name: String!\n    $section: String!\n    $gradingScaleId: ID\n    $nextLevelId: ID\n    $hasSubjectSelection: Boolean!\n    $reportTemplate: String!\n  ) {\n    saveLevel(\n      id: $id\n      name: $name\n      section: $section\n      gradingScaleId: $gradingScaleId\n      nextLevelId: $nextLevelId\n      hasSubjectSelection: $hasSubjectSelection\n      reportTemplate: $reportTemplate\n    ) {\n      id\n    }\n  }\n": typeof types.SaveLevelDocument,
     "mutation SaveSubject($name: String!) { saveSubject(name: $name) { id name } }": typeof types.SaveSubjectDocument,
     "\n  mutation SetLevelSubjects($levelId: ID!, $subjects: [LevelSubjectInput!]!) { setLevelSubjects(levelId: $levelId, subjects: $subjects) { id } }\n": typeof types.SetLevelSubjectsDocument,
@@ -107,7 +115,7 @@ type Documents = {
     "\n  query Terms {\n    terms { id label number isCurrent session { id name } }\n  }\n": typeof types.TermsDocument,
     "\n  query StudentSearch($search: String!) {\n    students(search: $search, limit: 8) { items { id fullName admissionNumber currentArm { label } } }\n  }\n": typeof types.StudentSearchDocument,
     "\n  query MyConsent {\n    myConsent {\n      pending\n      notice { version body publishedAt schoolName }\n      children { consented givenAt source student { id fullName firstName currentArm { label } } }\n    }\n  }\n": typeof types.MyConsentDocument,
-    "\n  query Me {\n    me {\n      permissions\n      roles\n      accessMode\n      isPlatformAdmin\n      viaSupport\n      mustChangePassword\n      user { id fullName firstName phone email }\n      membership { id }\n    }\n    school { name slug motto address phone email primaryColor secondaryColor logoUrl }\n    currentTerm { id label number isCurrent session { id name } }\n  }\n": typeof types.MeDocument,
+    "\n  query Me {\n    me {\n      permissions\n      roles\n      accessMode\n      isPlatformAdmin\n      viaSupport\n      mustChangePassword\n      user { id fullName firstName phone email }\n      membership { id }\n      billingAlert { kind date invoice { number periodLabel amountKobo studentCount } }\n    }\n    school { name slug motto address phone email primaryColor secondaryColor logoUrl }\n    currentTerm { id label number isCurrent session { id name } }\n  }\n": typeof types.MeDocument,
 };
 const documents: Documents = {
     "\n  query Register($armId: ID!, $date: Date!) {\n    register(armId: $armId, date: $date) {\n      date\n      rows { status student { id fullName admissionNumber currentArm { label } } }\n    }\n  }\n": types.RegisterDocument,
@@ -167,6 +175,10 @@ const documents: Documents = {
     "mutation SaveArm($id: ID, $levelId: ID!, $name: String!, $classTeacherId: ID) { saveArm(id: $id, levelId: $levelId, name: $name, classTeacherId: $classTeacherId) { id } }": types.SaveArmDocument,
     "\n  mutation SetComponents($levelId: ID!, $components: [ComponentInput!]!) { setAssessmentComponents(levelId: $levelId, components: $components) { id } }\n": types.SetComponentsDocument,
     "\n  mutation PromoteClass($armId: ID!, $from: ID!, $to: ID!) { promoteClass(armId: $armId, fromSessionId: $from, toSessionId: $to) { promoted repeated graduated } }\n": types.PromoteClassDocument,
+    "\n  query Billing {\n    billing {\n      plan { name pricePerStudentKobo minimumKobo }\n      accessMode trialEndsAt inTrial graceDays activeStudents outstandingKobo\n      invoices { id number periodLabel studentCount pricePerStudentKobo amountKobo dueDate status paidAt paidVia readOnlyFrom isOverdue pdfUrl }\n      smsBalance smsUnitPriceKobo smsMinUnits smsMaxUnits\n      smsPurchases { id units amountKobo reason createdAt }\n      bank { bankName accountNumber accountName }\n      billingEmail\n    }\n  }\n": types.BillingDocument,
+    "\n  mutation PayInvoice($invoiceId: ID!, $returnPath: String!) { payInvoice(invoiceId: $invoiceId, returnPath: $returnPath) { authorizationUrl } }\n": types.PayInvoiceDocument,
+    "\n  mutation BuySmsUnits($units: Int!, $returnPath: String!) { buySmsUnits(units: $units, returnPath: $returnPath) { authorizationUrl } }\n": types.BuySmsUnitsDocument,
+    "\n  mutation ConfirmPlatformPayment($reference: String!) {\n    confirmPlatformPayment(reference: $reference) { reference status purpose units amountKobo invoiceNumber smsBalance }\n  }\n": types.ConfirmPlatformPaymentDocument,
     "\n  query SchoolSettings {\n    school { name motto address phone email primaryColor secondaryColor }\n    schoolSettings {\n      showClassPosition admissionNumberFormat admissionNumberPrefix resultDebtThresholdKobo transactionChargeBearer\n      smsSenderId smsSenderStatus notifyParentOnAbsence reportTemplate principalTitle\n    }\n    supportGrants { id reason expiresAt grantedBy }\n    schoolBranding { logoUrl signatureUrl stampUrl }\n  }\n": types.SchoolSettingsDocument,
     "\n  mutation UpdateSchoolSettings($name: String, $motto: String, $address: String, $phone: String, $email: String, $primaryColor: String, $settingsJson: JSON) {\n    updateSchoolSettings(name: $name, motto: $motto, address: $address, phone: $phone, email: $email, primaryColor: $primaryColor, settingsJson: $settingsJson) {\n      showClassPosition\n    }\n  }\n": types.UpdateSchoolSettingsDocument,
     "mutation GrantSupport($reason: String!, $hours: Int!) { grantSupportAccess(reason: $reason, hours: $hours) { id } }": types.GrantSupportDocument,
@@ -188,6 +200,10 @@ const documents: Documents = {
     "\n  query PublicPrivacyNotice {\n    privacyNotice { version body publishedAt schoolName }\n  }\n": types.PublicPrivacyNoticeDocument,
     "\n  mutation SignUpSchool(\n    $name: String!\n    $slug: String!\n    $adminFirstName: String!\n    $adminLastName: String!\n    $adminPhone: String!\n    $adminEmail: String\n    $password: String!\n    $sections: [String!]!\n    $accept: Boolean!\n  ) {\n    signUpSchool(\n      name: $name\n      slug: $slug\n      adminFirstName: $adminFirstName\n      adminLastName: $adminLastName\n      adminPhone: $adminPhone\n      adminEmail: $adminEmail\n      password: $password\n      sections: $sections\n      acceptDataProcessingAgreement: $accept\n    ) {\n      slug\n      schoolUrl\n    }\n  }\n": types.SignUpSchoolDocument,
     "\n  mutation Logout {\n    logout\n  }\n": types.LogoutDocument,
+    "\n  query PlatformInvoices($status: String) {\n    platformInvoices(status: $status) {\n      schoolName schoolSlug\n      invoice { id number periodLabel studentCount amountKobo dueDate status paidAt paidVia paymentReference voidReason isOverdue readOnlyFrom }\n    }\n  }\n": types.PlatformInvoicesDocument,
+    "mutation GenerateInvoices { generateInvoices { schoolName invoice { number } } }": types.GenerateInvoicesDocument,
+    "\n  mutation MarkInvoicePaid($invoiceId: ID!, $reference: String!) { markInvoicePaid(invoiceId: $invoiceId, reference: $reference) { id status } }\n": types.MarkInvoicePaidDocument,
+    "\n  mutation VoidInvoice($invoiceId: ID!, $reason: String!) { voidInvoice(invoiceId: $invoiceId, reason: $reason) { id status } }\n": types.VoidInvoiceDocument,
     "\n  mutation SaveLevel(\n    $id: ID\n    $name: String!\n    $section: String!\n    $gradingScaleId: ID\n    $nextLevelId: ID\n    $hasSubjectSelection: Boolean!\n    $reportTemplate: String!\n  ) {\n    saveLevel(\n      id: $id\n      name: $name\n      section: $section\n      gradingScaleId: $gradingScaleId\n      nextLevelId: $nextLevelId\n      hasSubjectSelection: $hasSubjectSelection\n      reportTemplate: $reportTemplate\n    ) {\n      id\n    }\n  }\n": types.SaveLevelDocument,
     "mutation SaveSubject($name: String!) { saveSubject(name: $name) { id name } }": types.SaveSubjectDocument,
     "\n  mutation SetLevelSubjects($levelId: ID!, $subjects: [LevelSubjectInput!]!) { setLevelSubjects(levelId: $levelId, subjects: $subjects) { id } }\n": types.SetLevelSubjectsDocument,
@@ -202,7 +218,7 @@ const documents: Documents = {
     "\n  query Terms {\n    terms { id label number isCurrent session { id name } }\n  }\n": types.TermsDocument,
     "\n  query StudentSearch($search: String!) {\n    students(search: $search, limit: 8) { items { id fullName admissionNumber currentArm { label } } }\n  }\n": types.StudentSearchDocument,
     "\n  query MyConsent {\n    myConsent {\n      pending\n      notice { version body publishedAt schoolName }\n      children { consented givenAt source student { id fullName firstName currentArm { label } } }\n    }\n  }\n": types.MyConsentDocument,
-    "\n  query Me {\n    me {\n      permissions\n      roles\n      accessMode\n      isPlatformAdmin\n      viaSupport\n      mustChangePassword\n      user { id fullName firstName phone email }\n      membership { id }\n    }\n    school { name slug motto address phone email primaryColor secondaryColor logoUrl }\n    currentTerm { id label number isCurrent session { id name } }\n  }\n": types.MeDocument,
+    "\n  query Me {\n    me {\n      permissions\n      roles\n      accessMode\n      isPlatformAdmin\n      viaSupport\n      mustChangePassword\n      user { id fullName firstName phone email }\n      membership { id }\n      billingAlert { kind date invoice { number periodLabel amountKobo studentCount } }\n    }\n    school { name slug motto address phone email primaryColor secondaryColor logoUrl }\n    currentTerm { id label number isCurrent session { id name } }\n  }\n": types.MeDocument,
 };
 
 /**
@@ -436,6 +452,22 @@ export function graphql(source: "\n  mutation PromoteClass($armId: ID!, $from: I
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
+export function graphql(source: "\n  query Billing {\n    billing {\n      plan { name pricePerStudentKobo minimumKobo }\n      accessMode trialEndsAt inTrial graceDays activeStudents outstandingKobo\n      invoices { id number periodLabel studentCount pricePerStudentKobo amountKobo dueDate status paidAt paidVia readOnlyFrom isOverdue pdfUrl }\n      smsBalance smsUnitPriceKobo smsMinUnits smsMaxUnits\n      smsPurchases { id units amountKobo reason createdAt }\n      bank { bankName accountNumber accountName }\n      billingEmail\n    }\n  }\n"): typeof import('./graphql').BillingDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  mutation PayInvoice($invoiceId: ID!, $returnPath: String!) { payInvoice(invoiceId: $invoiceId, returnPath: $returnPath) { authorizationUrl } }\n"): typeof import('./graphql').PayInvoiceDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  mutation BuySmsUnits($units: Int!, $returnPath: String!) { buySmsUnits(units: $units, returnPath: $returnPath) { authorizationUrl } }\n"): typeof import('./graphql').BuySmsUnitsDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  mutation ConfirmPlatformPayment($reference: String!) {\n    confirmPlatformPayment(reference: $reference) { reference status purpose units amountKobo invoiceNumber smsBalance }\n  }\n"): typeof import('./graphql').ConfirmPlatformPaymentDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
 export function graphql(source: "\n  query SchoolSettings {\n    school { name motto address phone email primaryColor secondaryColor }\n    schoolSettings {\n      showClassPosition admissionNumberFormat admissionNumberPrefix resultDebtThresholdKobo transactionChargeBearer\n      smsSenderId smsSenderStatus notifyParentOnAbsence reportTemplate principalTitle\n    }\n    supportGrants { id reason expiresAt grantedBy }\n    schoolBranding { logoUrl signatureUrl stampUrl }\n  }\n"): typeof import('./graphql').SchoolSettingsDocument;
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
@@ -520,6 +552,22 @@ export function graphql(source: "\n  mutation Logout {\n    logout\n  }\n"): typ
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
+export function graphql(source: "\n  query PlatformInvoices($status: String) {\n    platformInvoices(status: $status) {\n      schoolName schoolSlug\n      invoice { id number periodLabel studentCount amountKobo dueDate status paidAt paidVia paymentReference voidReason isOverdue readOnlyFrom }\n    }\n  }\n"): typeof import('./graphql').PlatformInvoicesDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "mutation GenerateInvoices { generateInvoices { schoolName invoice { number } } }"): typeof import('./graphql').GenerateInvoicesDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  mutation MarkInvoicePaid($invoiceId: ID!, $reference: String!) { markInvoicePaid(invoiceId: $invoiceId, reference: $reference) { id status } }\n"): typeof import('./graphql').MarkInvoicePaidDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  mutation VoidInvoice($invoiceId: ID!, $reason: String!) { voidInvoice(invoiceId: $invoiceId, reason: $reason) { id status } }\n"): typeof import('./graphql').VoidInvoiceDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
 export function graphql(source: "\n  mutation SaveLevel(\n    $id: ID\n    $name: String!\n    $section: String!\n    $gradingScaleId: ID\n    $nextLevelId: ID\n    $hasSubjectSelection: Boolean!\n    $reportTemplate: String!\n  ) {\n    saveLevel(\n      id: $id\n      name: $name\n      section: $section\n      gradingScaleId: $gradingScaleId\n      nextLevelId: $nextLevelId\n      hasSubjectSelection: $hasSubjectSelection\n      reportTemplate: $reportTemplate\n    ) {\n      id\n    }\n  }\n"): typeof import('./graphql').SaveLevelDocument;
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
@@ -576,7 +624,7 @@ export function graphql(source: "\n  query MyConsent {\n    myConsent {\n      p
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
-export function graphql(source: "\n  query Me {\n    me {\n      permissions\n      roles\n      accessMode\n      isPlatformAdmin\n      viaSupport\n      mustChangePassword\n      user { id fullName firstName phone email }\n      membership { id }\n    }\n    school { name slug motto address phone email primaryColor secondaryColor logoUrl }\n    currentTerm { id label number isCurrent session { id name } }\n  }\n"): typeof import('./graphql').MeDocument;
+export function graphql(source: "\n  query Me {\n    me {\n      permissions\n      roles\n      accessMode\n      isPlatformAdmin\n      viaSupport\n      mustChangePassword\n      user { id fullName firstName phone email }\n      membership { id }\n      billingAlert { kind date invoice { number periodLabel amountKobo studentCount } }\n    }\n    school { name slug motto address phone email primaryColor secondaryColor logoUrl }\n    currentTerm { id label number isCurrent session { id name } }\n  }\n"): typeof import('./graphql').MeDocument;
 
 
 export function graphql(source: string) {
