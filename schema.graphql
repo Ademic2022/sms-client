@@ -1,0 +1,757 @@
+type ArmType {
+  id: ID!
+  name: String!
+  isActive: Boolean!
+  classTeacher: MembershipType
+  label: String!
+  levelId: ID!
+  studentCount: Int!
+}
+
+input AttendanceEntry {
+  studentId: ID!
+  status: String!
+  clientUpdatedAt: DateTime = null
+}
+
+type AttendanceRecordType {
+  id: ID!
+  date: Date!
+  status: String!
+  studentId: ID!
+  clientUpdatedAt: DateTime
+}
+
+type AttendanceSaveResult {
+  saved: Int!
+  conflicts: [Conflict!]!
+}
+
+type AuditEntry {
+  id: ID!
+  action: String!
+  objectType: String!
+  objectId: String!
+  summary: String!
+  changes: JSON!
+  viaSupport: Boolean!
+  createdAt: DateTime!
+  userName: String
+}
+
+input BandInput {
+  grade: String!
+  minScore: Decimal!
+  maxScore: Decimal!
+  remark: String! = ""
+}
+
+type BillLineType {
+  id: ID!
+  kind: String!
+  description: String!
+  amountKobo: Kobo!
+  isOptional: Boolean!
+}
+
+type BillType {
+  id: ID!
+  broughtForwardKobo: Kobo!
+  createdAt: DateTime!
+  term: TermType!
+  student: StudentType!
+  lines: [BillLineType!]!
+  totalKobo: Kobo!
+}
+
+type Broadsheet {
+  armLabel: String!
+  termId: ID!
+  isThirdTerm: Boolean!
+  components: [ComponentType!]!
+  subjects: [SubjectType!]!
+  students: [StudentResultType!]!
+  classSize: Int!
+  classAverage: Decimal
+  missing: [MissingCount!]!
+  status: String!
+  showPosition: Boolean!
+}
+
+type CheckoutResult {
+  reference: String!
+  authorizationUrl: String!
+  amountKobo: Kobo!
+  convenienceFeeKobo: Kobo!
+  totalKobo: Kobo!
+}
+
+type CheckoutStatus {
+  reference: String!
+  status: String!
+  amountKobo: Kobo!
+}
+
+type ChildAccount {
+  student: StudentType!
+  balanceKobo: Kobo!
+  currentBill: BillType
+}
+
+type ChildResult {
+  visible: Boolean!
+  reason: String!
+  result: StudentResultType
+  classSize: Int
+  classAverage: Decimal
+  reportCardUrl: String
+}
+
+type ClassReportInputs {
+  traits: [TraitType!]!
+  ratings: [TraitRatingRow!]!
+  comments: [CommentRow!]!
+}
+
+type ClassResultStatus {
+  armId: ID!
+  armLabel: String!
+  status: String!
+  publishAt: DateTime
+  missingCells: Int!
+}
+
+input CommentInput {
+  studentId: ID!
+  classTeacherComment: String = null
+  principalComment: String = null
+}
+
+type CommentRow {
+  studentId: ID!
+  classTeacherComment: String!
+  principalComment: String!
+  suggestedClassTeacherComment: String!
+  suggestedPrincipalComment: String!
+}
+
+input ComponentInput {
+  name: String!
+  maxScore: Decimal!
+}
+
+type ComponentType {
+  id: ID!
+  name: String!
+  maxScore: Decimal!
+  order: Int!
+}
+
+type Conflict {
+  studentId: ID!
+  serverStatus: String!
+}
+
+"""Date (isoformat)"""
+scalar Date
+
+"""Date with time (isoformat)"""
+scalar DateTime
+
+type DebtorRow {
+  student: StudentType!
+  balanceKobo: Kobo!
+}
+
+"""Decimal (fixed-point)"""
+scalar Decimal
+
+type DeliveryCounts {
+  queued: Int!
+  sent: Int!
+  delivered: Int!
+  failed: Int!
+  skipped: Int!
+}
+
+type DiscountType {
+  id: ID!
+  name: String!
+  kind: String!
+  value: Kobo!
+  isActive: Boolean!
+  item: FeeItemType
+  term: TermType
+}
+
+type FeeItemType {
+  id: ID!
+  name: String!
+  order: Int!
+}
+
+type FeeScheduleType {
+  id: ID!
+  amountKobo: Kobo!
+  isCompulsory: Boolean!
+  item: FeeItemType!
+  levelId: ID!
+}
+
+type GradeBandType {
+  id: ID!
+  grade: String!
+  minScore: Decimal!
+  maxScore: Decimal!
+  remark: String!
+}
+
+type GradingScaleType {
+  id: ID!
+  name: String!
+  bands: [GradeBandType!]!
+}
+
+input GuardianInput {
+  firstName: String!
+  lastName: String!
+  phone: String!
+  title: String! = ""
+  email: String! = ""
+  relationship: String! = "Parent"
+}
+
+type GuardianType {
+  id: ID!
+  title: String!
+  firstName: String!
+  lastName: String!
+  phone: String!
+  altPhone: String!
+  email: String!
+  address: String!
+  occupation: String!
+}
+
+"""
+The `JSON` scalar type represents JSON values as specified by [ECMA-404](https://ecma-international.org/wp-content/uploads/ECMA-404_2nd_edition_december_2017.pdf).
+"""
+scalar JSON @specifiedBy(url: "https://ecma-international.org/wp-content/uploads/ECMA-404_2nd_edition_december_2017.pdf")
+
+"""Money in whole kobo (100 kobo = ₦1)."""
+scalar Kobo
+
+type Ledger {
+  student: StudentType!
+  balanceKobo: Kobo!
+  chargedKobo: Kobo!
+  paidKobo: Kobo!
+  bills: [BillType!]!
+  payments: [PaymentType!]!
+  discounts: [DiscountType!]!
+}
+
+type LevelCount {
+  level: String!
+  students: Int!
+}
+
+input LevelSubjectInput {
+  subjectId: ID!
+  category: String! = "core"
+}
+
+type LevelSubjectType {
+  id: ID!
+  category: String!
+  order: Int!
+  subject: SubjectType!
+}
+
+type LevelType {
+  id: ID!
+  name: String!
+  section: String!
+  order: Int!
+  hasSubjectSelection: Boolean!
+  reportTemplate: String!
+  gradingScale: GradingScaleType
+  nextLevel: LevelType
+  arms: [ArmType!]!
+  levelSubjects: [LevelSubjectType!]!
+  components: [ComponentType!]!
+}
+
+type Me {
+  user: UserType!
+  school: SchoolPublic
+  permissions: [String!]!
+  roles: [String!]!
+  accessMode: String!
+  isPlatformAdmin: Boolean!
+  viaSupport: Boolean!
+  mustChangePassword: Boolean!
+  membership: MembershipType
+}
+
+type MembershipType {
+  id: ID!
+  title: String!
+  isActive: Boolean!
+  user: UserType!
+  roles: [RoleType!]!
+}
+
+type MessageRecipientType {
+  id: ID!
+  phone: String!
+  status: String!
+  units: Int!
+  error: String!
+}
+
+type MessageType {
+  id: ID!
+  kind: String!
+  audience: String!
+  title: String!
+  body: String!
+  sendSms: Boolean!
+  showInApp: Boolean!
+  senderId: String!
+  unitsUsed: Int!
+  createdAt: DateTime!
+  arm: ArmType
+  delivery: DeliveryCounts!
+  failedRecipients: [MessageRecipientType!]!
+}
+
+type MissingCount {
+  subject: String!
+  students: Int!
+}
+
+type Mutation {
+  """Log in by phone number or email address."""
+  login(identifier: String!, password: String!): Me!
+  logout: Boolean!
+
+  """Send a reset code by SMS (or email when there is no phone)."""
+  requestPasswordReset(identifier: String!): Boolean!
+  resetPassword(identifier: String!, code: String!, newPassword: String!): Boolean!
+  changePassword(currentPassword: String!, newPassword: String!): Boolean!
+
+  """Create a new school with its own web address."""
+  signUpSchool(name: String!, slug: String!, adminFirstName: String!, adminLastName: String!, adminPhone: String!, password: String!, sections: [String!]!, acceptDataProcessingAgreement: Boolean!, adminEmail: String = null): SignUpResult!
+  updateSchoolSettings(name: String = null, motto: String = null, address: String = null, phone: String = null, email: String = null, primaryColor: String = null, secondaryColor: String = null, settingsJson: JSON = null): SchoolSettings!
+  saveSession(name: String!, startDate: Date!, endDate: Date!, id: ID = null): SessionType!
+  saveTerm(sessionId: ID!, number: Int!, startDate: Date!, endDate: Date!, daysOpened: Int! = 0, nextTermBegins: Date = null, id: ID = null): TermType!
+  setCurrentTerm(termId: ID!): TermType!
+  saveLevel(name: String!, section: String!, order: Int! = 0, gradingScaleId: ID = null, nextLevelId: ID = null, hasSubjectSelection: Boolean! = false, reportTemplate: String! = "", id: ID = null): LevelType!
+  saveArm(levelId: ID!, name: String!, classTeacherId: ID = null, isActive: Boolean! = true, id: ID = null): ArmType!
+  saveSubject(name: String!, code: String! = "", id: ID = null): SubjectType!
+  setLevelSubjects(levelId: ID!, subjects: [LevelSubjectInput!]!): LevelType!
+  setAssessmentComponents(levelId: ID!, components: [ComponentInput!]!): LevelType!
+  saveGradingScale(name: String!, bands: [BandInput!]!, id: ID = null): GradingScaleType!
+  assignSubjectTeacher(armId: ID!, subjectId: ID!, teacherId: ID!): SubjectAssignmentType!
+  addStaff(firstName: String!, lastName: String!, roleCodes: [String!]!, phone: String = null, email: String = null, title: String! = ""): MembershipType!
+  setStaffRoles(membershipId: ID!, roleCodes: [String!]!, isActive: Boolean! = true): MembershipType!
+  createStudent(data: StudentInput!, guardians: [GuardianInput!]!): StudentType!
+  updateStudent(id: ID!, data: StudentInput!): StudentType!
+  addGuardian(studentId: ID!, guardian: GuardianInput!): StudentType!
+  changeStudentStatus(id: ID!, status: String!, reason: String!): StudentType!
+  setStudentSubjects(studentId: ID!, subjectIds: [ID!]!): [SubjectType!]!
+  promoteClass(armId: ID!, fromSessionId: ID!, toSessionId: ID!, decisions: [PromotionDecision!] = null): PromotionResult!
+  markAttendance(armId: ID!, date: Date!, entries: [AttendanceEntry!]!): AttendanceSaveResult!
+  saveScores(armId: ID!, subjectId: ID!, termId: ID!, entries: [ScoreEntry!]!): SaveScoresResult!
+  saveTraitRatings(armId: ID!, termId: ID!, ratings: [RatingInput!]!): Int!
+  saveReportComments(armId: ID!, termId: ID!, comments: [CommentInput!]!): Int!
+  approveResults(armId: ID!, termId: ID!): String!
+  unlockResults(armId: ID!, termId: ID!, reason: String!): String!
+  publishResults(armId: ID!, termId: ID!, publishAt: DateTime = null, notifyParents: Boolean! = true): String!
+  generateReportCards(armId: ID!, termId: ID!): Boolean!
+  saveFeeItem(name: String!, order: Int! = 0, id: ID = null): FeeItemType!
+  setFeeSchedule(termId: ID!, schedules: [ScheduleInput!]!): [FeeScheduleType!]!
+  generateBills(termId: ID!, armId: ID = null): Int!
+  addDiscount(studentId: ID!, name: String!, kind: String!, value: Kobo!, itemId: ID = null, termId: ID = null, applyToExistingBill: Boolean! = true): DiscountType!
+  addBillItem(billId: ID!, description: String!, amountKobo: Kobo!, itemId: ID = null, reason: String! = ""): BillType!
+  removeBillItem(lineId: ID!, reason: String!): BillType!
+  recordPayment(studentId: ID!, amountKobo: Kobo!, method: String!, paidAt: DateTime!, reference: String! = "", note: String! = ""): PaymentType!
+  reversePayment(paymentId: ID!, reason: String!): PaymentType!
+  startCheckout(payFor: [PayFor!]!, callbackUrl: String!, email: String = null): CheckoutResult!
+  sendMessage(audience: String!, body: String!, title: String! = "", armId: ID = null, sendSms: Boolean! = true, showInApp: Boolean! = true): MessageType!
+  setSchoolStatus(schoolId: ID!, status: String!, reason: String! = ""): SchoolRow!
+  setSenderIdStatus(schoolId: ID!, status: String!): Boolean!
+  creditSmsUnits(schoolId: ID!, units: Int!, reason: String!, amountPaidKobo: Int! = 0): Int!
+  grantSupportAccess(reason: String!, hours: Int! = 24): SupportGrantType!
+  revokeSupportAccess(grantId: ID!): Boolean!
+}
+
+type MyClasses {
+  classArms: [ArmType!]!
+  subjectAssignments: [SubjectAssignmentType!]!
+}
+
+type Notice {
+  id: ID!
+  title: String!
+  body: String!
+  createdAt: String!
+}
+
+type OwnerDashboard {
+  termLabel: String!
+  fees: TermFeeSummary!
+  activeStudents: Int!
+  studentsByLevel: [LevelCount!]!
+  classesPublished: Int!
+  classesTotal: Int!
+}
+
+input PayFor {
+  studentId: ID!
+  amountKobo: Kobo!
+}
+
+type PaymentType {
+  id: ID!
+  amountKobo: Kobo!
+  method: String!
+  status: String!
+  receiptNumber: String!
+  reference: String!
+  paidAt: DateTime!
+  note: String!
+  reversedReason: String!
+  student: StudentType!
+  recordedBy: UserType
+}
+
+input PromotionDecision {
+  studentId: ID!
+  decision: String!
+}
+
+type PromotionResult {
+  promoted: Int!
+  repeated: Int!
+  graduated: Int!
+}
+
+type Query {
+  """The logged-in user in this school, or null."""
+  me: Me
+
+  """Public branding for the school on this web address."""
+  school: SchoolPublic
+  schoolSettings: SchoolSettings!
+  sessions: [SessionType!]!
+  terms(sessionId: ID = null): [TermType!]!
+  currentTerm: TermType
+  levels: [LevelType!]!
+  arms: [ArmType!]!
+  subjects: [SubjectType!]!
+  gradingScales: [GradingScaleType!]!
+  subjectAssignments(armId: ID = null): [SubjectAssignmentType!]!
+  staff: [MembershipType!]!
+  roles: [RoleType!]!
+  myClasses: MyClasses!
+  students(armId: ID = null, search: String = null, status: String = "active", offset: Int! = 0, limit: Int! = 50): StudentPage!
+  student(id: ID!): StudentType!
+  studentSubjects(studentId: ID!): [SubjectType!]!
+  register(armId: ID!, date: Date!): Register!
+  attendanceHistory(studentId: ID!, termId: ID!): [AttendanceRecordType!]!
+  scoreSheet(armId: ID!, subjectId: ID!, termId: ID!): ScoreSheet!
+  broadsheet(armId: ID!, termId: ID!): Broadsheet!
+  classResultStatuses(termId: ID!): [ClassResultStatus!]!
+  classReportInputs(armId: ID!, termId: ID!): ClassReportInputs!
+
+  """A parent's view of one child's result for a term."""
+  childResult(studentId: ID!, termId: ID!): ChildResult!
+  feeItems: [FeeItemType!]!
+  feeSchedules(termId: ID!): [FeeScheduleType!]!
+  bills(termId: ID!, armId: ID = null): [BillType!]!
+  ledger(studentId: ID!): Ledger!
+  debtors(armId: ID = null, minBalanceKobo: Kobo! = 1): [DebtorRow!]!
+  payments(dateFrom: Date = null, dateTo: Date = null, method: String = null, limit: Int! = 100): [PaymentType!]!
+  termFeeSummary(termId: ID!): TermFeeSummary!
+  ownerDashboard: OwnerDashboard
+
+  """A parent's children in this school with balances and the current bill."""
+  myChildren: [ChildAccount!]!
+  checkoutStatus(reference: String!): CheckoutStatus!
+  messages(limit: Int! = 50): [MessageType!]!
+  smsWalletBalance: Int!
+  estimateMessage(body: String!, audience: String!, armId: ID = null): SmsEstimate!
+
+  """In-app notices for the logged-in user."""
+  notices(limit: Int! = 20): [Notice!]!
+  platformSchools(search: String = null): [SchoolRow!]!
+  auditLog(objectType: String = null, objectId: String = null, actionPrefix: String = null, limit: Int! = 100): [AuditEntry!]!
+  supportGrants: [SupportGrantType!]!
+}
+
+input RatingInput {
+  studentId: ID!
+  traitId: ID!
+  rating: Int!
+}
+
+type Register {
+  date: Date!
+  termId: ID!
+  rows: [RegisterRow!]!
+}
+
+type RegisterRow {
+  student: StudentType!
+  status: String
+}
+
+type RoleType {
+  id: ID!
+  code: String!
+  name: String!
+  permissions: [String!]!
+  isSystem: Boolean!
+}
+
+type SaveScoresResult {
+  saved: Int!
+  conflicts: [ScoreConflict!]!
+}
+
+input ScheduleInput {
+  levelId: ID!
+  itemId: ID!
+  amountKobo: Kobo!
+  isCompulsory: Boolean! = true
+}
+
+type SchoolPublic {
+  name: String!
+  slug: String!
+  motto: String!
+  address: String!
+  phone: String!
+  email: String!
+  primaryColor: String!
+  secondaryColor: String!
+  logoUrl: String
+}
+
+type SchoolRow {
+  id: ID!
+  name: String!
+  slug: String!
+  status: String!
+  accessMode: String!
+  plan: String
+  studentCount: Int!
+  trialEndsAt: DateTime
+  lastActivityAt: DateTime
+  createdAt: DateTime!
+  smsSenderId: String!
+  smsSenderStatus: String!
+}
+
+type SchoolSettings {
+  showClassPosition: Boolean!
+  admissionNumberFormat: String!
+  admissionNumberPrefix: String!
+  resultDebtThresholdKobo: Kobo
+  transactionChargeBearer: String!
+  smsSenderId: String!
+  smsSenderStatus: String!
+  notifyParentOnAbsence: Boolean!
+  reportTemplate: String!
+  principalTitle: String!
+}
+
+type ScoreCell {
+  studentId: ID!
+  componentId: ID!
+  value: Decimal
+  updatedAt: DateTime
+}
+
+type ScoreConflict {
+  studentId: ID!
+  componentId: ID!
+  serverValue: Decimal
+}
+
+input ScoreEntry {
+  studentId: ID!
+  componentId: ID!
+  value: Decimal = null
+  clientUpdatedAt: DateTime = null
+}
+
+type ScoreSheet {
+  armLabel: String!
+  subject: SubjectType!
+  termId: ID!
+  components: [ComponentType!]!
+  students: [StudentType!]!
+  scores: [ScoreCell!]!
+  locked: Boolean!
+  status: String!
+}
+
+type SessionType {
+  id: ID!
+  name: String!
+  startDate: Date!
+  endDate: Date!
+  isCurrent: Boolean!
+}
+
+type SignUpResult {
+  schoolUrl: String!
+  slug: String!
+}
+
+type SmsEstimate {
+  recipients: Int!
+  units: Int!
+  walletBalance: Int!
+  senderId: String!
+}
+
+type StudentGuardianType {
+  relationship: String!
+  isPrimary: Boolean!
+  guardian: GuardianType!
+}
+
+input StudentInput {
+  firstName: String!
+  lastName: String!
+  gender: String!
+  armId: ID!
+  middleName: String! = ""
+  dateOfBirth: Date = null
+  admissionNumber: String = null
+  medicalNotes: String = null
+  emergencyContactName: String = null
+  emergencyContactPhone: String = null
+  examNumbers: JSON = null
+}
+
+type StudentPage {
+  items: [StudentType!]!
+  total: Int!
+}
+
+type StudentResultType {
+  student: StudentType!
+  subjects: [SubjectResultType!]!
+  total: Decimal!
+  average: Decimal
+  position: Int
+  subjectsTaken: Int!
+  missingSubjects: [String!]!
+  cumulativeAverage: Decimal
+  cumulativePosition: Int
+}
+
+type StudentType {
+  id: ID!
+  admissionNumber: String!
+  firstName: String!
+  middleName: String!
+  lastName: String!
+  gender: String!
+  dateOfBirth: Date
+  admittedOn: Date!
+  status: String!
+  currentArm: ArmType
+  examNumbers: JSON!
+  guardianLinks: [StudentGuardianType!]!
+  fullName: String!
+  photoUrl: String
+  medicalNotes: String
+  emergencyContactName: String
+  emergencyContactPhone: String
+}
+
+type SubjectAssignmentType {
+  id: ID!
+  arm: ArmType!
+  subject: SubjectType!
+  teacher: MembershipType!
+}
+
+type SubjectResultType {
+  subjectId: ID!
+  subjectName: String!
+  componentScores: [Decimal]!
+  total: Decimal
+  grade: String!
+  remark: String!
+  position: Int
+  classAverage: Decimal
+  highest: Decimal
+  lowest: Decimal
+  isComplete: Boolean!
+  firstTermTotal: Decimal
+  secondTermTotal: Decimal
+  cumulativeAverage: Decimal
+  cumulativeGrade: String!
+}
+
+type SubjectType {
+  id: ID!
+  name: String!
+  code: String!
+}
+
+type SupportGrantType {
+  id: ID!
+  reason: String!
+  expiresAt: DateTime!
+  grantedBy: String!
+}
+
+type TermFeeSummary {
+  expectedKobo: Kobo!
+  collectedKobo: Kobo!
+  collectedOnlineKobo: Kobo!
+  outstandingKobo: Kobo!
+  debtorCount: Int!
+}
+
+type TermType {
+  id: ID!
+  number: Int!
+  startDate: Date!
+  endDate: Date!
+  nextTermBegins: Date
+  daysOpened: Int!
+  isCurrent: Boolean!
+  session: SessionType!
+  label: String!
+}
+
+type TraitRatingRow {
+  studentId: ID!
+  traitId: ID!
+  rating: Int!
+}
+
+type TraitType {
+  id: ID!
+  name: String!
+  kind: String!
+  order: Int!
+}
+
+type UserType {
+  id: ID!
+  firstName: String!
+  lastName: String!
+  phone: String
+  email: String
+  fullName: String!
+}
