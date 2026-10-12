@@ -1,16 +1,20 @@
+import { existsSync } from "node:fs";
+
 import { defineConfig, devices } from "@playwright/test";
 
 /**
  * Browser tests. They start their own Django (port 8100, on a throwaway SQLite database
  * seeded with the demo school) and Next.js (port 3100), so they never touch your data.
- * The server repository must be checked out next to this one, at ../sms-server.
+ * The server repository must be checked out next to this one, as ../akademiq-server (its
+ * name on GitHub) or ../sms-server, or set SERVER_DIR.
  *
  *   npm run e2e            # headless
  *   npx playwright test --ui
  */
 const DB = "/tmp/akademiq-e2e.sqlite3";
+const SERVER_DIR = process.env.SERVER_DIR ?? (existsSync("../akademiq-server") ? "../akademiq-server" : "../sms-server");
 const serverEnv = {
-  LOAD_DOTENV: "false", // ignore ../sms-server/.env: tests must not use real keys or settings
+  LOAD_DOTENV: "false", // ignore the server's .env: tests must not use real keys or settings
   DATABASE_URL: `sqlite:///${DB}`,
   DEBUG: "true",
   TENANT_BASE_DOMAIN: "localhost",
@@ -38,7 +42,7 @@ export default defineConfig({
   webServer: [
     {
       command: `rm -f ${DB}* && uv run python manage.py migrate --noinput -v 0 && uv run python manage.py seed_demo && uv run python manage.py runserver 127.0.0.1:8100 --noreload`,
-      cwd: "../sms-server",
+      cwd: SERVER_DIR,
       env: serverEnv,
       url: "http://127.0.0.1:8100/healthz",
       stderr: process.env.E2E_SERVER_LOGS ? "pipe" : "ignore", // E2E_SERVER_LOGS=1 to see Django's request log

@@ -29,11 +29,12 @@ jobs:
         with:
           path: sms-client
       # The tests start the real API, so the server repository sits next to this one.
-      # If it is private, add a SERVER_REPO_TOKEN secret with read access to it.
+      # It is private and in another account (AdemicOrg), so add a SERVER_REPO_TOKEN secret:
+      # a fine-grained token with read access to AdemicOrg/akademiq-server's contents.
       - uses: actions/checkout@v4
         with:
-          repository: Ademic2022/sms-server
-          path: sms-server
+          repository: AdemicOrg/akademiq-server
+          path: akademiq-server
           token: ${{ secrets.SERVER_REPO_TOKEN || github.token }}
       - uses: actions/setup-node@v4
         with:
@@ -44,11 +45,11 @@ jobs:
       - name: PDF libraries for report cards
         run: sudo apt-get update && sudo apt-get install -y libpango-1.0-0 libpangoft2-1.0-0 libharfbuzz-subset0
       - run: uv sync --frozen
-        working-directory: sms-server
+        working-directory: akademiq-server
       - run: npm ci
         working-directory: sms-client
       - name: Client and server agree on the API
-        run: diff sms-server/schema.graphql sms-client/schema.graphql
+        run: diff akademiq-server/schema.graphql sms-client/schema.graphql
       - run: npx playwright install --with-deps chromium
         working-directory: sms-client
       - run: npm run e2e

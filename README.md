@@ -4,7 +4,7 @@ The web app for **Akademiq**, a multi-tenant school management platform for Nige
 
 Each school opens the app on its own address, for example `greenfield.akademiq.ng`, with its own name, crest and colours. The bare domain shows the marketing homepage and school sign-up.
 
-> **Backend:** [sms-server](https://github.com/Ademic2022/sms-server), Django with a GraphQL API. This app needs it running.
+> **Backend:** [akademiq-server](https://github.com/AdemicOrg/akademiq-server), Django with a GraphQL API. This app needs it running.
 
 ---
 
@@ -63,7 +63,7 @@ Each school opens the app on its own address, for example `greenfield.akademiq.n
 ### Prerequisites
 
 - Node.js 20.9 or newer, and npm
-- [sms-server](https://github.com/Ademic2022/sms-server) running on port 8000, with demo data (`uv run python manage.py seed_demo`)
+- [akademiq-server](https://github.com/AdemicOrg/akademiq-server) running on port 8000, with demo data (`uv run python manage.py seed_demo`)
 
 ### Run it locally
 
@@ -138,7 +138,7 @@ src/
   gql/                       generated: do not edit
 public/
   sw.js                      service worker
-schema.graphql               copied from sms-server
+schema.graphql               copied from akademiq-server
 ```
 
 ## Design system
@@ -165,7 +165,7 @@ const { data } = useGql(StudentsDocument, { search });   // data is fully typed
 After changing the server's API, regenerate the types:
 
 ```bash
-npm run schema   # copies ../sms-server/schema.graphql and runs codegen
+npm run schema   # copies the server's schema.graphql (../akademiq-server or ../sms-server) and runs codegen
 ```
 
 Forms that are seeded from fetched data use `useDerivedState`, not an effect, which keeps the React Compiler lint rules happy.
@@ -201,7 +201,7 @@ In production, `public/sw.js` caches the app shell and static assets, so a teach
 | `npm run schema` | Copy the server schema and regenerate GraphQL types |
 | `npm run codegen` | Regenerate GraphQL types from the current `schema.graphql` |
 | `npm test` | Unit tests (Vitest) |
-| `npm run e2e` | Browser tests (Playwright). They start their own Django on port 8100 with a throwaway, seeded database and Next.js on port 3100, so your data is never touched. Needs `../sms-server` checked out and Chrome installed. |
+| `npm run e2e` | Browser tests (Playwright). They start their own Django on port 8100 with a throwaway, seeded database and Next.js on port 3100, so your data is never touched. Needs the server repository checked out next to this one (`../akademiq-server`, or `../sms-server`) and Chrome installed. |
 
 ## Deploying
 
