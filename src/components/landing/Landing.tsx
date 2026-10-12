@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 
 import { SITE } from "@/lib/site";
 
-import { FeesMock, PhoneMock, ReportCardMock, ScoreGridMock } from "./Mockups";
+import { FeesMock, PhoneMock, ReceiptMock, ReportCardMock, ScoreGridMock } from "./Mockups";
 
 const NAV = [
   ["Product", "#product"],
@@ -181,7 +181,7 @@ function TwoJobs() {
               "Totals, grades, subject and class positions, class averages, highest and lowest are computed instantly.",
               "The broadsheet shows which subjects still have missing scores, so you know exactly who to chase.",
               "The principal approves and locks results. Any later change needs permission and is logged.",
-              "Print a whole class of report cards in one click, with your logo, signature and stamp. Third term shows the session's cumulative result.",
+              "Generate a whole class of PDF report cards in one click, with your crest, signature and stamp. Third term shows the session's cumulative result.",
             ].map((t) => <li key={t} className="flex gap-3"><Check className="mt-1 text-[var(--lp-green-2)]" />{t}</li>)}
           </ul>
         </div>
@@ -197,12 +197,17 @@ function TwoJobs() {
                 "Itemised bills per class and term: tuition, books, uniform, bus, lesson, PTA levy.",
                 "Discounts, sibling discounts and scholarships applied automatically. Part payment is normal, and every balance is exact.",
                 "Parents pay any amount by card, transfer or USSD. Money settles straight into your school's bank account.",
-                "Cash, POS and bank tellers are recorded by the bursar with an instant SMS receipt to the parent.",
+                "Cash, POS and bank tellers are recorded by the bursar. Parents get an SMS receipt instantly and a printable official receipt, with the amount in words.",
                 "Every change to a bill or payment is written to an audit log, with the person and the time.",
               ].map((t) => <li key={t} className="flex gap-3"><Check className="mt-1 text-[var(--lp-saffron)]" />{t}</li>)}
             </ul>
           </div>
-          <FeesMock />
+          <div className="relative lg:min-h-[500px]">
+            <div className="lg:w-[86%]"><FeesMock /></div>
+            <div className="relative mx-auto mt-6 w-fit rotate-[2.5deg] lg:absolute lg:right-0 lg:top-[190px] lg:mt-0">
+              <ReceiptMock />
+            </div>
+          </div>
         </div>
       </div>
     </section>

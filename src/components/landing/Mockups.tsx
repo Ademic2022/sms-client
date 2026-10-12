@@ -11,65 +11,139 @@ const SUBJECTS: [string, number, number, number, string, string][] = [
   ["French", 11, 12, 33, "C", "19th"],
 ];
 
+const cell = "border border-[#d9d4c7] px-1.5 py-[3px]";
+
+/** Mirrors the real report card PDF the product generates. */
 export function ReportCardMock() {
   return (
-    <div className="relative w-[330px] rounded-[6px] border border-[var(--lp-rule)] bg-[var(--lp-card)] p-5 text-[10.5px] leading-tight text-[var(--lp-ink)] shadow-[0_30px_60px_-20px_rgba(15,61,46,0.35),0_8px_20px_-8px_rgba(15,61,46,0.2)] sm:w-[380px]">
-      <div className="flex items-center gap-3 border-b-2 border-[var(--lp-green)] pb-2.5">
-        <div className="grid h-10 w-10 place-items-center rounded-full bg-[var(--lp-green)] text-[11px] font-bold text-[var(--lp-saffron)]">GS</div>
+    <div className="relative w-[330px] rounded-[4px] border border-[var(--lp-rule)] bg-white p-5 text-[9.5px] leading-tight text-[var(--lp-ink)] shadow-[0_30px_60px_-20px_rgba(15,61,46,0.35),0_8px_20px_-8px_rgba(15,61,46,0.2)] sm:w-[390px]">
+      {/* Letterhead */}
+      <div className="flex items-center gap-2.5 border-b-2 border-[var(--lp-green)] pb-2">
+        <div className="grid h-9 w-9 flex-none place-items-center rounded-full bg-[var(--lp-green)] font-display text-[15px] font-bold text-white">G</div>
         <div>
-          <div className="font-display text-[13px] font-semibold uppercase tracking-wide text-[var(--lp-green)]">Greenfield Schools, Lekki</div>
-          <div className="italic text-[var(--lp-muted)]">Knowledge and Character</div>
+          <div className="font-display text-[13.5px] font-bold uppercase tracking-wide text-[var(--lp-green)]">Greenfield Schools</div>
+          <div className="text-[8.5px] italic text-[var(--lp-muted)]">Knowledge and Character</div>
+          <div className="text-[7.5px] text-[var(--lp-muted)]">12 Admiralty Way, Lekki, Lagos · 0803 000 0001</div>
         </div>
       </div>
-      <div className="mt-2 text-center text-[9.5px] font-semibold tracking-[0.18em] text-[var(--lp-muted)]">FIRST TERM REPORT · 2026/2027 SESSION</div>
-      <div className="mt-2.5 grid grid-cols-2 gap-x-3 gap-y-1">
-        <div><span className="text-[var(--lp-muted)]">Name </span><b>Okafor Chidinma A.</b></div>
-        <div><span className="text-[var(--lp-muted)]">Class </span><b>JSS 2B</b></div>
-        <div><span className="text-[var(--lp-muted)]">Adm. no. </span>GRE/2025/0142</div>
-        <div><span className="text-[var(--lp-muted)]">Attendance </span>61 of 62</div>
-      </div>
-      <table className="mt-3 w-full border-collapse tabular-nums">
+      <div className="my-2 text-center text-[8.5px] font-bold uppercase tracking-[0.2em]">First term report · 2026/2027 session</div>
+
+      {/* Details */}
+      <table className="w-full border-collapse text-[8.5px]">
+        <tbody>
+          <tr>
+            <td className={`${cell} bg-[#f5f5f4] text-[var(--lp-muted)]`}>Name</td><td className={`${cell} font-bold`} colSpan={3}>Okafor Chidinma A.</td>
+          </tr>
+          <tr>
+            <td className={`${cell} bg-[#f5f5f4] text-[var(--lp-muted)]`}>Class</td><td className={`${cell} font-bold`}>JSS 2B</td>
+            <td className={`${cell} bg-[#f5f5f4] text-[var(--lp-muted)]`}>Admission no.</td><td className={`${cell} font-bold`}>GRE/2025/0142</td>
+          </tr>
+          <tr>
+            <td className={`${cell} bg-[#f5f5f4] text-[var(--lp-muted)]`}>Days present</td><td className={`${cell} font-bold`}>61 of 62</td>
+            <td className={`${cell} bg-[#f5f5f4] text-[var(--lp-muted)]`}>No. in class</td><td className={`${cell} font-bold`}>38</td>
+          </tr>
+        </tbody>
+      </table>
+
+      {/* Scores */}
+      <table className="mt-2 w-full border-collapse tabular-nums">
         <thead>
-          <tr className="bg-[var(--lp-green)] text-[9px] text-white">
-            <th className="px-1.5 py-1 text-left font-medium">Subject</th>
-            <th className="font-medium">CA1</th>
-            <th className="font-medium">CA2</th>
-            <th className="font-medium">Exam</th>
-            <th className="font-medium">Total</th>
-            <th className="font-medium">Grd</th>
-            <th className="pr-1.5 font-medium">Pos.</th>
+          <tr className="bg-[var(--lp-green)] text-[8px] text-white">
+            <th className="border border-[var(--lp-green)] px-1.5 py-1 text-left font-semibold">Subject</th>
+            <th className="border border-[var(--lp-green)] font-semibold">CA1</th>
+            <th className="border border-[var(--lp-green)] font-semibold">CA2</th>
+            <th className="border border-[var(--lp-green)] font-semibold">Exam</th>
+            <th className="border border-[var(--lp-green)] font-semibold">Total</th>
+            <th className="border border-[var(--lp-green)] font-semibold">Grade</th>
+            <th className="border border-[var(--lp-green)] px-1 font-semibold">Position</th>
           </tr>
         </thead>
         <tbody>
           {SUBJECTS.map(([name, a, b, c, g, p], i) => (
-            <tr key={name} className={i % 2 ? "bg-[#f3eddf]" : ""}>
-              <td className="px-1.5 py-[3px]">{name}</td>
-              <td className="text-center">{a}</td>
-              <td className="text-center">{b}</td>
-              <td className="text-center">{c}</td>
-              <td className="text-center font-bold">{a + b + c}</td>
-              <td className="text-center">{g}</td>
-              <td className="pr-1.5 text-center">{p}</td>
+            <tr key={name} className={i % 2 ? "bg-[#fafaf9]" : ""}>
+              <td className={cell}>{name}</td>
+              <td className={`${cell} text-center`}>{a}</td>
+              <td className={`${cell} text-center`}>{b}</td>
+              <td className={`${cell} text-center`}>{c}</td>
+              <td className={`${cell} text-center font-bold`}>{a + b + c}</td>
+              <td className={`${cell} text-center font-bold`}>{g}</td>
+              <td className={`${cell} text-center`}>{p}</td>
             </tr>
           ))}
         </tbody>
       </table>
-      <div className="mt-3 grid grid-cols-3 border border-[var(--lp-rule)] text-center">
-        <div className="border-r border-[var(--lp-rule)] py-1.5"><div className="text-[var(--lp-muted)]">Average</div><b className="text-[13px]">74.13</b></div>
-        <div className="border-r border-[var(--lp-rule)] py-1.5"><div className="text-[var(--lp-muted)]">Class avg.</div><b className="text-[13px]">64.20</b></div>
-        <div className="py-1.5"><div className="text-[var(--lp-muted)]">Position</div><b className="text-[13px] text-[var(--lp-green)]">3rd of 38</b></div>
+
+      {/* Summary */}
+      <div className="mt-2 grid grid-cols-3 border border-[#d9d4c7]">
+        {[["Average", "74.13"], ["Class average", "64.20"]].map(([k, v]) => (
+          <div key={k} className="border-r border-[#e7e3d8] px-2 py-1.5">
+            <div className="text-[7px] uppercase tracking-wide text-[var(--lp-muted)]">{k}</div>
+            <div className="text-[12px] font-bold">{v}</div>
+          </div>
+        ))}
+        <div className="px-2 py-1.5">
+          <div className="text-[7px] uppercase tracking-wide text-[var(--lp-muted)]">Position in class</div>
+          <div className="text-[12px] font-bold text-[var(--lp-green)]">3rd <span className="text-[9px] font-normal text-[var(--lp-muted)]">of 38</span></div>
+        </div>
       </div>
-      <div className="mt-3 space-y-1.5">
-        <div><span className="text-[var(--lp-muted)]">Class teacher: </span><span className="font-display italic">A very good performance. Aim higher next term.</span></div>
-        <div><span className="text-[var(--lp-muted)]">Principal: </span><span className="font-display italic">Good. Keep working hard.</span></div>
+
+      {/* Comments and signatures */}
+      <div className="mt-2 border border-[#d9d4c7]">
+        {[
+          ["Class teacher", "A very good performance. Aim higher next term.", "Signature and date"],
+          ["Principal", "Good. Keep working hard.", "Principal's signature"],
+        ].map(([who, text, cap], i) => (
+          <div key={who} className={`flex ${i === 0 ? "border-b border-[#e7e3d8]" : ""}`}>
+            <div className="w-[22%] bg-[#f5f5f4] px-2 py-1.5 text-[8px] font-bold">{who}</div>
+            <div className="flex-1 px-2 py-1.5 font-display text-[9px] italic">{text}</div>
+            <div className="w-[28%] border-l border-[#e7e3d8] px-2 pb-1 pt-3">
+              <div className="h-3 border-b border-[#8a8f8b]">{i === 1 && <span className="font-display text-[10px] italic leading-none text-[var(--lp-green)]">A. Nwachukwu</span>}</div>
+              <div className="mt-0.5 text-[6.5px] text-[var(--lp-muted)]">{cap}</div>
+            </div>
+          </div>
+        ))}
+      </div>
+      <div className="mt-2 flex items-end justify-between gap-3 text-[8.5px]">
+        <div>Next term begins <b>Wednesday, 6 January 2027</b></div>
+        <div className="text-[7px] text-[var(--lp-muted)]">A 70–100 · B 60–69 · C 50–59</div>
+      </div>
+
+      {/* Approval stamp, over the principal's signature like the real thing */}
+      <div className="lp-stamp pointer-events-none absolute bottom-8 right-[38%] grid h-[64px] w-[64px] place-items-center rounded-full border-[2.5px] border-double border-[var(--lp-clay)] text-center text-[6.5px] font-bold uppercase leading-tight tracking-wider text-[var(--lp-clay)]">
+        <span>Greenfield<br /><span className="text-[9px]">Approved</span><br />12 Dec 2026</span>
+      </div>
+    </div>
+  );
+}
+
+/** Mirrors the official receipt PDF parents receive. */
+export function ReceiptMock() {
+  const row = "flex justify-between gap-3 border-b border-[#ece8dd] py-[5px]";
+  return (
+    <div className="w-[300px] rounded-[4px] bg-white p-5 text-[9.5px] leading-snug text-[var(--lp-ink)] shadow-[0_30px_60px_-15px_rgba(0,0,0,0.45)]">
+      <div className="flex items-center gap-2 border-b-2 border-[var(--lp-green)] pb-2">
+        <div className="grid h-7 w-7 place-items-center rounded-full bg-[var(--lp-green)] font-display text-[12px] font-bold text-white">G</div>
+        <div className="font-display text-[12px] font-bold text-[var(--lp-green)]">Greenfield Schools</div>
       </div>
       <div className="mt-3 flex items-end justify-between">
-        <div className="text-[var(--lp-muted)]">Next term begins<br /><b className="text-[var(--lp-ink)]">Tuesday, 6 January 2027</b></div>
-        <div className="font-display text-[15px] italic text-[var(--lp-green)]">A. Nwachukwu</div>
+        <div className="text-[9px] font-bold uppercase tracking-[0.18em]">Official receipt</div>
+        <div className="text-right text-[7.5px] text-[var(--lp-muted)]">Receipt number<div className="text-[9.5px] font-bold text-[var(--lp-ink)]">RCT/2026/000318</div></div>
       </div>
-      {/* Rubber stamp */}
-      <div className="lp-stamp pointer-events-none absolute bottom-3 right-[120px] grid h-[74px] w-[74px] place-items-center rounded-full border-[2.5px] border-double border-[var(--lp-clay)] text-center text-[7.5px] font-bold uppercase leading-tight tracking-wider text-[var(--lp-clay)]">
-        <span>Greenfield<br /><span className="text-[10px]">Approved</span><br />12 Dec 2026</span>
+      <div className="mt-2.5 border border-[#ddd8cb] bg-[#fafaf8] px-3 py-2">
+        <div className="text-[7px] uppercase tracking-wider text-[var(--lp-muted)]">Amount received</div>
+        <div className="text-[19px] font-bold leading-tight">₦85,000</div>
+        <div className="text-[8.5px] italic text-[var(--lp-muted)]">Eighty-five thousand naira only</div>
+      </div>
+      <div className="mt-2">
+        <div className={row}><span className="text-[var(--lp-muted)]">Received from</span><b className="font-medium">Mrs Ngozi Okafor</b></div>
+        <div className={row}><span className="text-[var(--lp-muted)]">For</span><b className="font-medium">School fees, Chidinma Okafor</b></div>
+        <div className={row}><span className="text-[var(--lp-muted)]">Term</span><b className="font-medium">First term, 2026/2027</b></div>
+        <div className={row}><span className="text-[var(--lp-muted)]">Method</span><b className="font-medium">Bank transfer · TLR40817</b></div>
+        <div className={row}><span className="text-[var(--lp-muted)]">Balance</span><b className="font-medium">₦0</b></div>
+      </div>
+      <div className="mt-4 grid grid-cols-2 gap-4 text-[6.5px] text-[var(--lp-muted)]">
+        <div><div className="h-3 border-b border-[#8a8f8b]" />Received by: Bola Adeyemi, Bursary</div>
+        <div><div className="h-3 border-b border-[#8a8f8b]" />Signature and school stamp</div>
       </div>
     </div>
   );
