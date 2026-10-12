@@ -90,7 +90,7 @@ export default function ChildPage() {
                   <tr key={s.subjectId}>
                     <TD className="font-medium">{s.subjectName}</TD>
                     <TD align="right" className="tabular-nums">{s.total ? Number(s.total) : "–"}</TD>
-                    <TD align="center"><Badge tone="brand">{s.cumulativeGrade || s.grade || "–"}</Badge></TD>
+                    <TD align="center">{s.cumulativeGrade || s.grade ? <Badge tone="brand">{s.cumulativeGrade || s.grade}</Badge> : <span className="text-muted">–</span>}</TD>
                     <TD className="text-muted">{s.remark}</TD>
                   </tr>
                 ))}

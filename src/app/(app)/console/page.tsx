@@ -52,7 +52,7 @@ export default function ConsolePage() {
   return (
     <>
       <PageHeader title="Schools" subtitle="Every school on the platform, its usage and its status." />
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
         <Stat label="Schools" value={schools.length} />
         <Stat label="Active students" value={students.toLocaleString("en-NG")} />
         <Stat label="On free trial" value={trials} />

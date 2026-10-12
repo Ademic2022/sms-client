@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 
 import { IconAward, IconCalendarCheck, IconMessage, IconPencilGrid, IconUsers, IconWallet } from "@/components/icons";
-import { ButtonLink, Card, Empty, ErrorNote, Loading, Notice, PageHeader, RowLink, Stat } from "@/components/ui";
+import { ButtonLink, Card, Empty, ErrorNote, Loading, Notice, PageHeader, Stat } from "@/components/ui";
 import { graphql } from "@/gql";
 import { useGql } from "@/lib/api";
 import { naira } from "@/lib/money";
@@ -60,7 +60,7 @@ function Progress({ value }: { value: number }) {
 function FeeTiles({ f }: { f: { expectedKobo: number; collectedKobo: number; collectedOnlineKobo: number; outstandingKobo: number; debtorCount: number } }) {
   const rate = percent(f.collectedKobo, f.expectedKobo);
   return (
-    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+    <div className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
       <Stat label="Billed this term" value={naira(f.expectedKobo)} hint="All compulsory and added items" />
       <Stat
         label="Collected"
@@ -121,8 +121,14 @@ function TeacherPanel() {
   const arms = data?.myClasses.classArms ?? [];
   const subjects = data?.myClasses.subjectAssignments ?? [];
   if (!arms.length && !subjects.length) return null;
+  const byArm: [string, string, typeof subjects][] = [];
+  for (const s of subjects) {
+    const group = byArm.find(([id]) => id === s.arm.id);
+    if (group) group[2].push(s);
+    else byArm.push([s.arm.id, s.arm.label, [s]]);
+  }
   return (
-    <div className="grid gap-5 lg:grid-cols-2">
+    <div className="grid items-start gap-5 lg:grid-cols-2">
       {arms.length > 0 && (
         <Card title="My class" description="Daily register, broadsheet, comments and ratings" flush>
           {arms.map((a) => (
@@ -140,9 +146,22 @@ function TeacherPanel() {
         </Card>
       )}
       {subjects.length > 0 && (
-        <Card title="My subjects" description="Enter or upload scores for this term" flush>
-          {subjects.map((s) => (
-            <RowLink key={s.id} href={`/scores/${s.arm.id}/${s.subject.id}`} title={s.subject.name} meta={s.arm.label} right={<span className="text-[13px] font-medium text-brand-ink">Enter scores</span>} />
+        <Card title="My subjects" description={`${subjects.length} subject${subjects.length === 1 ? "" : "s"} across ${byArm.length} class${byArm.length === 1 ? "" : "es"}`} flush>
+          {byArm.map(([armId, label, items]) => (
+            <div key={armId} className="border-b border-line px-5 py-4 last:border-b-0">
+              <div className="mb-2.5 flex items-baseline justify-between">
+                <span className="text-sm font-semibold text-ink">{label}</span>
+                <span className="text-xs text-muted">{items.length} subject{items.length === 1 ? "" : "s"}</span>
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                {items.map((s) => (
+                  <Link key={s.id} href={`/scores/${s.arm.id}/${s.subject.id}`}
+                    className="rounded-md border border-line-strong bg-surface px-2.5 py-1 text-[13px] text-ink shadow-sm transition hover:border-brand hover:text-brand-ink">
+                    {s.subject.name}
+                  </Link>
+                ))}
+              </div>
+            </div>
           ))}
         </Card>
       )}
@@ -164,7 +183,8 @@ function QuickActions() {
     can("scores.enter", "scores.manage") && { href: "/scores", label: "Enter scores", icon: IconPencilGrid },
     can("messaging.send") && { href: "/messages", label: "Send an announcement", icon: IconMessage },
   ].filter(Boolean) as { href: string; label: string; icon: typeof IconWallet }[];
-  if (!actions.length) return null;
+  // A single shortcut duplicates the panel below it; only show the row when there is a choice.
+  if (actions.length < 2) return null;
   return (
     <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
       {actions.map(({ href, label, icon: Icon }) => (

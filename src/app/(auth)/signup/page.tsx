@@ -168,9 +168,9 @@ export default function SignUpPage() {
                     type="button"
                     aria-pressed={on}
                     onClick={() => setSections(on ? sections.filter((x) => x !== s.key) : [...sections, s.key])}
-                    className={cx("relative rounded-lg border px-3.5 py-3 text-left transition", on ? "border-brand bg-brand/5 ring-[3px] ring-brand/10" : "border-line hover:bg-subtle")}
+                    className={cx("relative rounded-lg border px-3.5 py-3 text-left transition", on ? "border-brand bg-brand/5 ring-[3px] ring-brand/10 dark:border-brand-ink dark:bg-brand-ink/10" : "border-line hover:bg-subtle")}
                   >
-                    {on && <span className="absolute right-2.5 top-2.5 grid h-4 w-4 place-items-center rounded-full bg-brand text-white"><IconCheck size={11} strokeWidth={2.6} /></span>}
+                    {on && <span className="absolute right-2.5 top-2.5 grid h-4 w-4 place-items-center rounded-full bg-brand text-white dark:bg-brand-ink dark:text-background"><IconCheck size={11} strokeWidth={2.6} /></span>}
                     <div className="text-sm font-medium text-ink">{s.label}</div>
                     <div className="text-xs text-muted">{s.text}</div>
                   </button>

@@ -102,7 +102,7 @@ export default function ForgotPasswordPage() {
         <AuthField label="New password" hint="At least 8 characters. Avoid your name or phone number.">
           <PasswordInput value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="new-password" minLength={8} required />
         </AuthField>
-        <AuthButton type="submit" busy={busy} disabled={code.length !== 6}>Save password and sign in</AuthButton>
+        <AuthButton type="submit" busy={busy} disabled={code.length !== 6}>Save new password</AuthButton>
       </form>
     </AuthShell>
   );

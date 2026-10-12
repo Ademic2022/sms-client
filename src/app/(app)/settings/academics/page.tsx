@@ -259,7 +259,7 @@ export default function AcademicSetupPage() {
               <div className="border-t border-line pt-4">
                 <div className="mb-2 text-[13px] font-medium text-ink">Subjects{level.hasSubjectSelection && <span className="font-normal text-muted"> · students choose electives individually</span>}</div>
                 <div className="flex flex-wrap gap-1.5">
-                  {level.levelSubjects.map((ls) => <Badge key={ls.subject.id} tone={ls.category === "core" ? "brand" : "neutral"}>{ls.subject.name}{ls.category !== "core" && ` · ${ls.category}`}</Badge>)}
+                  {level.levelSubjects.map((ls) => <Badge key={ls.subject.id}>{ls.subject.name}{ls.category !== "core" && <span className="text-muted/80"> · {ls.category}</span>}</Badge>)}
                 </div>
               </div>
             </div>

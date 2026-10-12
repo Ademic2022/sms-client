@@ -236,9 +236,9 @@ export function PageHeader({
 
 export function Stat({ label, value, hint }: { label: string; value: ReactNode; hint?: ReactNode }) {
   return (
-    <div className="rounded-xl border border-line bg-surface p-5 shadow-sm">
+    <div className="min-w-0 rounded-xl border border-line bg-surface p-4 shadow-sm sm:p-5">
       <div className="text-[13px] font-medium text-muted">{label}</div>
-      <div className="mt-2 font-display text-[28px] font-medium leading-none tracking-[-0.01em] text-ink tabular-nums">{value}</div>
+      <div className="mt-2 truncate font-display text-[21px] font-medium leading-none tracking-[-0.01em] text-ink tabular-nums sm:text-[28px]">{value}</div>
       {hint && <div className="mt-2 text-xs text-muted">{hint}</div>}
     </div>
   );

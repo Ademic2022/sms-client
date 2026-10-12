@@ -115,8 +115,10 @@ function Comments({ armId, termId, students, canPrincipal, locked }: { armId: st
               <div className="text-[13px] text-muted">Average {s.average ?? "–"}</div>
             </div>
             <div className="space-y-2">
+              {canPrincipal && <div className="text-xs font-medium text-muted">Class teacher</div>}
               <Textarea rows={2} disabled={readOnly} placeholder={byId[s.id]?.suggestedClassTeacherComment} value={draft[s.id]?.ct ?? ""}
                 onChange={(e) => setDraft((d) => ({ ...d, [s.id]: { ...(d[s.id] ?? { p: "" }), ct: e.target.value } }))} aria-label={`Class teacher comment for ${s.fullName}`} />
+              {canPrincipal && <div className="pt-1 text-xs font-medium text-muted">Principal</div>}
               {canPrincipal && (
                 <Textarea rows={1} placeholder={`Principal: ${byId[s.id]?.suggestedPrincipalComment ?? ""}`} value={draft[s.id]?.p ?? ""}
                   onChange={(e) => setDraft((d) => ({ ...d, [s.id]: { ...(d[s.id] ?? { ct: "" }), p: e.target.value } }))} aria-label={`Principal comment for ${s.fullName}`} />
@@ -214,7 +216,8 @@ const STEPS = [
 ];
 
 function Workflow({ status, missing, children }: { status: string; missing: number; children: ReactNode }) {
-  const current = STEPS.findIndex((s) => s.key === status);
+  // Published is the last step, so it counts as done rather than in progress.
+  const current = status === "published" ? STEPS.length : STEPS.findIndex((s) => s.key === status);
   return (
     <Card title="Approval" description={missing ? `${missing} missing score${missing === 1 ? "" : "s"} in this class` : "Every score has been entered"}>
       <ol className="grid gap-4 sm:grid-cols-3">

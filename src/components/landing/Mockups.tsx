@@ -68,7 +68,7 @@ export function ReportCardMock() {
         <div className="font-display text-[15px] italic text-[var(--lp-green)]">A. Nwachukwu</div>
       </div>
       {/* Rubber stamp */}
-      <div className="lp-stamp pointer-events-none absolute bottom-[58px] left-[46%] grid h-[74px] w-[74px] place-items-center rounded-full border-[2.5px] border-double border-[var(--lp-clay)] text-center text-[7.5px] font-bold uppercase leading-tight tracking-wider text-[var(--lp-clay)]">
+      <div className="lp-stamp pointer-events-none absolute bottom-3 right-[120px] grid h-[74px] w-[74px] place-items-center rounded-full border-[2.5px] border-double border-[var(--lp-clay)] text-center text-[7.5px] font-bold uppercase leading-tight tracking-wider text-[var(--lp-clay)]">
         <span>Greenfield<br /><span className="text-[10px]">Approved</span><br />12 Dec 2026</span>
       </div>
     </div>
@@ -86,7 +86,7 @@ export function PhoneMock() {
         </div>
         <div className="border-b border-black/5 bg-white/70 px-3 py-2 text-center">
           <div className="mx-auto mb-0.5 grid h-7 w-7 place-items-center rounded-full bg-[var(--lp-green)] text-[9px] font-bold text-[var(--lp-saffron)]">GS</div>
-          <div className="text-[10px] font-semibold">GreenfieldS</div>
+          <div className="text-[10px] font-semibold tracking-wide">GREENFIELD</div>
         </div>
         <div className="space-y-2 px-2.5 py-3 text-[10.5px] leading-snug">
           <div className="lp-pop max-w-[88%] rounded-2xl rounded-bl-md bg-white px-3 py-2 shadow-sm" style={{ animationDelay: "1.4s" }}>

@@ -63,7 +63,7 @@ export default function FeesPage() {
       <ErrorNote error={error} />
       {msg && <Notice tone="success">{msg}</Notice>}
       {f && (
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
           <Stat label="Billed this term" value={naira(f.expectedKobo)} />
           <Stat label="Collected" value={naira(f.collectedKobo)} hint={`${rate}% of billed`} />
           <Stat label="Collected online" value={naira(f.collectedOnlineKobo)} hint="Card, transfer and USSD" />

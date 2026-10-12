@@ -7,7 +7,7 @@ import { Button, Card, Checkbox, ErrorNote, Field, FormActions, FormSection, Inp
 import { graphql } from "@/gql";
 import { gql, useGql } from "@/lib/api";
 import { useDerivedState } from "@/lib/hooks";
-import { toKobo } from "@/lib/money";
+import { localPhone, toKobo } from "@/lib/money";
 import { useSession } from "@/lib/session";
 
 const SettingsDocument = graphql(`
@@ -38,7 +38,7 @@ export default function SettingsPage() {
   const { data, error, isLoading, mutate } = useGql(SettingsDocument, canSchool ? {} : null);
   const [school, setSchool] = useDerivedState(
     data?.school,
-    ({ name, motto, address, phone, email, primaryColor }) => ({ name, motto, address, phone, email, primaryColor }),
+    ({ name, motto, address, phone, email, primaryColor }) => ({ name, motto, address, phone: localPhone(phone).replace(/\u00a0/g, " "), email, primaryColor }),
     { name: "", motto: "", address: "", phone: "", email: "", primaryColor: "#1d4ed8" },
   );
   const [s, setS] = useDerivedState(

@@ -85,7 +85,7 @@ export default function StudentsPage() {
         ) : (
           <Table>
             <thead>
-              <tr><TH>Student</TH><TH>Admission no.</TH><TH>Class</TH><TH>Gender</TH><TH>Status</TH></tr>
+              <tr><TH>Student</TH><TH className="hidden sm:table-cell">Admission no.</TH><TH>Class</TH><TH className="hidden md:table-cell">Gender</TH><TH>Status</TH></tr>
             </thead>
             <tbody>
               {page.items.map((s) => (
@@ -93,12 +93,15 @@ export default function StudentsPage() {
                   <TD>
                     <Link href={`/students/${s.id}`} className="flex items-center gap-3 font-medium text-ink" onClick={(e) => e.stopPropagation()}>
                       <Avatar name={s.fullName} />
-                      {s.fullName}
+                      <span className="min-w-0">
+                        <span className="block">{s.fullName}</span>
+                        <span className="block text-xs font-normal tabular-nums text-muted sm:hidden">{s.admissionNumber}</span>
+                      </span>
                     </Link>
                   </TD>
-                  <TD className="tabular-nums text-muted">{s.admissionNumber}</TD>
-                  <TD>{s.currentArm?.label ?? <span className="text-muted">None</span>}</TD>
-                  <TD className="text-muted">{s.gender === "F" ? "Female" : "Male"}</TD>
+                  <TD className="hidden tabular-nums text-muted sm:table-cell">{s.admissionNumber}</TD>
+                  <TD className="whitespace-nowrap">{s.currentArm?.label ?? <span className="text-muted">None</span>}</TD>
+                  <TD className="hidden text-muted md:table-cell">{s.gender === "F" ? "Female" : "Male"}</TD>
                   <TD><StatusBadge status={s.status} /></TD>
                 </tr>
               ))}
