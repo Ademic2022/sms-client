@@ -87,7 +87,7 @@ Every demo password is `demo-pass-2026`. Browsers resolve `*.localhost` to your 
 | Variable | Default | Purpose |
 | --- | --- | --- |
 | `API_ORIGIN` | `http://127.0.0.1:8000` | Where the Django API runs |
-| `TENANT_BASE_DOMAIN` | `localhost` | Must match the server. The bare domain shows the homepage; subdomains are schools. |
+| `TENANT_BASE_DOMAIN` | `localhost` | Must match the server. The bare domain shows the homepage and `<slug>.<domain>` is a school. Any other host, such as your hosting provider's address, shows the homepage unless the API recognises it as a school's custom domain. |
 
 ## How it connects to the server
 

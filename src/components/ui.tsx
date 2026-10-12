@@ -3,6 +3,7 @@
 import Link from "next/link";
 import {
   useEffect,
+  useEffectEvent,
   useId,
   useRef,
   useState,
@@ -452,18 +453,25 @@ export function Dialog({
 }) {
   const titleId = useId();
   const panel = useRef<HTMLDivElement>(null);
+  // Callers pass a new onClose on every render; reading it through an effect event keeps
+  // the effect below from re-running (and stealing focus) on each keystroke.
+  const close = useEffectEvent(() => onClose());
   useEffect(() => {
     if (!open) return;
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && close();
     document.addEventListener("keydown", onKey);
     const previous = document.body.style.overflow;
     document.body.style.overflow = "hidden";
-    panel.current?.querySelector<HTMLElement>("input, textarea, select, button")?.focus();
+    // Focus the first field once, on open; fall back to the first button (e.g. a confirmation).
+    const root = panel.current;
+    const first = root?.querySelector<HTMLElement>("input:not([type=hidden]), textarea, select")
+      ?? root?.querySelector<HTMLElement>("[data-dialog-footer] button");
+    first?.focus();
     return () => {
       document.removeEventListener("keydown", onKey);
       document.body.style.overflow = previous;
     };
-  }, [open, onClose]);
+  }, [open]);
   if (!open) return null;
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center sm:p-6">
@@ -477,7 +485,7 @@ export function Dialog({
           <IconButton label="Close" onClick={onClose} className="-mr-2 -mt-1"><IconClose size={16} /></IconButton>
         </div>
         {children && <div className="px-6 pt-4">{children}</div>}
-        {footer && <div className="mt-6 flex flex-col-reverse gap-2 border-t border-line bg-subtle/50 px-6 py-4 sm:flex-row sm:justify-end">{footer}</div>}
+        {footer && <div data-dialog-footer className="mt-6 flex flex-col-reverse gap-2 border-t border-line bg-subtle/50 px-6 py-4 sm:flex-row sm:justify-end">{footer}</div>}
       </div>
     </div>
   );
