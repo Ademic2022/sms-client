@@ -200,6 +200,8 @@ In production, `public/sw.js` caches the app shell and static assets, so a teach
 | `npm run typecheck` | TypeScript check |
 | `npm run schema` | Copy the server schema and regenerate GraphQL types |
 | `npm run codegen` | Regenerate GraphQL types from the current `schema.graphql` |
+| `npm test` | Unit tests (Vitest) |
+| `npm run e2e` | Browser tests (Playwright). They start their own Django on port 8100 with a throwaway, seeded database and Next.js on port 3100, so your data is never touched. Needs `../sms-server` checked out and Chrome installed. |
 
 ## Deploying
 
