@@ -498,7 +498,11 @@ function Footer() {
       <div className="border-t border-[var(--lp-rule)]">
         <div className="mx-auto flex max-w-7xl flex-col gap-2 px-5 py-6 text-[13px] text-[var(--lp-muted)] sm:flex-row sm:items-center sm:justify-between sm:px-8">
           <span>© {new Date().getFullYear()} {SITE.name}. Made in Nigeria, for Nigerian schools.</span>
-          <span>Sample names and figures on this page are for illustration.</span>
+          <span className="flex flex-col gap-1 sm:flex-row sm:items-center sm:gap-2">
+            <span>Payments secured by Paystack</span>
+            <span aria-hidden className="hidden sm:inline">·</span>
+            <span>Data handled under the Nigeria Data Protection Act 2023</span>
+          </span>
         </div>
       </div>
     </footer>
