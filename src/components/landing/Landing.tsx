@@ -474,7 +474,7 @@ function FinalCTA() {
 export function Footer() {
   const cols: [string, [string, string][]][] = [
     ["Product", [["Results", "/#product"], ["Fees", "/#product"], ["Parents", "/#parents"], ["Pricing", "/#pricing"]]],
-    ["Get started", [["Start free trial", "/signup"], ["Log in", "/login"], ["How it works", "/#how"], ["FAQ", "/#faq"]]],
+    ["Get started", [["Start free trial", "/signup"], ["Log in", "/login"], ["User guide", "/guide"], ["FAQ", "/#faq"]]],
     ["Company", [["Contact", `mailto:${SITE.contactEmail}`], ["Privacy notice", "/legal/privacy"], ["Data processing agreement", "/legal/dpa"], ["Terms", "/legal/terms"]]],
   ];
   return (

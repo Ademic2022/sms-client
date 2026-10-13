@@ -122,6 +122,7 @@ export function AuthShell({ title, subtitle, children, footer, wide, aside }: { 
             Encrypted connection. We never ask for your password by SMS or phone.
           </span>
           <span className="flex items-center gap-4">
+            <Link href="/guide" className="font-medium text-ink hover:underline">Help</Link>
             {school && <Link href="/privacy" className="font-medium text-ink hover:underline">Privacy notice</Link>}
             <span>Powered by <Link href={school ? "#" : "/"} className="font-medium text-ink hover:underline">{SITE.name}</Link></span>
           </span>

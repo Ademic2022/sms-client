@@ -9,7 +9,7 @@ export const SITE = {
   trialDays: 30,
   smsUnitNaira: 4,
   contactEmail: "hello@akademiq.ng",
-  whatsapp: "", // e.g. "2348000000000" to show a WhatsApp link
+  whatsapp: "2349121424608", // support WhatsApp, international format without "+"
 };
 
 /**

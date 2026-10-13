@@ -18,6 +18,7 @@ import {
   IconChild,
   IconClose,
   IconHome,
+  IconInfo,
   IconLogout,
   IconMenu,
   IconMessage,
@@ -246,6 +247,10 @@ export function AppShell({ children }: { children: ReactNode }) {
             <div className="truncate text-sm font-medium text-ink">{me.user.fullName}</div>
             <div className="truncate text-xs text-muted">{roleLabel}</div>
           </div>
+          <a href="/guide" target="_blank" rel="noopener" aria-label="Help: user guide" title="User guide"
+            className="grid h-8 w-8 place-items-center rounded-lg text-muted transition hover:bg-subtle hover:text-ink">
+            <IconInfo size={17} />
+          </a>
           <IconButton label="Sign out" onClick={logout}>
             <IconLogout size={17} />
           </IconButton>
