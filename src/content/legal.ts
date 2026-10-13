@@ -350,7 +350,7 @@ export const TERMS: LegalDoc = {
     `${SITE.name} costs ${PRICE} per active student per term, after a ${SITE.trialDays}-day free trial. SMS units are ${`₦${SITE.smsUnitNaira}`} each.`,
     "If an invoice is unpaid 14 days after it is due, the portal becomes read-only until it is paid. Nothing is deleted.",
     "Your school owns its data and can export it at any time.",
-    "Fees from parents go straight to your school's bank account through Paystack.",
+    "Fees from parents go straight to your school's bank account through Paystack. We take no share of them.",
   ],
   sections: [
     {
@@ -409,8 +409,12 @@ export const TERMS: LegalDoc = {
       id: "school-fees",
       heading: "7. Collecting fees from parents",
       blocks: [
-        "Online fee payments are processed by Paystack, under Paystack's own terms. Money settles directly into the School's bank account; we do not hold the School's money. The School chooses whether it or the parent pays the transaction charge. Any platform fee is shown before the School turns online payments on.",
+        "Online fee payments are processed by Paystack, under Paystack's own terms, through our Paystack business account. Money settles directly into the School's bank account, usually the next working day; we do not hold the School's money. Parents may see our business name, or Paystack's, on their bank statement.",
+        "We take no share of fee payments. Our charges are the subscription and SMS units only. The School chooses whether it or the parent pays Paystack's transaction charge.",
+        "Only the School's owner can link or change the bank account fees are paid into. The School is responsible for those details being correct; a payment settled into the account the School linked counts as paid to the School.",
+        "Cash, POS and bank payments made to the School never pass through us. The service only records them, and the School is responsible for those records and the receipts it issues.",
         "Fees, discounts and refunds are a matter between the School and its parents. The School handles refund requests from parents.",
+        "If a parent disputes an online payment with their bank or card issuer (a chargeback), the School will provide evidence that the payment was owed, such as the bill and receipt, within the time Paystack allows. If the dispute is decided against the School, the School bears the amount refunded and any charge Paystack makes for the dispute. We may invoice the School for these or recover them from its future settlements.",
       ],
     },
     {

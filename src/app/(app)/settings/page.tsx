@@ -3,6 +3,7 @@
 import { useState } from "react";
 
 import { ImageUpload } from "@/components/ImageUpload";
+import { PayoutAccountCard } from "@/components/PayoutAccountCard";
 import { SettingsNav } from "@/components/SettingsNav";
 import { Button, Card, Checkbox, ErrorNote, Field, FormActions, FormSection, Input, Loading, Notice, PageHeader, Select, StatusBadge, Textarea } from "@/components/ui";
 import { graphql } from "@/gql";
@@ -233,6 +234,8 @@ export default function SettingsPage() {
         </FormSection>
       </Card>
       <FormActions><Button busy={busy} onClick={save}>Save settings</Button></FormActions>
+
+      <PayoutAccountCard />
 
       <Card title="Support access" description="Let the platform support team into your account for 24 hours. Everything they do is recorded in your audit log.">
         <div className="space-y-3">

@@ -757,6 +757,32 @@ export type LogoutMutationVariables = Exact<{ [key: string]: never; }>;
 
 export type LogoutMutation = { logout: boolean };
 
+export type PayoutAccountQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type PayoutAccountQuery = { payoutAccount: { connected: boolean, bankName: string | null, accountNumber: string | null, accountName: string | null, canChange: boolean } };
+
+export type PayoutBanksQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type PayoutBanksQuery = { payoutBanks: Array<{ code: string, name: string }> };
+
+export type ResolvePayoutAccountMutationVariables = Exact<{
+  bankCode: string;
+  accountNumber: string;
+}>;
+
+
+export type ResolvePayoutAccountMutation = { resolvePayoutAccount: string };
+
+export type ConnectPayoutAccountMutationVariables = Exact<{
+  bankCode: string;
+  accountNumber: string;
+}>;
+
+
+export type ConnectPayoutAccountMutation = { connectPayoutAccount: { connected: boolean } };
+
 export type PlatformInvoicesQueryVariables = Exact<{
   status?: string | null | undefined;
 }>;
@@ -2268,6 +2294,37 @@ export const LogoutDocument = new TypedDocumentString(`
   logout
 }
     `) as unknown as TypedDocumentString<LogoutMutation, LogoutMutationVariables>;
+export const PayoutAccountDocument = new TypedDocumentString(`
+    query PayoutAccount {
+  payoutAccount {
+    connected
+    bankName
+    accountNumber
+    accountName
+    canChange
+  }
+}
+    `) as unknown as TypedDocumentString<PayoutAccountQuery, PayoutAccountQueryVariables>;
+export const PayoutBanksDocument = new TypedDocumentString(`
+    query PayoutBanks {
+  payoutBanks {
+    code
+    name
+  }
+}
+    `) as unknown as TypedDocumentString<PayoutBanksQuery, PayoutBanksQueryVariables>;
+export const ResolvePayoutAccountDocument = new TypedDocumentString(`
+    mutation ResolvePayoutAccount($bankCode: String!, $accountNumber: String!) {
+  resolvePayoutAccount(bankCode: $bankCode, accountNumber: $accountNumber)
+}
+    `) as unknown as TypedDocumentString<ResolvePayoutAccountMutation, ResolvePayoutAccountMutationVariables>;
+export const ConnectPayoutAccountDocument = new TypedDocumentString(`
+    mutation ConnectPayoutAccount($bankCode: String!, $accountNumber: String!) {
+  connectPayoutAccount(bankCode: $bankCode, accountNumber: $accountNumber) {
+    connected
+  }
+}
+    `) as unknown as TypedDocumentString<ConnectPayoutAccountMutation, ConnectPayoutAccountMutationVariables>;
 export const PlatformInvoicesDocument = new TypedDocumentString(`
     query PlatformInvoices($status: String) {
   platformInvoices(status: $status) {

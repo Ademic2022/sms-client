@@ -101,6 +101,10 @@ type Documents = {
     "\n  query PublicPrivacyNotice {\n    privacyNotice { version body publishedAt schoolName }\n  }\n": typeof types.PublicPrivacyNoticeDocument,
     "\n  mutation SignUpSchool(\n    $name: String!\n    $slug: String!\n    $adminFirstName: String!\n    $adminLastName: String!\n    $adminPhone: String!\n    $adminEmail: String\n    $password: String!\n    $sections: [String!]!\n    $accept: Boolean!\n  ) {\n    signUpSchool(\n      name: $name\n      slug: $slug\n      adminFirstName: $adminFirstName\n      adminLastName: $adminLastName\n      adminPhone: $adminPhone\n      adminEmail: $adminEmail\n      password: $password\n      sections: $sections\n      acceptDataProcessingAgreement: $accept\n    ) {\n      slug\n      schoolUrl\n      confirmationSentTo\n    }\n  }\n": typeof types.SignUpSchoolDocument,
     "\n  mutation Logout {\n    logout\n  }\n": typeof types.LogoutDocument,
+    "\n  query PayoutAccount { payoutAccount { connected bankName accountNumber accountName canChange } }\n": typeof types.PayoutAccountDocument,
+    "query PayoutBanks { payoutBanks { code name } }": typeof types.PayoutBanksDocument,
+    "\n  mutation ResolvePayoutAccount($bankCode: String!, $accountNumber: String!) { resolvePayoutAccount(bankCode: $bankCode, accountNumber: $accountNumber) }\n": typeof types.ResolvePayoutAccountDocument,
+    "\n  mutation ConnectPayoutAccount($bankCode: String!, $accountNumber: String!) {\n    connectPayoutAccount(bankCode: $bankCode, accountNumber: $accountNumber) { connected }\n  }\n": typeof types.ConnectPayoutAccountDocument,
     "\n  query PlatformInvoices($status: String) {\n    platformInvoices(status: $status) {\n      schoolName schoolSlug\n      invoice { id number periodLabel studentCount amountKobo dueDate status paidAt paidVia paymentReference voidReason isOverdue readOnlyFrom }\n    }\n  }\n": typeof types.PlatformInvoicesDocument,
     "mutation GenerateInvoices { generateInvoices { schoolName invoice { number } } }": typeof types.GenerateInvoicesDocument,
     "\n  mutation MarkInvoicePaid($invoiceId: ID!, $reference: String!) { markInvoicePaid(invoiceId: $invoiceId, reference: $reference) { id status } }\n": typeof types.MarkInvoicePaidDocument,
@@ -209,6 +213,10 @@ const documents: Documents = {
     "\n  query PublicPrivacyNotice {\n    privacyNotice { version body publishedAt schoolName }\n  }\n": types.PublicPrivacyNoticeDocument,
     "\n  mutation SignUpSchool(\n    $name: String!\n    $slug: String!\n    $adminFirstName: String!\n    $adminLastName: String!\n    $adminPhone: String!\n    $adminEmail: String\n    $password: String!\n    $sections: [String!]!\n    $accept: Boolean!\n  ) {\n    signUpSchool(\n      name: $name\n      slug: $slug\n      adminFirstName: $adminFirstName\n      adminLastName: $adminLastName\n      adminPhone: $adminPhone\n      adminEmail: $adminEmail\n      password: $password\n      sections: $sections\n      acceptDataProcessingAgreement: $accept\n    ) {\n      slug\n      schoolUrl\n      confirmationSentTo\n    }\n  }\n": types.SignUpSchoolDocument,
     "\n  mutation Logout {\n    logout\n  }\n": types.LogoutDocument,
+    "\n  query PayoutAccount { payoutAccount { connected bankName accountNumber accountName canChange } }\n": types.PayoutAccountDocument,
+    "query PayoutBanks { payoutBanks { code name } }": types.PayoutBanksDocument,
+    "\n  mutation ResolvePayoutAccount($bankCode: String!, $accountNumber: String!) { resolvePayoutAccount(bankCode: $bankCode, accountNumber: $accountNumber) }\n": types.ResolvePayoutAccountDocument,
+    "\n  mutation ConnectPayoutAccount($bankCode: String!, $accountNumber: String!) {\n    connectPayoutAccount(bankCode: $bankCode, accountNumber: $accountNumber) { connected }\n  }\n": types.ConnectPayoutAccountDocument,
     "\n  query PlatformInvoices($status: String) {\n    platformInvoices(status: $status) {\n      schoolName schoolSlug\n      invoice { id number periodLabel studentCount amountKobo dueDate status paidAt paidVia paymentReference voidReason isOverdue readOnlyFrom }\n    }\n  }\n": types.PlatformInvoicesDocument,
     "mutation GenerateInvoices { generateInvoices { schoolName invoice { number } } }": types.GenerateInvoicesDocument,
     "\n  mutation MarkInvoicePaid($invoiceId: ID!, $reference: String!) { markInvoicePaid(invoiceId: $invoiceId, reference: $reference) { id status } }\n": types.MarkInvoicePaidDocument,
@@ -575,6 +583,22 @@ export function graphql(source: "\n  mutation SignUpSchool(\n    $name: String!\
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function graphql(source: "\n  mutation Logout {\n    logout\n  }\n"): typeof import('./graphql').LogoutDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  query PayoutAccount { payoutAccount { connected bankName accountNumber accountName canChange } }\n"): typeof import('./graphql').PayoutAccountDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "query PayoutBanks { payoutBanks { code name } }"): typeof import('./graphql').PayoutBanksDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  mutation ResolvePayoutAccount($bankCode: String!, $accountNumber: String!) { resolvePayoutAccount(bankCode: $bankCode, accountNumber: $accountNumber) }\n"): typeof import('./graphql').ResolvePayoutAccountDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  mutation ConnectPayoutAccount($bankCode: String!, $accountNumber: String!) {\n    connectPayoutAccount(bankCode: $bankCode, accountNumber: $accountNumber) { connected }\n  }\n"): typeof import('./graphql').ConnectPayoutAccountDocument;
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
