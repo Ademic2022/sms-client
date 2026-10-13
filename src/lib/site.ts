@@ -12,6 +12,21 @@ export const SITE = {
   whatsapp: "", // e.g. "2348000000000" to show a WhatsApp link
 };
 
+/**
+ * Details printed in the privacy notice, data processing agreement and terms. The company
+ * name and address are placeholders until the business is registered: confirm them, and have
+ * a Nigerian data protection lawyer review the documents in src/content/legal.ts, before launch.
+ */
+export const LEGAL = {
+  company: "Akademiq Technologies Ltd",
+  address: "Lagos, Nigeria",
+  email: SITE.contactEmail,
+  effective: "13 October 2026",
+  // Must match CURRENT_DPA_VERSION in the server (apps/schools/services.py): it is recorded
+  // against each school when its owner accepts the agreement at sign-up.
+  dpaVersion: "2026-10",
+};
+
 /** What search engines and link previews show for the public site. */
 export const SEO = {
   // Under about 60 characters, so search results do not cut it off.

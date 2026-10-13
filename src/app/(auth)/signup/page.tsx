@@ -203,7 +203,7 @@ export default function SignUpPage() {
             <Checkbox
               checked={accept}
               onChange={setAccept}
-              label="I accept the data processing agreement on behalf of the school"
+              label={<>I accept the <a href="/legal/dpa" target="_blank" rel="noreferrer" className="font-medium underline underline-offset-2">data processing agreement</a> on behalf of the school</>}
               description="Under the Nigeria Data Protection Act 2023, your school is the data controller for its students, and we process data on your behalf."
             />
           </div>
@@ -211,7 +211,7 @@ export default function SignUpPage() {
 
         <AuthButton type="submit" busy={busy} disabled={!sections.length || !accept}>{busy ? "Creating your school…" : "Create my school"}</AuthButton>
         <p className="text-center text-xs text-muted">
-          By continuing you agree to the terms of service. <Link href="/" className="font-medium text-ink hover:underline">Back to the homepage</Link>
+          By continuing you agree to the <a href="/legal/terms" target="_blank" rel="noreferrer" className="font-medium text-ink hover:underline">terms of service</a> and our <a href="/legal/privacy" target="_blank" rel="noreferrer" className="font-medium text-ink hover:underline">privacy notice</a>. <Link href="/" className="font-medium text-ink hover:underline">Back to the homepage</Link>
         </p>
       </form>
     </AuthShell>

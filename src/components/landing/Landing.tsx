@@ -6,12 +6,13 @@ import { SITE } from "@/lib/site";
 import { FAQS } from "./faqs";
 import { FeesMock, PhoneMock, ReceiptMock, ReportCardMock, ScoreGridMock } from "./Mockups";
 
+// "/#..." rather than "#...", so the links also work from the legal pages.
 const NAV = [
-  ["Product", "#product"],
-  ["How it works", "#how"],
-  ["Parents", "#parents"],
-  ["Pricing", "#pricing"],
-  ["FAQ", "#faq"],
+  ["Product", "/#product"],
+  ["How it works", "/#how"],
+  ["Parents", "/#parents"],
+  ["Pricing", "/#pricing"],
+  ["FAQ", "/#faq"],
 ];
 
 function Logo({ light = false }: { light?: boolean }) {
@@ -59,7 +60,7 @@ const Check = ({ className = "" }: { className?: string }) => (
 
 /* ------------------------------------------------------------------------- */
 
-function Header() {
+export function Header() {
   return (
     <header className="sticky top-0 z-40 border-b border-[var(--lp-rule)]/70 bg-[var(--lp-paper)]/85 backdrop-blur-md">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-5 sm:px-8">
@@ -469,11 +470,11 @@ function FinalCTA() {
   );
 }
 
-function Footer() {
+export function Footer() {
   const cols: [string, [string, string][]][] = [
-    ["Product", [["Results", "#product"], ["Fees", "#product"], ["Parents", "#parents"], ["Pricing", "#pricing"]]],
-    ["Get started", [["Start free trial", "/signup"], ["Log in", "/login"], ["How it works", "#how"], ["FAQ", "#faq"]]],
-    ["Company", [["Contact", `mailto:${SITE.contactEmail}`], ["Privacy notice", "#"], ["Data processing agreement", "#"], ["Terms", "#"]]],
+    ["Product", [["Results", "/#product"], ["Fees", "/#product"], ["Parents", "/#parents"], ["Pricing", "/#pricing"]]],
+    ["Get started", [["Start free trial", "/signup"], ["Log in", "/login"], ["How it works", "/#how"], ["FAQ", "/#faq"]]],
+    ["Company", [["Contact", `mailto:${SITE.contactEmail}`], ["Privacy notice", "/legal/privacy"], ["Data processing agreement", "/legal/dpa"], ["Terms", "/legal/terms"]]],
   ];
   return (
     <footer className="border-t border-[var(--lp-rule)] bg-[var(--lp-card)]">
