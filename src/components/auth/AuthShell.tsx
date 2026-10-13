@@ -54,7 +54,9 @@ export function AuthShell({ title, subtitle, children, footer, wide, aside }: { 
   const name = school?.name ?? `${SITE.name} platform`;
 
   return (
-    <div className="min-h-screen bg-background lg:grid lg:grid-cols-[minmax(420px,5fr)_7fr]" style={{ ["--brand" as string]: brand }}>
+    // On wide screens the page itself never scrolls: the brand panel stays put and only the
+    // form column scrolls. On phones the two stack and the page scrolls as usual.
+    <div className="min-h-screen bg-background lg:grid lg:h-dvh lg:grid-cols-[minmax(420px,5fr)_7fr] lg:overflow-hidden" style={{ ["--brand" as string]: brand }}>
       {/* Identity panel */}
       <aside className="relative overflow-hidden" style={{ backgroundColor: brand, color: ink }}>
         <div
@@ -63,7 +65,7 @@ export function AuthShell({ title, subtitle, children, footer, wide, aside }: { 
           style={{ backgroundImage: `repeating-linear-gradient(135deg, currentColor 0 1px, transparent 1px 14px)` }}
         />
         <div aria-hidden className="pointer-events-none absolute -bottom-40 -right-40 h-[28rem] w-[28rem] rounded-full border-[56px] border-current opacity-[0.06]" />
-        <div className={`relative flex h-full flex-col px-6 py-6 sm:px-10 lg:min-h-screen lg:px-12 lg:py-12 ${loading ? "opacity-0" : "opacity-100"} transition-opacity duration-300`}>
+        <div className={`relative flex h-full flex-col px-6 py-6 sm:px-10 lg:px-12 lg:py-12 ${loading ? "opacity-0" : "opacity-100"} transition-opacity duration-300`}>
           <div className="flex items-center gap-4">
             <Crest school={school} size={48} />
             <div className="min-w-0">
@@ -105,7 +107,7 @@ export function AuthShell({ title, subtitle, children, footer, wide, aside }: { 
       </aside>
 
       {/* Form panel */}
-      <main className="flex flex-col px-6 sm:px-10">
+      <main className="flex flex-col px-6 sm:px-10 lg:h-dvh lg:overflow-y-auto">
         <div className="flex flex-1 items-center justify-center py-10 lg:py-16">
           <div className={wide ? "w-full max-w-[560px]" : "w-full max-w-[400px]"}>
             <h1 className="font-display text-[32px] font-medium leading-tight tracking-[-0.01em] text-ink">{title}</h1>
