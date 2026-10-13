@@ -148,9 +148,9 @@ export default function SettingsPage() {
           <div className="grid gap-6 sm:grid-cols-2">
             <ImageUpload label="School logo" hint="Square works best. Also shown in the sidebar and on the sign-in page." url={data?.schoolBranding.logoUrl}
               endpoint="/files/school/logo/" onChange={() => { void mutate(); void refresh(); }} emptyText="No logo" />
-            <ImageUpload label="Principal's signature" hint="Sign on white paper and photograph it, or upload a scan." url={data?.schoolBranding.signatureUrl}
+            <ImageUpload label="Principal's signature" hint="Sign on plain paper and photograph it, or upload a scan. The paper is removed automatically." url={data?.schoolBranding.signatureUrl}
               endpoint="/files/school/signature/" onChange={() => void mutate()} shape="wide" emptyText="No signature" />
-            <ImageUpload label="School stamp" hint="A clear photo or scan of the official stamp." url={data?.schoolBranding.stampUrl}
+            <ImageUpload label="School stamp" hint="A clear photo or scan of the stamp on plain paper. The paper is removed automatically." url={data?.schoolBranding.stampUrl}
               endpoint="/files/school/stamp/" onChange={() => void mutate()} shape="circle" emptyText="No stamp" />
           </div>
         </FormSection>
