@@ -22,20 +22,39 @@ jobs:
         run: npx graphql-codegen && git diff --exit-code src/gql
       - run: npm run build
 
+  # The browser tests start the real API, so they need the server repository. It is private
+  # and in another account (AdemicOrg), so they need a SERVER_REPO_TOKEN secret: a
+  # fine-grained personal access token with read-only Contents access to
+  # AdemicOrg/akademiq-server. Without it the browser tests are skipped, not failed.
+  server-access:
+    runs-on: ubuntu-latest
+    outputs:
+      ok: ${{ steps.check.outputs.ok }}
+    steps:
+      - id: check
+        env:
+          TOKEN: ${{ secrets.SERVER_REPO_TOKEN }}
+        run: |
+          if [ -n "$TOKEN" ]; then
+            echo "ok=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "ok=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::Browser tests skipped: add a SERVER_REPO_TOKEN secret (read access to AdemicOrg/akademiq-server) to run them."
+          fi
+
   browser-tests:
+    needs: server-access
+    if: needs.server-access.outputs.ok == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
           path: sms-client
-      # The tests start the real API, so the server repository sits next to this one.
-      # It is private and in another account (AdemicOrg), so add a SERVER_REPO_TOKEN secret:
-      # a fine-grained token with read access to AdemicOrg/akademiq-server's contents.
       - uses: actions/checkout@v4
         with:
           repository: AdemicOrg/akademiq-server
           path: akademiq-server
-          token: ${{ secrets.SERVER_REPO_TOKEN || github.token }}
+          token: ${{ secrets.SERVER_REPO_TOKEN }}
       - uses: actions/setup-node@v4
         with:
           node-version: 22
