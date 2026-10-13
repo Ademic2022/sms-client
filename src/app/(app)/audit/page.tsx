@@ -3,15 +3,17 @@
 import { useState } from "react";
 
 import { IconShield } from "@/components/icons";
-import { Badge, Card, Empty, ErrorNote, Loading, PageHeader, Select, Table, TD, TH } from "@/components/ui";
+import { Badge, Card, Empty, ErrorNote, Loading, PageHeader, Pager, Select, Table, TD, TH } from "@/components/ui";
 import { graphql } from "@/gql";
 import { useGql } from "@/lib/api";
 
 const AuditDocument = graphql(`
-  query AuditLog($prefix: String) {
-    auditLog(actionPrefix: $prefix, limit: 200) { id action summary userName viaSupport createdAt }
+  query AuditLog($prefix: String, $offset: Int!) {
+    auditLog(actionPrefix: $prefix, offset: $offset, limit: 50) { total items { id action summary userName viaSupport createdAt } }
   }
 `);
+
+const PAGE = 50;
 
 const FILTERS: Record<string, string> = {
   "": "All activity",
@@ -38,15 +40,16 @@ const AREA: Record<string, string> = {
 
 export default function AuditPage() {
   const [prefix, setPrefix] = useState("");
-  const { data, error, isLoading } = useGql(AuditDocument, { prefix: prefix || null });
-  const entries = data?.auditLog ?? [];
+  const [offset, setOffset] = useState(0);
+  const { data, error, isLoading } = useGql(AuditDocument, { prefix: prefix || null, offset });
+  const entries = data?.auditLog.items ?? [];
   return (
     <>
       <PageHeader
         title="Audit log"
         subtitle="Every change to results, fees, staff permissions and support access, with who made it and when."
         actions={
-          <Select value={prefix} onChange={(e) => setPrefix(e.target.value)} className="w-auto" aria-label="Filter">
+          <Select value={prefix} onChange={(e) => { setPrefix(e.target.value); setOffset(0); }} className="w-auto" aria-label="Filter">
             {Object.entries(FILTERS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
           </Select>
         }
@@ -75,6 +78,7 @@ export default function AuditPage() {
             </tbody>
           </Table>
         )}
+        {data && <Pager offset={offset} pageSize={PAGE} total={data.auditLog.total} onChange={setOffset} />}
       </Card>
     </>
   );

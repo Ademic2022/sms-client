@@ -39,6 +39,11 @@ type AuditEntry {
   userName: String
 }
 
+type AuditPage {
+  items: [AuditEntry!]!
+  total: Int!
+}
+
 input BandInput {
   grade: String!
   minScore: Decimal!
@@ -215,6 +220,14 @@ scalar Date
 
 """Date with time (isoformat)"""
 scalar DateTime
+
+type DebtorPage {
+  items: [DebtorRow!]!
+  total: Int!
+
+  """Owed by every debtor matching the filter, not just this page."""
+  totalBalanceKobo: Kobo!
+}
 
 type DebtorRow {
   student: StudentType!
@@ -409,6 +422,11 @@ type MembershipType {
   roles: [RoleType!]!
 }
 
+type MessagePage {
+  items: [MessageType!]!
+  total: Int!
+}
+
 type MessageRecipientType {
   id: ID!
   phone: String!
@@ -600,6 +618,11 @@ input PayFor {
   amountKobo: Kobo!
 }
 
+type PaymentPage {
+  items: [PaymentType!]!
+  total: Int!
+}
+
 type PaymentStart {
   reference: String!
   authorizationUrl: String!
@@ -637,6 +660,12 @@ type PayoutBank {
   name: String!
 }
 
+type PendingSender {
+  schoolId: ID!
+  schoolName: String!
+  senderId: String!
+}
+
 type PlanInfo {
   name: String!
   pricePerStudentKobo: Kobo!
@@ -648,6 +677,13 @@ type PlatformInvoiceRow {
   schoolId: ID!
   schoolName: String!
   schoolSlug: String!
+}
+
+type PlatformOverview {
+  schools: Int!
+  activeStudents: Int!
+  onTrial: Int!
+  pendingSenders: [PendingSender!]!
 }
 
 type PlatformPaymentResult {
@@ -715,15 +751,15 @@ type Query {
   feeSchedules(termId: ID!): [FeeScheduleType!]!
   bills(termId: ID!, armId: ID = null): [BillType!]!
   ledger(studentId: ID!): Ledger!
-  debtors(armId: ID = null, minBalanceKobo: Kobo! = 1): [DebtorRow!]!
-  payments(dateFrom: Date = null, dateTo: Date = null, method: String = null, limit: Int! = 100): [PaymentType!]!
+  debtors(armId: ID = null, minBalanceKobo: Kobo! = 1, offset: Int! = 0, limit: Int! = 50): DebtorPage!
+  payments(dateFrom: Date = null, dateTo: Date = null, method: String = null, offset: Int! = 0, limit: Int! = 50): PaymentPage!
   termFeeSummary(termId: ID!): TermFeeSummary!
   ownerDashboard: OwnerDashboard
 
   """A parent's children in this school with balances and the current bill."""
   myChildren: [ChildAccount!]!
   checkoutStatus(reference: String!): CheckoutStatus!
-  messages(limit: Int! = 50): [MessageType!]!
+  messages(offset: Int! = 0, limit: Int! = 50): MessagePage!
   smsWalletBalance: Int!
   estimateMessage(body: String!, audience: String!, armId: ID = null): SmsEstimate!
 
@@ -752,8 +788,9 @@ type Query {
 
   """Platform admins: invoices across all schools."""
   platformInvoices(status: String = null, limit: Int! = 200): [PlatformInvoiceRow!]!
-  platformSchools(search: String = null): [SchoolRow!]!
-  auditLog(objectType: String = null, objectId: String = null, actionPrefix: String = null, limit: Int! = 100): [AuditEntry!]!
+  platformOverview: PlatformOverview!
+  platformSchools(search: String = null, offset: Int! = 0, limit: Int! = 50): SchoolPage!
+  auditLog(objectType: String = null, objectId: String = null, actionPrefix: String = null, offset: Int! = 0, limit: Int! = 50): AuditPage!
   supportGrants: [SupportGrantType!]!
 
   """Where online fee payments are paid out."""
@@ -804,6 +841,11 @@ type SchoolBranding {
   logoUrl: String
   signatureUrl: String
   stampUrl: String
+}
+
+type SchoolPage {
+  items: [SchoolRow!]!
+  total: Int!
 }
 
 type SchoolPublic {

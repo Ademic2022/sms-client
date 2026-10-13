@@ -3,17 +3,21 @@
 import { useState } from "react";
 
 import { IconBuilding } from "@/components/icons";
-import { ActionDialog, Badge, Button, Card, Empty, ErrorNote, Loading, Notice, PageHeader, SearchInput, Stat, StatusBadge, Table, TD, TH } from "@/components/ui";
+import { ActionDialog, Badge, Button, Card, Empty, ErrorNote, Loading, Notice, PageHeader, Pager, SearchInput, Stat, StatusBadge, Table, TD, TH } from "@/components/ui";
 import { InvoicesPanel } from "@/components/console/InvoicesPanel";
 import { graphql } from "@/gql";
 import { gql, useGql } from "@/lib/api";
 import { naira } from "@/lib/money";
 
 const PlatformSchoolsDocument = graphql(`
-  query PlatformSchools($search: String) {
-    platformSchools(search: $search) {
-      id name slug status accessMode plan studentCount trialEndsAt lastActivityAt createdAt smsSenderId smsSenderStatus
-      usage { signIns7d activeUsers7d smsUnits30d collected30dKobo onlineShare30d unpaidInvoices }
+  query PlatformSchools($search: String, $offset: Int!) {
+    platformOverview { schools activeStudents onTrial pendingSenders { schoolId schoolName senderId } }
+    platformSchools(search: $search, offset: $offset, limit: 50) {
+      total
+      items {
+        id name slug status accessMode plan studentCount trialEndsAt lastActivityAt createdAt smsSenderId smsSenderStatus
+        usage { signIns7d activeUsers7d smsUnits30d collected30dKobo onlineShare30d unpaidInvoices }
+      }
     }
   }
 `);
@@ -36,16 +40,16 @@ function ago(iso: string | null | undefined) {
 
 export default function ConsolePage() {
   const [search, setSearch] = useState("");
-  const { data, error, isLoading, mutate } = useGql(PlatformSchoolsDocument, { search: search || null });
+  const [offset, setOffset] = useState(0);
+  const { data, error, isLoading, mutate } = useGql(PlatformSchoolsDocument, { search: search || null, offset });
   const [msg, setMsg] = useState<string | null>(null);
   const [suspending, setSuspending] = useState<SchoolRow | null>(null);
   const [reactivating, setReactivating] = useState<SchoolRow | null>(null);
   const [crediting, setCrediting] = useState<SchoolRow | null>(null);
 
-  const schools = data?.platformSchools ?? [];
-  const students = schools.reduce((s, x) => s + x.studentCount, 0);
-  const trials = schools.filter((s) => s.trialEndsAt && new Date(s.trialEndsAt) > new Date()).length;
-  const pendingSenders = schools.filter((s) => s.smsSenderStatus === "pending");
+  const schools = data?.platformSchools.items ?? [];
+  const overview = data?.platformOverview;
+  const pendingSenders = overview?.pendingSenders ?? [];
 
   async function done(text: string) {
     setMsg(text);
@@ -56,9 +60,9 @@ export default function ConsolePage() {
     <>
       <PageHeader title="Schools" subtitle="Every school on the platform, its usage and its status." />
       <div className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
-        <Stat label="Schools" value={schools.length} />
-        <Stat label="Active students" value={students.toLocaleString("en-NG")} />
-        <Stat label="On free trial" value={trials} />
+        <Stat label="Schools" value={(overview?.schools ?? 0).toLocaleString("en-NG")} />
+        <Stat label="Active students" value={(overview?.activeStudents ?? 0).toLocaleString("en-NG")} />
+        <Stat label="On free trial" value={overview?.onTrial ?? 0} />
         <Stat label="Sender names awaiting approval" value={pendingSenders.length} />
       </div>
       <ErrorNote error={error} />
@@ -67,11 +71,11 @@ export default function ConsolePage() {
       {pendingSenders.length > 0 && (
         <Card flush title="SMS sender names awaiting network approval" description="Record the decision once the networks have approved or rejected the name.">
           {pendingSenders.map((s) => (
-            <div key={s.id} className="flex flex-wrap items-center justify-between gap-3 border-b border-line px-5 py-3 last:border-b-0">
-              <div className="text-sm"><span className="font-medium text-ink">{s.smsSenderId}</span> <span className="text-muted">· {s.name}</span></div>
+            <div key={s.schoolId} className="flex flex-wrap items-center justify-between gap-3 border-b border-line px-5 py-3 last:border-b-0">
+              <div className="text-sm"><span className="font-medium text-ink">{s.senderId}</span> <span className="text-muted">· {s.schoolName}</span></div>
               <div className="flex gap-2">
-                <Button size="sm" variant="secondary" onClick={async () => { await gql(SenderDocument, { schoolId: s.id, status: "rejected" }); await done(`${s.smsSenderId} marked as rejected.`); }}>Rejected</Button>
-                <Button size="sm" onClick={async () => { await gql(SenderDocument, { schoolId: s.id, status: "approved" }); await done(`${s.smsSenderId} approved. ${s.name} now sends under its own name.`); }}>Approved</Button>
+                <Button size="sm" variant="secondary" onClick={async () => { await gql(SenderDocument, { schoolId: s.schoolId, status: "rejected" }); await done(`${s.senderId} marked as rejected.`); }}>Rejected</Button>
+                <Button size="sm" onClick={async () => { await gql(SenderDocument, { schoolId: s.schoolId, status: "approved" }); await done(`${s.senderId} approved. ${s.schoolName} now sends under its own name.`); }}>Approved</Button>
               </div>
             </div>
           ))}
@@ -79,7 +83,7 @@ export default function ConsolePage() {
       )}
 
       <Card flush>
-        <div className="border-b border-line p-4"><SearchInput placeholder="Search by name or web address" value={search} onChange={(e) => setSearch(e.target.value)} aria-label="Search schools" /></div>
+        <div className="border-b border-line p-4"><SearchInput placeholder="Search by name or web address" value={search} onChange={(e) => { setSearch(e.target.value); setOffset(0); }} aria-label="Search schools" /></div>
         {isLoading ? (
           <div className="p-5"><Loading /></div>
         ) : !schools.length ? (
@@ -120,6 +124,7 @@ export default function ConsolePage() {
             </tbody>
           </Table>
         )}
+        {data && <Pager offset={offset} pageSize={50} total={data.platformSchools.total} onChange={setOffset} />}
       </Card>
 
       <InvoicesPanel />

@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useDeferredValue, useState } from "react";
 
 import { IconMessage, IconSend } from "@/components/icons";
-import { ActionDialog, Badge, Button, Card, Checkbox, Empty, ErrorNote, Field, Input, Loading, Notice, PageHeader, Select, Textarea, cx } from "@/components/ui";
+import { ActionDialog, Badge, Button, Card, Checkbox, Empty, ErrorNote, Field, Input, Loading, Notice, PageHeader, Pager, Select, Textarea, cx } from "@/components/ui";
 import { graphql } from "@/gql";
 import { gql, useGql } from "@/lib/api";
 import { localPhone } from "@/lib/money";
@@ -14,13 +14,16 @@ import { useSession } from "@/lib/session";
 const ResendDocument = graphql(`mutation ResendFailed($messageId: ID!) { resendFailed(messageId: $messageId) { id unitsUsed } }`);
 
 const MessagesDocument = graphql(`
-  query Messages {
+  query Messages($offset: Int!) {
     smsWalletBalance
-    messages(limit: 30) {
-      id kind audience title body unitsUsed createdAt sendSms isAutomatic
-      arm { label }
-      delivery { queued sent delivered failed skipped }
-      failedRecipients { id phone error }
+    messages(offset: $offset, limit: 20) {
+      total
+      items {
+        id kind audience title body unitsUsed createdAt sendSms isAutomatic
+        arm { label }
+        delivery { queued sent delivered failed skipped }
+        failedRecipients { id phone error }
+      }
     }
   }
 `);
@@ -36,6 +39,8 @@ const SendDocument = graphql(`
     sendMessage(audience: $audience, body: $body, title: $title, armId: $armId, sendSms: $sendSms, showInApp: $showInApp) { id unitsUsed }
   }
 `);
+
+const PAGE = 20;
 
 const AUDIENCES: Record<string, { label: string; text: string }> = {
   all_parents: { label: "All parents", text: "Every parent with a child in school" },
@@ -55,7 +60,8 @@ const KIND_LABELS: Record<string, string> = {
 export default function MessagesPage() {
   const { can } = useSession();
   const [resending, setResending] = useState<{ id: string; count: number } | null>(null);
-  const { data, isLoading, mutate } = useGql(MessagesDocument, {});
+  const [offset, setOffset] = useState(0);
+  const { data, isLoading, mutate } = useGql(MessagesDocument, { offset });
   const arms = useGql(ArmsDocument, {});
   const [form, setForm] = useState({ audience: "all_parents", armId: "", title: "", body: "", sendSms: true, showInApp: true });
   const deferredBody = useDeferredValue(form.body);
@@ -73,6 +79,7 @@ export default function MessagesPage() {
       const { sendMessage } = await gql(SendDocument, { ...form, armId: form.armId || null });
       setMsg(form.sendSms ? `Message sent. ${sendMessage.unitsUsed} SMS units used.` : "Notice posted to the portal.");
       setForm({ ...form, title: "", body: "" });
+      setOffset(0);
       await mutate();
     } catch (e) {
       setErr((e as Error).message);
@@ -156,11 +163,11 @@ export default function MessagesPage() {
         <Card flush title="Sent" description="Delivery status for each message">
           {isLoading ? (
             <div className="p-5"><Loading /></div>
-          ) : !data?.messages.length ? (
+          ) : !data?.messages.items.length ? (
             <div className="p-5"><Empty title="Nothing sent yet" icon={<IconMessage size={18} />}>Receipts, result alerts and your announcements appear here.</Empty></div>
           ) : (
             <ul className="max-h-[720px] overflow-y-auto">
-              {data.messages.map((m) => {
+              {data.messages.items.map((m) => {
                 return (
                   <li key={m.id} className="border-b border-line px-5 py-4 last:border-b-0">
                     <div className="flex items-baseline justify-between gap-3">
@@ -197,6 +204,7 @@ export default function MessagesPage() {
               })}
             </ul>
           )}
+          {data && <Pager offset={offset} pageSize={PAGE} total={data.messages.total} onChange={setOffset} />}
         </Card>
       </div>
       <ActionDialog

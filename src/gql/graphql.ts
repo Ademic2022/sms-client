@@ -107,17 +107,19 @@ export type AttendanceClassesQuery = { myClasses: { classArms: Array<{ id: strin
 
 export type AuditLogQueryVariables = Exact<{
   prefix?: string | null | undefined;
+  offset: number;
 }>;
 
 
-export type AuditLogQuery = { auditLog: Array<{ id: string, action: string, summary: string, userName: string | null, viaSupport: boolean, createdAt: string }> };
+export type AuditLogQuery = { auditLog: { total: number, items: Array<{ id: string, action: string, summary: string, userName: string | null, viaSupport: boolean, createdAt: string }> } };
 
 export type PlatformSchoolsQueryVariables = Exact<{
   search?: string | null | undefined;
+  offset: number;
 }>;
 
 
-export type PlatformSchoolsQuery = { platformSchools: Array<{ id: string, name: string, slug: string, status: string, accessMode: string, plan: string | null, studentCount: number, trialEndsAt: string | null, lastActivityAt: string | null, createdAt: string, smsSenderId: string, smsSenderStatus: string, usage: { signIns7d: number, activeUsers7d: number, smsUnits30d: number, collected30dKobo: number, onlineShare30d: number, unpaidInvoices: number } }> };
+export type PlatformSchoolsQuery = { platformOverview: { schools: number, activeStudents: number, onTrial: number, pendingSenders: Array<{ schoolId: string, schoolName: string, senderId: string }> }, platformSchools: { total: number, items: Array<{ id: string, name: string, slug: string, status: string, accessMode: string, plan: string | null, studentCount: number, trialEndsAt: string | null, lastActivityAt: string | null, createdAt: string, smsSenderId: string, smsSenderStatus: string, usage: { signIns7d: number, activeUsers7d: number, smsUnits30d: number, collected30dKobo: number, onlineShare30d: number, unpaidInvoices: number } }> } };
 
 export type SetSchoolStatusMutationVariables = Exact<{
   schoolId: string | number;
@@ -170,10 +172,11 @@ export type NoticesQuery = { notices: Array<{ id: string, title: string, body: s
 export type FeesOverviewQueryVariables = Exact<{
   termId: string | number;
   armId?: string | number | null | undefined;
+  offset: number;
 }>;
 
 
-export type FeesOverviewQuery = { termFeeSummary: { expectedKobo: number, collectedKobo: number, collectedOnlineKobo: number, outstandingKobo: number, debtorCount: number }, debtors: Array<{ balanceKobo: number, student: { id: string, fullName: string, admissionNumber: string, currentArm: { label: string } | null } }> };
+export type FeesOverviewQuery = { termFeeSummary: { expectedKobo: number, collectedKobo: number, collectedOnlineKobo: number, outstandingKobo: number, debtorCount: number }, debtors: { total: number, totalBalanceKobo: number, items: Array<{ balanceKobo: number, student: { id: string, fullName: string, admissionNumber: string, currentArm: { label: string } | null } }> } };
 
 export type GenerateBillsMutationVariables = Exact<{
   termId: string | number;
@@ -191,10 +194,11 @@ export type RemindDebtorsMutation = { sendMessage: { id: string, unitsUsed: numb
 
 export type RecentPaymentsQueryVariables = Exact<{
   method?: string | null | undefined;
+  offset: number;
 }>;
 
 
-export type RecentPaymentsQuery = { payments: Array<{ id: string, amountKobo: number, method: string, status: string, receiptNumber: string, reference: string, paidAt: string, student: { id: string, fullName: string, admissionNumber: string }, recordedBy: { fullName: string } | null }> };
+export type RecentPaymentsQuery = { payments: { total: number, items: Array<{ id: string, amountKobo: number, method: string, status: string, receiptNumber: string, reference: string, paidAt: string, student: { id: string, fullName: string, admissionNumber: string }, recordedBy: { fullName: string } | null }> } };
 
 export type RecordPaymentMutationVariables = Exact<{
   studentId: string | number;
@@ -300,10 +304,12 @@ export type ResendFailedMutationVariables = Exact<{
 
 export type ResendFailedMutation = { resendFailed: { id: string, unitsUsed: number } };
 
-export type MessagesQueryVariables = Exact<{ [key: string]: never; }>;
+export type MessagesQueryVariables = Exact<{
+  offset: number;
+}>;
 
 
-export type MessagesQuery = { smsWalletBalance: number, messages: Array<{ id: string, kind: string, audience: string, title: string, body: string, unitsUsed: number, createdAt: string, sendSms: boolean, isAutomatic: boolean, arm: { label: string } | null, delivery: { queued: number, sent: number, delivered: number, failed: number, skipped: number }, failedRecipients: Array<{ id: string, phone: string, error: string }> }> };
+export type MessagesQuery = { smsWalletBalance: number, messages: { total: number, items: Array<{ id: string, kind: string, audience: string, title: string, body: string, unitsUsed: number, createdAt: string, sendSms: boolean, isAutomatic: boolean, arm: { label: string } | null, delivery: { queued: number, sent: number, delivered: number, failed: number, skipped: number }, failedRecipients: Array<{ id: string, phone: string, error: string }> }> } };
 
 export type EstimateMessageQueryVariables = Exact<{
   body: string;
@@ -995,39 +1001,55 @@ export const AttendanceClassesDocument = new TypedDocumentString(`
 }
     `) as unknown as TypedDocumentString<AttendanceClassesQuery, AttendanceClassesQueryVariables>;
 export const AuditLogDocument = new TypedDocumentString(`
-    query AuditLog($prefix: String) {
-  auditLog(actionPrefix: $prefix, limit: 200) {
-    id
-    action
-    summary
-    userName
-    viaSupport
-    createdAt
+    query AuditLog($prefix: String, $offset: Int!) {
+  auditLog(actionPrefix: $prefix, offset: $offset, limit: 50) {
+    total
+    items {
+      id
+      action
+      summary
+      userName
+      viaSupport
+      createdAt
+    }
   }
 }
     `) as unknown as TypedDocumentString<AuditLogQuery, AuditLogQueryVariables>;
 export const PlatformSchoolsDocument = new TypedDocumentString(`
-    query PlatformSchools($search: String) {
-  platformSchools(search: $search) {
-    id
-    name
-    slug
-    status
-    accessMode
-    plan
-    studentCount
-    trialEndsAt
-    lastActivityAt
-    createdAt
-    smsSenderId
-    smsSenderStatus
-    usage {
-      signIns7d
-      activeUsers7d
-      smsUnits30d
-      collected30dKobo
-      onlineShare30d
-      unpaidInvoices
+    query PlatformSchools($search: String, $offset: Int!) {
+  platformOverview {
+    schools
+    activeStudents
+    onTrial
+    pendingSenders {
+      schoolId
+      schoolName
+      senderId
+    }
+  }
+  platformSchools(search: $search, offset: $offset, limit: 50) {
+    total
+    items {
+      id
+      name
+      slug
+      status
+      accessMode
+      plan
+      studentCount
+      trialEndsAt
+      lastActivityAt
+      createdAt
+      smsSenderId
+      smsSenderStatus
+      usage {
+        signIns7d
+        activeUsers7d
+        smsUnits30d
+        collected30dKobo
+        onlineShare30d
+        unpaidInvoices
+      }
     }
   }
 }
@@ -1115,7 +1137,7 @@ export const NoticesDocument = new TypedDocumentString(`
 }
     `) as unknown as TypedDocumentString<NoticesQuery, NoticesQueryVariables>;
 export const FeesOverviewDocument = new TypedDocumentString(`
-    query FeesOverview($termId: ID!, $armId: ID) {
+    query FeesOverview($termId: ID!, $armId: ID, $offset: Int!) {
   termFeeSummary(termId: $termId) {
     expectedKobo
     collectedKobo
@@ -1123,14 +1145,18 @@ export const FeesOverviewDocument = new TypedDocumentString(`
     outstandingKobo
     debtorCount
   }
-  debtors(armId: $armId) {
-    balanceKobo
-    student {
-      id
-      fullName
-      admissionNumber
-      currentArm {
-        label
+  debtors(armId: $armId, offset: $offset, limit: 50) {
+    total
+    totalBalanceKobo
+    items {
+      balanceKobo
+      student {
+        id
+        fullName
+        admissionNumber
+        currentArm {
+          label
+        }
       }
     }
   }
@@ -1150,22 +1176,25 @@ export const RemindDebtorsDocument = new TypedDocumentString(`
 }
     `) as unknown as TypedDocumentString<RemindDebtorsMutation, RemindDebtorsMutationVariables>;
 export const RecentPaymentsDocument = new TypedDocumentString(`
-    query RecentPayments($method: String) {
-  payments(method: $method, limit: 50) {
-    id
-    amountKobo
-    method
-    status
-    receiptNumber
-    reference
-    paidAt
-    student {
+    query RecentPayments($method: String, $offset: Int!) {
+  payments(method: $method, offset: $offset, limit: 50) {
+    total
+    items {
       id
-      fullName
-      admissionNumber
-    }
-    recordedBy {
-      fullName
+      amountKobo
+      method
+      status
+      receiptNumber
+      reference
+      paidAt
+      student {
+        id
+        fullName
+        admissionNumber
+      }
+      recordedBy {
+        fullName
+      }
     }
   }
 }
@@ -1354,32 +1383,35 @@ export const ResendFailedDocument = new TypedDocumentString(`
 }
     `) as unknown as TypedDocumentString<ResendFailedMutation, ResendFailedMutationVariables>;
 export const MessagesDocument = new TypedDocumentString(`
-    query Messages {
+    query Messages($offset: Int!) {
   smsWalletBalance
-  messages(limit: 30) {
-    id
-    kind
-    audience
-    title
-    body
-    unitsUsed
-    createdAt
-    sendSms
-    isAutomatic
-    arm {
-      label
-    }
-    delivery {
-      queued
-      sent
-      delivered
-      failed
-      skipped
-    }
-    failedRecipients {
+  messages(offset: $offset, limit: 20) {
+    total
+    items {
       id
-      phone
-      error
+      kind
+      audience
+      title
+      body
+      unitsUsed
+      createdAt
+      sendSms
+      isAutomatic
+      arm {
+        label
+      }
+      delivery {
+        queued
+        sent
+        delivered
+        failed
+        skipped
+      }
+      failedRecipients {
+        id
+        phone
+        error
+      }
     }
   }
 }

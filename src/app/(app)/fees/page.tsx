@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 import { IconDownload, IconMessage, IconPlus, IconSettings, IconWallet } from "@/components/icons";
-import { ActionDialog, Button, ButtonLink, Card, Dialog, Empty, ErrorNote, Field, Loading, Notice, PageHeader, Select, Stat, Table, TD, TH, Textarea } from "@/components/ui";
+import { ActionDialog, Button, ButtonLink, Card, Dialog, Empty, ErrorNote, Field, Loading, Notice, PageHeader, Pager, Select, Stat, Table, TD, TH, Textarea } from "@/components/ui";
 import { graphql } from "@/gql";
 import { gql, useGql } from "@/lib/api";
 import { naira } from "@/lib/money";
@@ -12,9 +12,9 @@ import { ArmsDocument } from "@/lib/queries";
 import { useSession } from "@/lib/session";
 
 const FeesOverviewDocument = graphql(`
-  query FeesOverview($termId: ID!, $armId: ID) {
+  query FeesOverview($termId: ID!, $armId: ID, $offset: Int!) {
     termFeeSummary(termId: $termId) { expectedKobo collectedKobo collectedOnlineKobo outstandingKobo debtorCount }
-    debtors(armId: $armId) { balanceKobo student { id fullName admissionNumber currentArm { label } } }
+    debtors(armId: $armId, offset: $offset, limit: 50) { total totalBalanceKobo items { balanceKobo student { id fullName admissionNumber currentArm { label } } } }
   }
 `);
 
@@ -32,8 +32,9 @@ export default function FeesPage() {
   const { term, can, school } = useSession();
   const router = useRouter();
   const [armId, setArmId] = useState("");
+  const [offset, setOffset] = useState(0);
   const arms = useGql(ArmsDocument, {});
-  const { data, error, isLoading, mutate } = useGql(FeesOverviewDocument, term ? { termId: term.id, armId: armId || null } : null);
+  const { data, error, isLoading, mutate } = useGql(FeesOverviewDocument, term ? { termId: term.id, armId: armId || null, offset } : null);
   const [msg, setMsg] = useState<string | null>(null);
   const [dialog, setDialog] = useState<null | "bills" | "remind">(null);
   const [reminder, setReminder] = useState(`Dear parent, {student_name}'s school fees balance is {balance}. Kindly make payment. Thank you. ${school?.name ?? ""}`.trim());
@@ -44,8 +45,8 @@ export default function FeesPage() {
 
   const f = data?.termFeeSummary;
   const rate = f && f.expectedKobo ? Math.round((f.collectedKobo / f.expectedKobo) * 100) : 0;
-  const debtors = data?.debtors ?? [];
-  const debtorTotal = debtors.reduce((n, d) => n + d.balanceKobo, 0);
+  const debtors = data?.debtors.items ?? [];
+  const debtorCount = data?.debtors.total ?? 0;
 
   return (
     <>
@@ -83,15 +84,15 @@ export default function FeesPage() {
       <Card
         flush
         title="Students owing"
-        description={debtors.length ? `${debtors.length} students · ${naira(debtorTotal)} outstanding` : undefined}
+        description={debtorCount ? `${debtorCount.toLocaleString("en-NG")} student${debtorCount === 1 ? "" : "s"} · ${naira(data?.debtors.totalBalanceKobo ?? 0)} outstanding` : undefined}
         actions={
           <>
-            <Select value={armId} onChange={(e) => setArmId(e.target.value)} className="w-auto" aria-label="Class">
+            <Select value={armId} onChange={(e) => { setArmId(e.target.value); setOffset(0); }} className="w-auto" aria-label="Class">
               <option value="">All classes</option>
               {arms.data?.arms.map((a) => <option key={a.id} value={a.id}>{a.label}</option>)}
             </Select>
             <ButtonLink href={`/files/debtors.xlsx${armId ? `?arm=${armId}` : ""}`} variant="secondary" size="sm" icon={<IconDownload size={15} />}>Excel</ButtonLink>
-            {can("messaging.send") && debtors.length > 0 && <Button variant="secondary" size="sm" icon={<IconMessage size={15} />} onClick={() => setDialog("remind")}>SMS reminder</Button>}
+            {can("messaging.send") && debtorCount > 0 && <Button variant="secondary" size="sm" icon={<IconMessage size={15} />} onClick={() => setDialog("remind")}>SMS reminder</Button>}
           </>
         }
       >
@@ -114,6 +115,7 @@ export default function FeesPage() {
             </tbody>
           </Table>
         )}
+        {data && <Pager offset={offset} pageSize={50} total={debtorCount} onChange={setOffset} />}
       </Card>
 
       <ActionDialog
@@ -132,7 +134,7 @@ export default function FeesPage() {
         open={dialog === "remind"}
         onClose={() => setDialog(null)}
         title="Send a fee reminder"
-        description={`Sent by SMS to the parents of all ${f?.debtorCount ?? debtors.length} students owing, charged to your SMS wallet.`}
+        description={`Sent by SMS to the parents of all ${f?.debtorCount ?? debtorCount} students owing, charged to your SMS wallet.`}
         footer={
           <>
             <Button variant="secondary" onClick={() => setDialog(null)}>Cancel</Button>

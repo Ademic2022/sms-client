@@ -4,18 +4,21 @@ import { useState, type FormEvent } from "react";
 
 import { IconDownload, IconReceipt } from "@/components/icons";
 import { StudentPicker, type PickedStudent } from "@/components/StudentPicker";
-import { Button, ButtonLink, Card, Dialog, Empty, ErrorNote, Field, IconButton, Input, Loading, Notice, PageHeader, Select, StatusBadge, Table, TD, TH } from "@/components/ui";
+import { Button, ButtonLink, Card, Dialog, Empty, ErrorNote, Field, IconButton, Input, Loading, Notice, PageHeader, Pager, Select, StatusBadge, Table, TD, TH } from "@/components/ui";
 import { graphql } from "@/gql";
 import { gql, useGql } from "@/lib/api";
 import { naira, toKobo } from "@/lib/money";
 import { useSession } from "@/lib/session";
 
 const RecentPaymentsDocument = graphql(`
-  query RecentPayments($method: String) {
-    payments(method: $method, limit: 50) {
-      id amountKobo method status receiptNumber reference paidAt
-      student { id fullName admissionNumber }
-      recordedBy { fullName }
+  query RecentPayments($method: String, $offset: Int!) {
+    payments(method: $method, offset: $offset, limit: 50) {
+      total
+      items {
+        id amountKobo method status receiptNumber reference paidAt
+        student { id fullName admissionNumber }
+        recordedBy { fullName }
+      }
     }
   }
 `);
@@ -32,6 +35,8 @@ const BalanceDocument = graphql(`
   query StudentBalance($studentId: ID!) { ledger(studentId: $studentId) { balanceKobo } }
 `);
 
+const PAGE = 50;
+
 const METHODS: Record<string, string> = { cash: "Cash", pos: "POS", bank: "Bank deposit or transfer", online: "Online" };
 
 function localDateTime() {
@@ -42,10 +47,11 @@ function localDateTime() {
 export default function PaymentsPage() {
   const { can } = useSession();
   const [method, setMethod] = useState("");
+  const [offset, setOffset] = useState(0);
   const [exporting, setExporting] = useState(false);
   const [range, setRange] = useState({ from: "", to: "" });
   const exportHref = `/files/payments.xlsx?${new URLSearchParams({ ...(range.from && { from: range.from }), ...(range.to && { to: range.to }), ...(method && { method }) })}`;
-  const payments = useGql(RecentPaymentsDocument, { method: method || null });
+  const payments = useGql(RecentPaymentsDocument, { method: method || null, offset });
   const [student, setStudent] = useState<PickedStudent | null>(null);
   const balance = useGql(BalanceDocument, student ? { studentId: student.id } : null);
   const [form, setForm] = useState({ amount: "", method: "cash", reference: "", note: "", paidAt: localDateTime() });
@@ -70,6 +76,7 @@ export default function PaymentsPage() {
       setDone({ id: recordPayment.id, receipt: recordPayment.receiptNumber, amount: amountKobo, name: student.fullName });
       setStudent(null);
       setForm({ amount: "", method: "cash", reference: "", note: "", paidAt: localDateTime() });
+      setOffset(0);
       void payments.mutate();
     } catch (e2) {
       setErr((e2 as Error).message);
@@ -140,9 +147,9 @@ export default function PaymentsPage() {
 
       <Card
         flush
-        title="Recent payments"
+        title="Payments"
         actions={<>
-          <Select value={method} onChange={(e) => setMethod(e.target.value)} className="w-auto" aria-label="Method">
+          <Select value={method} onChange={(e) => { setMethod(e.target.value); setOffset(0); }} className="w-auto" aria-label="Method">
             <option value="">All methods</option>
             {Object.entries(METHODS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
           </Select>
@@ -151,7 +158,7 @@ export default function PaymentsPage() {
       >
         {payments.isLoading ? (
           <div className="p-5"><Loading /></div>
-        ) : !payments.data?.payments.length ? (
+        ) : !payments.data?.payments.items.length ? (
           <div className="p-5"><Empty title="No payments yet" icon={<IconReceipt size={18} />}>Payments recorded here or made online by parents will appear in this list.</Empty></div>
         ) : (
           <Table>
@@ -159,7 +166,7 @@ export default function PaymentsPage() {
               <tr><TH>Date</TH><TH>Student</TH><TH>Receipt</TH><TH>Method</TH><TH>Status</TH><TH align="right">Amount</TH><TH /></tr>
             </thead>
             <tbody>
-              {payments.data.payments.map((p) => (
+              {payments.data.payments.items.map((p) => (
                 <tr key={p.id}>
                   <TD className="whitespace-nowrap text-muted">{new Date(p.paidAt).toLocaleDateString("en-NG", { day: "numeric", month: "short", year: "numeric" })}</TD>
                   <TD><div className="font-medium">{p.student.fullName}</div><div className="text-xs text-muted">{p.student.admissionNumber}</div></TD>
@@ -175,6 +182,7 @@ export default function PaymentsPage() {
             </tbody>
           </Table>
         )}
+        {payments.data && <Pager offset={offset} pageSize={PAGE} total={payments.data.payments.total} onChange={setOffset} />}
       </Card>
       <Dialog
         open={exporting}

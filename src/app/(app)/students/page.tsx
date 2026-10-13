@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useDeferredValue, useState } from "react";
 
 import { IconDownload, IconPlus, IconUpload, IconUsers } from "@/components/icons";
-import { Button, ButtonLink, Card, Empty, ErrorNote, Loading, PageHeader, SearchInput, Select, StatusBadge, Table, TD, TH } from "@/components/ui";
+import { ButtonLink, Card, Empty, ErrorNote, Loading, PageHeader, Pager, SearchInput, Select, StatusBadge, Table, TD, TH } from "@/components/ui";
 import { graphql } from "@/gql";
 import { useGql } from "@/lib/api";
 import { ArmsDocument } from "@/lib/queries";
@@ -108,15 +108,7 @@ export default function StudentsPage() {
             </tbody>
           </Table>
         )}
-        {page && page.total > PAGE && (
-          <div className="flex items-center justify-between gap-3 px-4 py-3 text-sm text-muted">
-            <span>Showing {offset + 1}–{Math.min(offset + PAGE, page.total)} of {page.total}</span>
-            <div className="flex gap-2">
-              <Button size="sm" variant="secondary" disabled={offset === 0} onClick={() => setOffset(Math.max(0, offset - PAGE))}>Previous</Button>
-              <Button size="sm" variant="secondary" disabled={offset + PAGE >= page.total} onClick={() => setOffset(offset + PAGE)}>Next</Button>
-            </div>
-          </div>
-        )}
+        {page && <Pager offset={offset} pageSize={PAGE} total={page.total} onChange={setOffset} />}
       </Card>
     </>
   );

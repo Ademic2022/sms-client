@@ -594,3 +594,19 @@ export function FormActions({ children }: { children: ReactNode }) {
     </div>
   );
 }
+
+/** "Showing 51–100 of 340" with Previous and Next. Renders nothing when everything fits on one page. */
+export function Pager({ offset, pageSize, total, onChange }: { offset: number; pageSize: number; total: number; onChange: (offset: number) => void }) {
+  if (total <= pageSize) return null;
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-3 border-t border-line px-4 py-3 text-sm text-muted">
+      <span className="tabular-nums">
+        Showing {(offset + 1).toLocaleString("en-NG")}–{Math.min(offset + pageSize, total).toLocaleString("en-NG")} of {total.toLocaleString("en-NG")}
+      </span>
+      <div className="flex gap-2">
+        <Button size="sm" variant="secondary" disabled={offset === 0} onClick={() => onChange(Math.max(0, offset - pageSize))}>Previous</Button>
+        <Button size="sm" variant="secondary" disabled={offset + pageSize >= total} onClick={() => onChange(offset + pageSize)}>Next</Button>
+      </div>
+    </div>
+  );
+}

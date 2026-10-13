@@ -18,8 +18,8 @@ type Documents = {
     "\n  query Register($armId: ID!, $date: Date!) {\n    register(armId: $armId, date: $date) {\n      date\n      rows { status student { id fullName admissionNumber currentArm { label } } }\n    }\n  }\n": typeof types.RegisterDocument,
     "\n  mutation MarkAttendance($armId: ID!, $date: Date!, $entries: [AttendanceEntry!]!) {\n    markAttendance(armId: $armId, date: $date, entries: $entries) {\n      saved\n      conflicts { studentId serverStatus }\n    }\n  }\n": typeof types.MarkAttendanceDocument,
     "\n  query AttendanceClasses($all: Boolean!) {\n    myClasses { classArms { id label studentCount } }\n    arms @include(if: $all) { id label studentCount }\n  }\n": typeof types.AttendanceClassesDocument,
-    "\n  query AuditLog($prefix: String) {\n    auditLog(actionPrefix: $prefix, limit: 200) { id action summary userName viaSupport createdAt }\n  }\n": typeof types.AuditLogDocument,
-    "\n  query PlatformSchools($search: String) {\n    platformSchools(search: $search) {\n      id name slug status accessMode plan studentCount trialEndsAt lastActivityAt createdAt smsSenderId smsSenderStatus\n      usage { signIns7d activeUsers7d smsUnits30d collected30dKobo onlineShare30d unpaidInvoices }\n    }\n  }\n": typeof types.PlatformSchoolsDocument,
+    "\n  query AuditLog($prefix: String, $offset: Int!) {\n    auditLog(actionPrefix: $prefix, offset: $offset, limit: 50) { total items { id action summary userName viaSupport createdAt } }\n  }\n": typeof types.AuditLogDocument,
+    "\n  query PlatformSchools($search: String, $offset: Int!) {\n    platformOverview { schools activeStudents onTrial pendingSenders { schoolId schoolName senderId } }\n    platformSchools(search: $search, offset: $offset, limit: 50) {\n      total\n      items {\n        id name slug status accessMode plan studentCount trialEndsAt lastActivityAt createdAt smsSenderId smsSenderStatus\n        usage { signIns7d activeUsers7d smsUnits30d collected30dKobo onlineShare30d unpaidInvoices }\n      }\n    }\n  }\n": typeof types.PlatformSchoolsDocument,
     "\n  mutation SetSchoolStatus($schoolId: ID!, $status: String!, $reason: String!) { setSchoolStatus(schoolId: $schoolId, status: $status, reason: $reason) { id status } }\n": typeof types.SetSchoolStatusDocument,
     "mutation SetSenderStatus($schoolId: ID!, $status: String!) { setSenderIdStatus(schoolId: $schoolId, status: $status) }": typeof types.SetSenderStatusDocument,
     "\n  mutation CreditSms($schoolId: ID!, $units: Int!, $reason: String!) { creditSmsUnits(schoolId: $schoolId, units: $units, reason: $reason) }\n": typeof types.CreditSmsDocument,
@@ -27,10 +27,10 @@ type Documents = {
     "\n  query MyClasses {\n    myClasses {\n      classArms { id label studentCount }\n      subjectAssignments { id arm { id label } subject { id name } }\n    }\n  }\n": typeof types.MyClassesDocument,
     "\n  query BursarSummary($termId: ID!) {\n    termFeeSummary(termId: $termId) { expectedKobo collectedKobo collectedOnlineKobo outstandingKobo debtorCount }\n  }\n": typeof types.BursarSummaryDocument,
     "\n  query Notices {\n    notices(limit: 5) { id title body createdAt }\n  }\n": typeof types.NoticesDocument,
-    "\n  query FeesOverview($termId: ID!, $armId: ID) {\n    termFeeSummary(termId: $termId) { expectedKobo collectedKobo collectedOnlineKobo outstandingKobo debtorCount }\n    debtors(armId: $armId) { balanceKobo student { id fullName admissionNumber currentArm { label } } }\n  }\n": typeof types.FeesOverviewDocument,
+    "\n  query FeesOverview($termId: ID!, $armId: ID, $offset: Int!) {\n    termFeeSummary(termId: $termId) { expectedKobo collectedKobo collectedOnlineKobo outstandingKobo debtorCount }\n    debtors(armId: $armId, offset: $offset, limit: 50) { total totalBalanceKobo items { balanceKobo student { id fullName admissionNumber currentArm { label } } } }\n  }\n": typeof types.FeesOverviewDocument,
     "\n  mutation GenerateBills($termId: ID!) { generateBills(termId: $termId) }\n": typeof types.GenerateBillsDocument,
     "\n  mutation RemindDebtors($body: String!) {\n    sendMessage(audience: \"debtors\", body: $body, showInApp: false) { id unitsUsed }\n  }\n": typeof types.RemindDebtorsDocument,
-    "\n  query RecentPayments($method: String) {\n    payments(method: $method, limit: 50) {\n      id amountKobo method status receiptNumber reference paidAt\n      student { id fullName admissionNumber }\n      recordedBy { fullName }\n    }\n  }\n": typeof types.RecentPaymentsDocument,
+    "\n  query RecentPayments($method: String, $offset: Int!) {\n    payments(method: $method, offset: $offset, limit: 50) {\n      total\n      items {\n        id amountKobo method status receiptNumber reference paidAt\n        student { id fullName admissionNumber }\n        recordedBy { fullName }\n      }\n    }\n  }\n": typeof types.RecentPaymentsDocument,
     "\n  mutation RecordPayment($studentId: ID!, $amountKobo: Kobo!, $method: String!, $paidAt: DateTime!, $reference: String!, $note: String!) {\n    recordPayment(studentId: $studentId, amountKobo: $amountKobo, method: $method, paidAt: $paidAt, reference: $reference, note: $note) {\n      id receiptNumber\n    }\n  }\n": typeof types.RecordPaymentDocument,
     "\n  query StudentBalance($studentId: ID!) { ledger(studentId: $studentId) { balanceKobo } }\n": typeof types.StudentBalanceDocument,
     "\n  query FeeSetup($termId: ID!) {\n    feeItems { id name order }\n    levels { id name }\n    feeSchedules(termId: $termId) { id amountKobo isCompulsory levelId item { id } }\n  }\n": typeof types.FeeSetupDocument,
@@ -43,7 +43,7 @@ type Documents = {
     "\n  mutation RemoveBillItem($lineId: ID!, $reason: String!) { removeBillItem(lineId: $lineId, reason: $reason) { id } }\n": typeof types.RemoveBillItemDocument,
     "\n  mutation ReversePayment($paymentId: ID!, $reason: String!) { reversePayment(paymentId: $paymentId, reason: $reason) { id status } }\n": typeof types.ReversePaymentDocument,
     "mutation ResendFailed($messageId: ID!) { resendFailed(messageId: $messageId) { id unitsUsed } }": typeof types.ResendFailedDocument,
-    "\n  query Messages {\n    smsWalletBalance\n    messages(limit: 30) {\n      id kind audience title body unitsUsed createdAt sendSms isAutomatic\n      arm { label }\n      delivery { queued sent delivered failed skipped }\n      failedRecipients { id phone error }\n    }\n  }\n": typeof types.MessagesDocument,
+    "\n  query Messages($offset: Int!) {\n    smsWalletBalance\n    messages(offset: $offset, limit: 20) {\n      total\n      items {\n        id kind audience title body unitsUsed createdAt sendSms isAutomatic\n        arm { label }\n        delivery { queued sent delivered failed skipped }\n        failedRecipients { id phone error }\n      }\n    }\n  }\n": typeof types.MessagesDocument,
     "\n  query EstimateMessage($body: String!, $audience: String!, $armId: ID) {\n    estimateMessage(body: $body, audience: $audience, armId: $armId) { recipients units walletBalance senderId }\n  }\n": typeof types.EstimateMessageDocument,
     "\n  mutation SendMessage($audience: String!, $body: String!, $title: String!, $armId: ID, $sendSms: Boolean!, $showInApp: Boolean!) {\n    sendMessage(audience: $audience, body: $body, title: $title, armId: $armId, sendSms: $sendSms, showInApp: $showInApp) { id unitsUsed }\n  }\n": typeof types.SendMessageDocument,
     "\n  query ChildResult($studentId: ID!, $termId: ID!) {\n    childResult(studentId: $studentId, termId: $termId) {\n      visible reason classSize classAverage reportCardUrl\n      result {\n        total average position cumulativeAverage cumulativePosition\n        student { fullName currentArm { label } }\n        subjects { subjectId subjectName total grade remark position cumulativeAverage cumulativeGrade }\n      }\n    }\n  }\n": typeof types.ChildResultDocument,
@@ -130,8 +130,8 @@ const documents: Documents = {
     "\n  query Register($armId: ID!, $date: Date!) {\n    register(armId: $armId, date: $date) {\n      date\n      rows { status student { id fullName admissionNumber currentArm { label } } }\n    }\n  }\n": types.RegisterDocument,
     "\n  mutation MarkAttendance($armId: ID!, $date: Date!, $entries: [AttendanceEntry!]!) {\n    markAttendance(armId: $armId, date: $date, entries: $entries) {\n      saved\n      conflicts { studentId serverStatus }\n    }\n  }\n": types.MarkAttendanceDocument,
     "\n  query AttendanceClasses($all: Boolean!) {\n    myClasses { classArms { id label studentCount } }\n    arms @include(if: $all) { id label studentCount }\n  }\n": types.AttendanceClassesDocument,
-    "\n  query AuditLog($prefix: String) {\n    auditLog(actionPrefix: $prefix, limit: 200) { id action summary userName viaSupport createdAt }\n  }\n": types.AuditLogDocument,
-    "\n  query PlatformSchools($search: String) {\n    platformSchools(search: $search) {\n      id name slug status accessMode plan studentCount trialEndsAt lastActivityAt createdAt smsSenderId smsSenderStatus\n      usage { signIns7d activeUsers7d smsUnits30d collected30dKobo onlineShare30d unpaidInvoices }\n    }\n  }\n": types.PlatformSchoolsDocument,
+    "\n  query AuditLog($prefix: String, $offset: Int!) {\n    auditLog(actionPrefix: $prefix, offset: $offset, limit: 50) { total items { id action summary userName viaSupport createdAt } }\n  }\n": types.AuditLogDocument,
+    "\n  query PlatformSchools($search: String, $offset: Int!) {\n    platformOverview { schools activeStudents onTrial pendingSenders { schoolId schoolName senderId } }\n    platformSchools(search: $search, offset: $offset, limit: 50) {\n      total\n      items {\n        id name slug status accessMode plan studentCount trialEndsAt lastActivityAt createdAt smsSenderId smsSenderStatus\n        usage { signIns7d activeUsers7d smsUnits30d collected30dKobo onlineShare30d unpaidInvoices }\n      }\n    }\n  }\n": types.PlatformSchoolsDocument,
     "\n  mutation SetSchoolStatus($schoolId: ID!, $status: String!, $reason: String!) { setSchoolStatus(schoolId: $schoolId, status: $status, reason: $reason) { id status } }\n": types.SetSchoolStatusDocument,
     "mutation SetSenderStatus($schoolId: ID!, $status: String!) { setSenderIdStatus(schoolId: $schoolId, status: $status) }": types.SetSenderStatusDocument,
     "\n  mutation CreditSms($schoolId: ID!, $units: Int!, $reason: String!) { creditSmsUnits(schoolId: $schoolId, units: $units, reason: $reason) }\n": types.CreditSmsDocument,
@@ -139,10 +139,10 @@ const documents: Documents = {
     "\n  query MyClasses {\n    myClasses {\n      classArms { id label studentCount }\n      subjectAssignments { id arm { id label } subject { id name } }\n    }\n  }\n": types.MyClassesDocument,
     "\n  query BursarSummary($termId: ID!) {\n    termFeeSummary(termId: $termId) { expectedKobo collectedKobo collectedOnlineKobo outstandingKobo debtorCount }\n  }\n": types.BursarSummaryDocument,
     "\n  query Notices {\n    notices(limit: 5) { id title body createdAt }\n  }\n": types.NoticesDocument,
-    "\n  query FeesOverview($termId: ID!, $armId: ID) {\n    termFeeSummary(termId: $termId) { expectedKobo collectedKobo collectedOnlineKobo outstandingKobo debtorCount }\n    debtors(armId: $armId) { balanceKobo student { id fullName admissionNumber currentArm { label } } }\n  }\n": types.FeesOverviewDocument,
+    "\n  query FeesOverview($termId: ID!, $armId: ID, $offset: Int!) {\n    termFeeSummary(termId: $termId) { expectedKobo collectedKobo collectedOnlineKobo outstandingKobo debtorCount }\n    debtors(armId: $armId, offset: $offset, limit: 50) { total totalBalanceKobo items { balanceKobo student { id fullName admissionNumber currentArm { label } } } }\n  }\n": types.FeesOverviewDocument,
     "\n  mutation GenerateBills($termId: ID!) { generateBills(termId: $termId) }\n": types.GenerateBillsDocument,
     "\n  mutation RemindDebtors($body: String!) {\n    sendMessage(audience: \"debtors\", body: $body, showInApp: false) { id unitsUsed }\n  }\n": types.RemindDebtorsDocument,
-    "\n  query RecentPayments($method: String) {\n    payments(method: $method, limit: 50) {\n      id amountKobo method status receiptNumber reference paidAt\n      student { id fullName admissionNumber }\n      recordedBy { fullName }\n    }\n  }\n": types.RecentPaymentsDocument,
+    "\n  query RecentPayments($method: String, $offset: Int!) {\n    payments(method: $method, offset: $offset, limit: 50) {\n      total\n      items {\n        id amountKobo method status receiptNumber reference paidAt\n        student { id fullName admissionNumber }\n        recordedBy { fullName }\n      }\n    }\n  }\n": types.RecentPaymentsDocument,
     "\n  mutation RecordPayment($studentId: ID!, $amountKobo: Kobo!, $method: String!, $paidAt: DateTime!, $reference: String!, $note: String!) {\n    recordPayment(studentId: $studentId, amountKobo: $amountKobo, method: $method, paidAt: $paidAt, reference: $reference, note: $note) {\n      id receiptNumber\n    }\n  }\n": types.RecordPaymentDocument,
     "\n  query StudentBalance($studentId: ID!) { ledger(studentId: $studentId) { balanceKobo } }\n": types.StudentBalanceDocument,
     "\n  query FeeSetup($termId: ID!) {\n    feeItems { id name order }\n    levels { id name }\n    feeSchedules(termId: $termId) { id amountKobo isCompulsory levelId item { id } }\n  }\n": types.FeeSetupDocument,
@@ -155,7 +155,7 @@ const documents: Documents = {
     "\n  mutation RemoveBillItem($lineId: ID!, $reason: String!) { removeBillItem(lineId: $lineId, reason: $reason) { id } }\n": types.RemoveBillItemDocument,
     "\n  mutation ReversePayment($paymentId: ID!, $reason: String!) { reversePayment(paymentId: $paymentId, reason: $reason) { id status } }\n": types.ReversePaymentDocument,
     "mutation ResendFailed($messageId: ID!) { resendFailed(messageId: $messageId) { id unitsUsed } }": types.ResendFailedDocument,
-    "\n  query Messages {\n    smsWalletBalance\n    messages(limit: 30) {\n      id kind audience title body unitsUsed createdAt sendSms isAutomatic\n      arm { label }\n      delivery { queued sent delivered failed skipped }\n      failedRecipients { id phone error }\n    }\n  }\n": types.MessagesDocument,
+    "\n  query Messages($offset: Int!) {\n    smsWalletBalance\n    messages(offset: $offset, limit: 20) {\n      total\n      items {\n        id kind audience title body unitsUsed createdAt sendSms isAutomatic\n        arm { label }\n        delivery { queued sent delivered failed skipped }\n        failedRecipients { id phone error }\n      }\n    }\n  }\n": types.MessagesDocument,
     "\n  query EstimateMessage($body: String!, $audience: String!, $armId: ID) {\n    estimateMessage(body: $body, audience: $audience, armId: $armId) { recipients units walletBalance senderId }\n  }\n": types.EstimateMessageDocument,
     "\n  mutation SendMessage($audience: String!, $body: String!, $title: String!, $armId: ID, $sendSms: Boolean!, $showInApp: Boolean!) {\n    sendMessage(audience: $audience, body: $body, title: $title, armId: $armId, sendSms: $sendSms, showInApp: $showInApp) { id unitsUsed }\n  }\n": types.SendMessageDocument,
     "\n  query ChildResult($studentId: ID!, $termId: ID!) {\n    childResult(studentId: $studentId, termId: $termId) {\n      visible reason classSize classAverage reportCardUrl\n      result {\n        total average position cumulativeAverage cumulativePosition\n        student { fullName currentArm { label } }\n        subjects { subjectId subjectName total grade remark position cumulativeAverage cumulativeGrade }\n      }\n    }\n  }\n": types.ChildResultDocument,
@@ -254,11 +254,11 @@ export function graphql(source: "\n  query AttendanceClasses($all: Boolean!) {\n
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
-export function graphql(source: "\n  query AuditLog($prefix: String) {\n    auditLog(actionPrefix: $prefix, limit: 200) { id action summary userName viaSupport createdAt }\n  }\n"): typeof import('./graphql').AuditLogDocument;
+export function graphql(source: "\n  query AuditLog($prefix: String, $offset: Int!) {\n    auditLog(actionPrefix: $prefix, offset: $offset, limit: 50) { total items { id action summary userName viaSupport createdAt } }\n  }\n"): typeof import('./graphql').AuditLogDocument;
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
-export function graphql(source: "\n  query PlatformSchools($search: String) {\n    platformSchools(search: $search) {\n      id name slug status accessMode plan studentCount trialEndsAt lastActivityAt createdAt smsSenderId smsSenderStatus\n      usage { signIns7d activeUsers7d smsUnits30d collected30dKobo onlineShare30d unpaidInvoices }\n    }\n  }\n"): typeof import('./graphql').PlatformSchoolsDocument;
+export function graphql(source: "\n  query PlatformSchools($search: String, $offset: Int!) {\n    platformOverview { schools activeStudents onTrial pendingSenders { schoolId schoolName senderId } }\n    platformSchools(search: $search, offset: $offset, limit: 50) {\n      total\n      items {\n        id name slug status accessMode plan studentCount trialEndsAt lastActivityAt createdAt smsSenderId smsSenderStatus\n        usage { signIns7d activeUsers7d smsUnits30d collected30dKobo onlineShare30d unpaidInvoices }\n      }\n    }\n  }\n"): typeof import('./graphql').PlatformSchoolsDocument;
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
@@ -290,7 +290,7 @@ export function graphql(source: "\n  query Notices {\n    notices(limit: 5) { id
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
-export function graphql(source: "\n  query FeesOverview($termId: ID!, $armId: ID) {\n    termFeeSummary(termId: $termId) { expectedKobo collectedKobo collectedOnlineKobo outstandingKobo debtorCount }\n    debtors(armId: $armId) { balanceKobo student { id fullName admissionNumber currentArm { label } } }\n  }\n"): typeof import('./graphql').FeesOverviewDocument;
+export function graphql(source: "\n  query FeesOverview($termId: ID!, $armId: ID, $offset: Int!) {\n    termFeeSummary(termId: $termId) { expectedKobo collectedKobo collectedOnlineKobo outstandingKobo debtorCount }\n    debtors(armId: $armId, offset: $offset, limit: 50) { total totalBalanceKobo items { balanceKobo student { id fullName admissionNumber currentArm { label } } } }\n  }\n"): typeof import('./graphql').FeesOverviewDocument;
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
@@ -302,7 +302,7 @@ export function graphql(source: "\n  mutation RemindDebtors($body: String!) {\n 
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
-export function graphql(source: "\n  query RecentPayments($method: String) {\n    payments(method: $method, limit: 50) {\n      id amountKobo method status receiptNumber reference paidAt\n      student { id fullName admissionNumber }\n      recordedBy { fullName }\n    }\n  }\n"): typeof import('./graphql').RecentPaymentsDocument;
+export function graphql(source: "\n  query RecentPayments($method: String, $offset: Int!) {\n    payments(method: $method, offset: $offset, limit: 50) {\n      total\n      items {\n        id amountKobo method status receiptNumber reference paidAt\n        student { id fullName admissionNumber }\n        recordedBy { fullName }\n      }\n    }\n  }\n"): typeof import('./graphql').RecentPaymentsDocument;
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
@@ -354,7 +354,7 @@ export function graphql(source: "mutation ResendFailed($messageId: ID!) { resend
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
-export function graphql(source: "\n  query Messages {\n    smsWalletBalance\n    messages(limit: 30) {\n      id kind audience title body unitsUsed createdAt sendSms isAutomatic\n      arm { label }\n      delivery { queued sent delivered failed skipped }\n      failedRecipients { id phone error }\n    }\n  }\n"): typeof import('./graphql').MessagesDocument;
+export function graphql(source: "\n  query Messages($offset: Int!) {\n    smsWalletBalance\n    messages(offset: $offset, limit: 20) {\n      total\n      items {\n        id kind audience title body unitsUsed createdAt sendSms isAutomatic\n        arm { label }\n        delivery { queued sent delivered failed skipped }\n        failedRecipients { id phone error }\n      }\n    }\n  }\n"): typeof import('./graphql').MessagesDocument;
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
