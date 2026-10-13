@@ -47,7 +47,7 @@ function BlockView({ block }: { block: Block }) {
 export function LegalDocument({ doc }: { doc: LegalDoc }) {
   return (
     <div className="lp min-h-screen">
-      <div className="print:hidden"><Header /></div>
+      <Header />
       <main className="mx-auto max-w-6xl px-5 pb-20 pt-12 sm:px-8 lg:pt-16">
         <nav aria-label="Legal documents" className="mb-8 flex flex-wrap gap-2 print:hidden">
           {OTHERS.map(([slug, label]) => (
