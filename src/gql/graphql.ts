@@ -701,6 +701,13 @@ export type StudentsQueryVariables = Exact<{
 
 export type StudentsQuery = { students: { total: number, items: Array<{ id: string, fullName: string, admissionNumber: string, gender: string, status: string, currentArm: { id: string, label: string } | null }> } };
 
+export type ConfirmEmailMutationVariables = Exact<{
+  token: string;
+}>;
+
+
+export type ConfirmEmailMutation = { confirmEmail: { email: string, schoolName: string | null, schoolUrl: string | null } };
+
 export type RequestResetMutationVariables = Exact<{
   identifier: string;
 }>;
@@ -743,7 +750,7 @@ export type SignUpSchoolMutationVariables = Exact<{
 }>;
 
 
-export type SignUpSchoolMutation = { signUpSchool: { slug: string, schoolUrl: string } };
+export type SignUpSchoolMutation = { signUpSchool: { slug: string, schoolUrl: string, confirmationSentTo: string | null } };
 
 export type LogoutMutationVariables = Exact<{ [key: string]: never; }>;
 
@@ -884,6 +891,13 @@ export type MyConsentQueryVariables = Exact<{ [key: string]: never; }>;
 
 
 export type MyConsentQuery = { myConsent: { pending: boolean, notice: { version: number, body: string, publishedAt: string, schoolName: string }, children: Array<{ consented: boolean, givenAt: string | null, source: string | null, student: { id: string, fullName: string, firstName: string, currentArm: { label: string } | null } }> } };
+
+export type ResendEmailConfirmationMutationVariables = Exact<{
+  identifier: string;
+}>;
+
+
+export type ResendEmailConfirmationMutation = { resendEmailConfirmation: boolean };
 
 export type MeQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -2193,6 +2207,15 @@ export const StudentsDocument = new TypedDocumentString(`
   }
 }
     `) as unknown as TypedDocumentString<StudentsQuery, StudentsQueryVariables>;
+export const ConfirmEmailDocument = new TypedDocumentString(`
+    mutation ConfirmEmail($token: String!) {
+  confirmEmail(token: $token) {
+    email
+    schoolName
+    schoolUrl
+  }
+}
+    `) as unknown as TypedDocumentString<ConfirmEmailMutation, ConfirmEmailMutationVariables>;
 export const RequestResetDocument = new TypedDocumentString(`
     mutation RequestReset($identifier: String!) {
   requestPasswordReset(identifier: $identifier)
@@ -2236,6 +2259,7 @@ export const SignUpSchoolDocument = new TypedDocumentString(`
   ) {
     slug
     schoolUrl
+    confirmationSentTo
   }
 }
     `) as unknown as TypedDocumentString<SignUpSchoolMutation, SignUpSchoolMutationVariables>;
@@ -2457,6 +2481,11 @@ export const MyConsentDocument = new TypedDocumentString(`
   }
 }
     `) as unknown as TypedDocumentString<MyConsentQuery, MyConsentQueryVariables>;
+export const ResendEmailConfirmationDocument = new TypedDocumentString(`
+    mutation ResendEmailConfirmation($identifier: String!) {
+  resendEmailConfirmation(identifier: $identifier)
+}
+    `) as unknown as TypedDocumentString<ResendEmailConfirmationMutation, ResendEmailConfirmationMutationVariables>;
 export const MeDocument = new TypedDocumentString(`
     query Me {
   me {

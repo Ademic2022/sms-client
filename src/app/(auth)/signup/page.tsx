@@ -4,10 +4,12 @@ import Link from "next/link";
 import { useState, type FormEvent } from "react";
 
 import { AuthAlert, AuthButton, AuthField, AuthInput, AuthShell, PasswordInput } from "@/components/auth/AuthShell";
+import { ResendButton } from "@/components/auth/ResendButton";
 import { IconCheck } from "@/components/icons";
 import { Checkbox, cx } from "@/components/ui";
 import { graphql } from "@/gql";
 import { gql } from "@/lib/api";
+import { ResendConfirmationDocument } from "@/lib/queries";
 import { SITE } from "@/lib/site";
 
 const SignUpDocument = graphql(`
@@ -35,6 +37,7 @@ const SignUpDocument = graphql(`
     ) {
       slug
       schoolUrl
+      confirmationSentTo
     }
   }
 `);
@@ -79,7 +82,7 @@ export default function SignUpPage() {
   const [accept, setAccept] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const [done, setDone] = useState<{ url: string; host: string } | null>(null);
+  const [done, setDone] = useState<{ url: string; host: string; sentTo: string | null } | null>(null);
 
   const set = (key: keyof typeof form) => (e: { target: { value: string } }) => {
     const value = e.target.value;
@@ -94,16 +97,42 @@ export default function SignUpPage() {
     try {
       const { signUpSchool } = await gql(SignUpDocument, {
         name: form.name, slug: form.slug, adminFirstName: form.first, adminLastName: form.last, adminPhone: form.phone,
-        adminEmail: form.email || null, password: form.password, sections, accept,
+        adminEmail: form.email.trim(), password: form.password, sections, accept,
       });
       const schoolHost = `${signUpSchool.slug}.${host}`;
-      setDone({ url: `${window.location.protocol}//${schoolHost}/login`, host: schoolHost });
+      setDone({ url: `${window.location.protocol}//${schoolHost}/login`, host: schoolHost, sentTo: signUpSchool.confirmationSentTo ?? null });
     } catch (err) {
       setError((err as Error).message);
       window.scrollTo({ top: 0, behavior: "smooth" });
     } finally {
       setBusy(false);
     }
+  }
+
+  if (done?.sentTo) {
+    const sentTo = done.sentTo;
+    return (
+      <AuthShell title="Check your email" subtitle="One more step: confirm your email address, then sign in to your new portal." aside={ASIDE}>
+        <div className="space-y-6">
+          <div className="flex items-center gap-4 rounded-xl border border-line bg-surface p-4 shadow-sm">
+            <span className="grid h-10 w-10 flex-none place-items-center rounded-full bg-brand/10 text-brand-ink"><IconCheck size={20} strokeWidth={2.2} /></span>
+            <div className="min-w-0">
+              <div className="text-xs text-muted">We sent a confirmation link to</div>
+              <div className="truncate font-medium text-ink">{sentTo}</div>
+            </div>
+          </div>
+          <ol className="space-y-2 text-sm text-muted">
+            <li>1. Open the email from {SITE.name} and choose <strong className="text-ink">Confirm my email</strong>. The link works for 3 days.</li>
+            <li>2. Sign in at <strong className="text-ink">{done.host}</strong> with your phone number and password.</li>
+            <li>3. Set this session&apos;s terms under Settings, then import your students.</li>
+          </ol>
+          <p className="text-sm text-muted">
+            No email after a few minutes? Check your spam folder.{" "}
+            <ResendButton waitFirst onSend={() => gql(ResendConfirmationDocument, { identifier: sentTo })} />
+          </p>
+        </div>
+      </AuthShell>
+    );
   }
 
   if (done) {
@@ -189,8 +218,8 @@ export default function SignUpPage() {
             <AuthField label="Phone number" hint="You sign in with this.">
               <AuthInput value={form.phone} onChange={set("phone")} required inputMode="tel" autoComplete="tel" placeholder="0803 123 4567" />
             </AuthField>
-            <AuthField label="Email" hint="Optional.">
-              <AuthInput type="email" value={form.email} onChange={set("email")} autoComplete="email" />
+            <AuthField label="Email" hint="We send a link to confirm your account.">
+              <AuthInput type="email" required value={form.email} onChange={set("email")} autoComplete="email" />
             </AuthField>
           </div>
           <AuthField label="Password" hint="At least 8 characters.">

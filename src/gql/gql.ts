@@ -94,11 +94,12 @@ type Documents = {
     "\n  mutation ChangeStudentStatus($id: ID!, $status: String!, $reason: String!) {\n    changeStudentStatus(id: $id, status: $status, reason: $reason) { id status }\n  }\n": typeof types.ChangeStudentStatusDocument,
     "\n  mutation CreateStudent($data: StudentInput!, $guardians: [GuardianInput!]!) {\n    createStudent(data: $data, guardians: $guardians) { id }\n  }\n": typeof types.CreateStudentDocument,
     "\n  query Students($armId: ID, $search: String, $status: String, $offset: Int!) {\n    students(armId: $armId, search: $search, status: $status, offset: $offset, limit: 50) {\n      total\n      items { id fullName admissionNumber gender status currentArm { id label } }\n    }\n  }\n": typeof types.StudentsDocument,
+    "\n  mutation ConfirmEmail($token: String!) { confirmEmail(token: $token) { email schoolName schoolUrl } }\n": typeof types.ConfirmEmailDocument,
     "\n  mutation RequestReset($identifier: String!) {\n    requestPasswordReset(identifier: $identifier)\n  }\n": typeof types.RequestResetDocument,
     "\n  mutation ResetPassword($identifier: String!, $code: String!, $newPassword: String!) {\n    resetPassword(identifier: $identifier, code: $code, newPassword: $newPassword)\n  }\n": typeof types.ResetPasswordDocument,
     "\n  mutation Login($identifier: String!, $password: String!) {\n    login(identifier: $identifier, password: $password) {\n      permissions\n      isPlatformAdmin\n    }\n  }\n": typeof types.LoginDocument,
     "\n  query PublicPrivacyNotice {\n    privacyNotice { version body publishedAt schoolName }\n  }\n": typeof types.PublicPrivacyNoticeDocument,
-    "\n  mutation SignUpSchool(\n    $name: String!\n    $slug: String!\n    $adminFirstName: String!\n    $adminLastName: String!\n    $adminPhone: String!\n    $adminEmail: String\n    $password: String!\n    $sections: [String!]!\n    $accept: Boolean!\n  ) {\n    signUpSchool(\n      name: $name\n      slug: $slug\n      adminFirstName: $adminFirstName\n      adminLastName: $adminLastName\n      adminPhone: $adminPhone\n      adminEmail: $adminEmail\n      password: $password\n      sections: $sections\n      acceptDataProcessingAgreement: $accept\n    ) {\n      slug\n      schoolUrl\n    }\n  }\n": typeof types.SignUpSchoolDocument,
+    "\n  mutation SignUpSchool(\n    $name: String!\n    $slug: String!\n    $adminFirstName: String!\n    $adminLastName: String!\n    $adminPhone: String!\n    $adminEmail: String\n    $password: String!\n    $sections: [String!]!\n    $accept: Boolean!\n  ) {\n    signUpSchool(\n      name: $name\n      slug: $slug\n      adminFirstName: $adminFirstName\n      adminLastName: $adminLastName\n      adminPhone: $adminPhone\n      adminEmail: $adminEmail\n      password: $password\n      sections: $sections\n      acceptDataProcessingAgreement: $accept\n    ) {\n      slug\n      schoolUrl\n      confirmationSentTo\n    }\n  }\n": typeof types.SignUpSchoolDocument,
     "\n  mutation Logout {\n    logout\n  }\n": typeof types.LogoutDocument,
     "\n  query PlatformInvoices($status: String) {\n    platformInvoices(status: $status) {\n      schoolName schoolSlug\n      invoice { id number periodLabel studentCount amountKobo dueDate status paidAt paidVia paymentReference voidReason isOverdue readOnlyFrom }\n    }\n  }\n": typeof types.PlatformInvoicesDocument,
     "mutation GenerateInvoices { generateInvoices { schoolName invoice { number } } }": typeof types.GenerateInvoicesDocument,
@@ -118,6 +119,7 @@ type Documents = {
     "\n  query Terms {\n    terms { id label number isCurrent session { id name } }\n  }\n": typeof types.TermsDocument,
     "\n  query StudentSearch($search: String!) {\n    students(search: $search, limit: 8) { items { id fullName admissionNumber currentArm { label } } }\n  }\n": typeof types.StudentSearchDocument,
     "\n  query MyConsent {\n    myConsent {\n      pending\n      notice { version body publishedAt schoolName }\n      children { consented givenAt source student { id fullName firstName currentArm { label } } }\n    }\n  }\n": typeof types.MyConsentDocument,
+    "\n  mutation ResendEmailConfirmation($identifier: String!) { resendEmailConfirmation(identifier: $identifier) }\n": typeof types.ResendEmailConfirmationDocument,
     "\n  query Me {\n    me {\n      permissions\n      roles\n      accessMode\n      isPlatformAdmin\n      viaSupport\n      mustChangePassword\n      user { id fullName firstName phone email }\n      membership { id }\n      billingAlert { kind date invoice { number periodLabel amountKobo studentCount } }\n    }\n    school { name slug motto address phone email primaryColor secondaryColor logoUrl }\n    currentTerm { id label number isCurrent session { id name } }\n  }\n": typeof types.MeDocument,
 };
 const documents: Documents = {
@@ -200,11 +202,12 @@ const documents: Documents = {
     "\n  mutation ChangeStudentStatus($id: ID!, $status: String!, $reason: String!) {\n    changeStudentStatus(id: $id, status: $status, reason: $reason) { id status }\n  }\n": types.ChangeStudentStatusDocument,
     "\n  mutation CreateStudent($data: StudentInput!, $guardians: [GuardianInput!]!) {\n    createStudent(data: $data, guardians: $guardians) { id }\n  }\n": types.CreateStudentDocument,
     "\n  query Students($armId: ID, $search: String, $status: String, $offset: Int!) {\n    students(armId: $armId, search: $search, status: $status, offset: $offset, limit: 50) {\n      total\n      items { id fullName admissionNumber gender status currentArm { id label } }\n    }\n  }\n": types.StudentsDocument,
+    "\n  mutation ConfirmEmail($token: String!) { confirmEmail(token: $token) { email schoolName schoolUrl } }\n": types.ConfirmEmailDocument,
     "\n  mutation RequestReset($identifier: String!) {\n    requestPasswordReset(identifier: $identifier)\n  }\n": types.RequestResetDocument,
     "\n  mutation ResetPassword($identifier: String!, $code: String!, $newPassword: String!) {\n    resetPassword(identifier: $identifier, code: $code, newPassword: $newPassword)\n  }\n": types.ResetPasswordDocument,
     "\n  mutation Login($identifier: String!, $password: String!) {\n    login(identifier: $identifier, password: $password) {\n      permissions\n      isPlatformAdmin\n    }\n  }\n": types.LoginDocument,
     "\n  query PublicPrivacyNotice {\n    privacyNotice { version body publishedAt schoolName }\n  }\n": types.PublicPrivacyNoticeDocument,
-    "\n  mutation SignUpSchool(\n    $name: String!\n    $slug: String!\n    $adminFirstName: String!\n    $adminLastName: String!\n    $adminPhone: String!\n    $adminEmail: String\n    $password: String!\n    $sections: [String!]!\n    $accept: Boolean!\n  ) {\n    signUpSchool(\n      name: $name\n      slug: $slug\n      adminFirstName: $adminFirstName\n      adminLastName: $adminLastName\n      adminPhone: $adminPhone\n      adminEmail: $adminEmail\n      password: $password\n      sections: $sections\n      acceptDataProcessingAgreement: $accept\n    ) {\n      slug\n      schoolUrl\n    }\n  }\n": types.SignUpSchoolDocument,
+    "\n  mutation SignUpSchool(\n    $name: String!\n    $slug: String!\n    $adminFirstName: String!\n    $adminLastName: String!\n    $adminPhone: String!\n    $adminEmail: String\n    $password: String!\n    $sections: [String!]!\n    $accept: Boolean!\n  ) {\n    signUpSchool(\n      name: $name\n      slug: $slug\n      adminFirstName: $adminFirstName\n      adminLastName: $adminLastName\n      adminPhone: $adminPhone\n      adminEmail: $adminEmail\n      password: $password\n      sections: $sections\n      acceptDataProcessingAgreement: $accept\n    ) {\n      slug\n      schoolUrl\n      confirmationSentTo\n    }\n  }\n": types.SignUpSchoolDocument,
     "\n  mutation Logout {\n    logout\n  }\n": types.LogoutDocument,
     "\n  query PlatformInvoices($status: String) {\n    platformInvoices(status: $status) {\n      schoolName schoolSlug\n      invoice { id number periodLabel studentCount amountKobo dueDate status paidAt paidVia paymentReference voidReason isOverdue readOnlyFrom }\n    }\n  }\n": types.PlatformInvoicesDocument,
     "mutation GenerateInvoices { generateInvoices { schoolName invoice { number } } }": types.GenerateInvoicesDocument,
@@ -224,6 +227,7 @@ const documents: Documents = {
     "\n  query Terms {\n    terms { id label number isCurrent session { id name } }\n  }\n": types.TermsDocument,
     "\n  query StudentSearch($search: String!) {\n    students(search: $search, limit: 8) { items { id fullName admissionNumber currentArm { label } } }\n  }\n": types.StudentSearchDocument,
     "\n  query MyConsent {\n    myConsent {\n      pending\n      notice { version body publishedAt schoolName }\n      children { consented givenAt source student { id fullName firstName currentArm { label } } }\n    }\n  }\n": types.MyConsentDocument,
+    "\n  mutation ResendEmailConfirmation($identifier: String!) { resendEmailConfirmation(identifier: $identifier) }\n": types.ResendEmailConfirmationDocument,
     "\n  query Me {\n    me {\n      permissions\n      roles\n      accessMode\n      isPlatformAdmin\n      viaSupport\n      mustChangePassword\n      user { id fullName firstName phone email }\n      membership { id }\n      billingAlert { kind date invoice { number periodLabel amountKobo studentCount } }\n    }\n    school { name slug motto address phone email primaryColor secondaryColor logoUrl }\n    currentTerm { id label number isCurrent session { id name } }\n  }\n": types.MeDocument,
 };
 
@@ -546,6 +550,10 @@ export function graphql(source: "\n  query Students($armId: ID, $search: String,
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
+export function graphql(source: "\n  mutation ConfirmEmail($token: String!) { confirmEmail(token: $token) { email schoolName schoolUrl } }\n"): typeof import('./graphql').ConfirmEmailDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
 export function graphql(source: "\n  mutation RequestReset($identifier: String!) {\n    requestPasswordReset(identifier: $identifier)\n  }\n"): typeof import('./graphql').RequestResetDocument;
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
@@ -562,7 +570,7 @@ export function graphql(source: "\n  query PublicPrivacyNotice {\n    privacyNot
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
-export function graphql(source: "\n  mutation SignUpSchool(\n    $name: String!\n    $slug: String!\n    $adminFirstName: String!\n    $adminLastName: String!\n    $adminPhone: String!\n    $adminEmail: String\n    $password: String!\n    $sections: [String!]!\n    $accept: Boolean!\n  ) {\n    signUpSchool(\n      name: $name\n      slug: $slug\n      adminFirstName: $adminFirstName\n      adminLastName: $adminLastName\n      adminPhone: $adminPhone\n      adminEmail: $adminEmail\n      password: $password\n      sections: $sections\n      acceptDataProcessingAgreement: $accept\n    ) {\n      slug\n      schoolUrl\n    }\n  }\n"): typeof import('./graphql').SignUpSchoolDocument;
+export function graphql(source: "\n  mutation SignUpSchool(\n    $name: String!\n    $slug: String!\n    $adminFirstName: String!\n    $adminLastName: String!\n    $adminPhone: String!\n    $adminEmail: String\n    $password: String!\n    $sections: [String!]!\n    $accept: Boolean!\n  ) {\n    signUpSchool(\n      name: $name\n      slug: $slug\n      adminFirstName: $adminFirstName\n      adminLastName: $adminLastName\n      adminPhone: $adminPhone\n      adminEmail: $adminEmail\n      password: $password\n      sections: $sections\n      acceptDataProcessingAgreement: $accept\n    ) {\n      slug\n      schoolUrl\n      confirmationSentTo\n    }\n  }\n"): typeof import('./graphql').SignUpSchoolDocument;
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
@@ -639,6 +647,10 @@ export function graphql(source: "\n  query StudentSearch($search: String!) {\n  
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function graphql(source: "\n  query MyConsent {\n    myConsent {\n      pending\n      notice { version body publishedAt schoolName }\n      children { consented givenAt source student { id fullName firstName currentArm { label } } }\n    }\n  }\n"): typeof import('./graphql').MyConsentDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  mutation ResendEmailConfirmation($identifier: String!) { resendEmailConfirmation(identifier: $identifier) }\n"): typeof import('./graphql').ResendEmailConfirmationDocument;
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */

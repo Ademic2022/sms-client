@@ -242,6 +242,12 @@ type DiscountType {
   term: TermType
 }
 
+type EmailConfirmation {
+  email: String!
+  schoolName: String
+  schoolUrl: String
+}
+
 type FeeItemType {
   id: ID!
   name: String!
@@ -447,6 +453,14 @@ type Mutation {
 
   """Create a new school with its own web address."""
   signUpSchool(name: String!, slug: String!, adminFirstName: String!, adminLastName: String!, adminPhone: String!, password: String!, sections: [String!]!, acceptDataProcessingAgreement: Boolean!, adminEmail: String = null): SignUpResult!
+
+  """Confirm an email address with the token from the confirmation link."""
+  confirmEmail(token: String!): EmailConfirmation!
+
+  """
+  Send the confirmation link again. Always succeeds, so it cannot reveal which accounts exist.
+  """
+  resendEmailConfirmation(identifier: String!): Boolean!
   updateSchoolSettings(name: String = null, motto: String = null, address: String = null, phone: String = null, email: String = null, primaryColor: String = null, secondaryColor: String = null, settingsJson: JSON = null): SchoolSettings!
   saveSession(name: String!, startDate: Date!, endDate: Date!, id: ID = null): SessionType!
   saveTerm(sessionId: ID!, number: Int!, startDate: Date!, endDate: Date!, daysOpened: Int! = 0, nextTermBegins: Date = null, id: ID = null): TermType!
@@ -859,6 +873,7 @@ type SessionType {
 type SignUpResult {
   schoolUrl: String!
   slug: String!
+  confirmationSentTo: String
 }
 
 type SmsEstimate {

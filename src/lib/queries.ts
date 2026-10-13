@@ -30,3 +30,8 @@ export const MyConsentDocument = graphql(`
     }
   }
 `);
+
+/** Ask for the account-confirmation email again. Always succeeds, whether or not the account exists. */
+export const ResendConfirmationDocument = graphql(`
+  mutation ResendEmailConfirmation($identifier: String!) { resendEmailConfirmation(identifier: $identifier) }
+`);

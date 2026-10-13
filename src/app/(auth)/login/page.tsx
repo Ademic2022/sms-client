@@ -5,9 +5,11 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useState, type FormEvent } from "react";
 
 import { AuthAlert, AuthButton, AuthField, AuthInput, AuthShell, PasswordInput } from "@/components/auth/AuthShell";
+import { ResendButton } from "@/components/auth/ResendButton";
 import { graphql } from "@/gql";
-import { gql } from "@/lib/api";
+import { ApiError, gql } from "@/lib/api";
 import { localPhone } from "@/lib/money";
+import { ResendConfirmationDocument } from "@/lib/queries";
 import { useSession } from "@/lib/session";
 
 const LoginDocument = graphql(`
@@ -26,12 +28,15 @@ function LoginForm() {
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
+  // A new owner who has not confirmed their email yet: offer to send the link again.
+  const [unconfirmed, setUnconfirmed] = useState(false);
   const [busy, setBusy] = useState(false);
 
   async function submit(e: FormEvent) {
     e.preventDefault();
     setBusy(true);
     setError(null);
+    setUnconfirmed(false);
     try {
       const { login } = await gql(LoginDocument, { identifier: identifier.trim(), password });
       await refresh();
@@ -42,6 +47,7 @@ function LoginForm() {
       router.replace(safeNext ?? home);
     } catch (err) {
       setError((err as Error).message);
+      if (err instanceof ApiError && err.code === "email_unconfirmed") setUnconfirmed(true);
       setBusy(false);
     }
   }
@@ -70,7 +76,17 @@ function LoginForm() {
       }
     >
       <form onSubmit={submit} className="space-y-5" noValidate={false}>
-        {error && <AuthAlert>{error}</AuthAlert>}
+        {error && (
+          <AuthAlert>
+            {error}
+            {unconfirmed && (
+              <span className="mt-1.5 block">
+                <ResendButton label="Send the confirmation link again" className="font-semibold text-current underline underline-offset-2 dark:text-current"
+                  onSend={() => gql(ResendConfirmationDocument, { identifier: identifier.trim() })} />
+              </span>
+            )}
+          </AuthAlert>
+        )}
         <AuthField label="Phone number or email">
           <AuthInput
             value={identifier}
