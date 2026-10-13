@@ -61,7 +61,8 @@ export async function flush(): Promise<number> {
         await discard(item.id);
         sent += 1;
       } catch (error) {
-        if (error instanceof NetworkError) break;
+        // Offline, or the server asked us to slow down: stop and try again on the next flush.
+        if (error instanceof NetworkError || (error instanceof ApiError && error.code === "rate_limited")) break;
         // The server refused it (e.g. results were locked meanwhile). Keep it visible so the
         // teacher can see what did not save, instead of silently dropping it.
         item.error = error instanceof ApiError ? error.message : "Could not save.";
