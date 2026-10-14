@@ -81,6 +81,14 @@ export type StudentInput = {
   middleName?: string;
 };
 
+export type ChangePasswordMutationVariables = Exact<{
+  currentPassword: string;
+  newPassword: string;
+}>;
+
+
+export type ChangePasswordMutation = { changePassword: boolean };
+
 export type RegisterQueryVariables = Exact<{
   armId: string | number;
   date: string;
@@ -163,11 +171,6 @@ export type BursarSummaryQueryVariables = Exact<{
 
 
 export type BursarSummaryQuery = { termFeeSummary: { expectedKobo: number, collectedKobo: number, collectedOnlineKobo: number, outstandingKobo: number, debtorCount: number } };
-
-export type NoticesQueryVariables = Exact<{ [key: string]: never; }>;
-
-
-export type NoticesQuery = { notices: Array<{ id: string, title: string, body: string, createdAt: string }> };
 
 export type FeesOverviewQueryVariables = Exact<{
   termId: string | number;
@@ -346,6 +349,14 @@ export type ChildLedgerQueryVariables = Exact<{
 
 
 export type ChildLedgerQuery = { ledger: { balanceKobo: number, student: { fullName: string, admissionNumber: string, currentArm: { label: string } | null }, payments: Array<{ id: string, amountKobo: number, method: string, status: string, receiptNumber: string, paidAt: string }> } };
+
+export type ChildAttendanceQueryVariables = Exact<{
+  studentId: string | number;
+  termId: string | number;
+}>;
+
+
+export type ChildAttendanceQuery = { attendanceHistory: Array<{ id: string, date: string, status: string }> };
 
 export type GiveConsentMutationVariables = Exact<{
   studentIds: Array<string | number> | string | number;
@@ -763,6 +774,11 @@ export type LogoutMutationVariables = Exact<{ [key: string]: never; }>;
 
 export type LogoutMutation = { logout: boolean };
 
+export type NoticesQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type NoticesQuery = { notices: Array<{ id: string, title: string, body: string, createdAt: string }> };
+
 export type PayoutAccountQueryVariables = Exact<{ [key: string]: never; }>;
 
 
@@ -955,6 +971,11 @@ export class TypedDocumentString<TResult, TVariables>
   }
 }
 
+export const ChangePasswordDocument = new TypedDocumentString(`
+    mutation ChangePassword($currentPassword: String!, $newPassword: String!) {
+  changePassword(currentPassword: $currentPassword, newPassword: $newPassword)
+}
+    `) as unknown as TypedDocumentString<ChangePasswordMutation, ChangePasswordMutationVariables>;
 export const RegisterDocument = new TypedDocumentString(`
     query Register($armId: ID!, $date: Date!) {
   register(armId: $armId, date: $date) {
@@ -1126,16 +1147,6 @@ export const BursarSummaryDocument = new TypedDocumentString(`
   }
 }
     `) as unknown as TypedDocumentString<BursarSummaryQuery, BursarSummaryQueryVariables>;
-export const NoticesDocument = new TypedDocumentString(`
-    query Notices {
-  notices(limit: 5) {
-    id
-    title
-    body
-    createdAt
-  }
-}
-    `) as unknown as TypedDocumentString<NoticesQuery, NoticesQueryVariables>;
 export const FeesOverviewDocument = new TypedDocumentString(`
     query FeesOverview($termId: ID!, $armId: ID, $offset: Int!) {
   termFeeSummary(termId: $termId) {
@@ -1497,6 +1508,15 @@ export const ChildLedgerDocument = new TypedDocumentString(`
   }
 }
     `) as unknown as TypedDocumentString<ChildLedgerQuery, ChildLedgerQueryVariables>;
+export const ChildAttendanceDocument = new TypedDocumentString(`
+    query ChildAttendance($studentId: ID!, $termId: ID!) {
+  attendanceHistory(studentId: $studentId, termId: $termId) {
+    id
+    date
+    status
+  }
+}
+    `) as unknown as TypedDocumentString<ChildAttendanceQuery, ChildAttendanceQueryVariables>;
 export const GiveConsentDocument = new TypedDocumentString(`
     mutation GiveConsent($studentIds: [ID!]!) {
   giveConsent(studentIds: $studentIds) {
@@ -2326,6 +2346,16 @@ export const LogoutDocument = new TypedDocumentString(`
   logout
 }
     `) as unknown as TypedDocumentString<LogoutMutation, LogoutMutationVariables>;
+export const NoticesDocument = new TypedDocumentString(`
+    query Notices {
+  notices(limit: 5) {
+    id
+    title
+    body
+    createdAt
+  }
+}
+    `) as unknown as TypedDocumentString<NoticesQuery, NoticesQueryVariables>;
 export const PayoutAccountDocument = new TypedDocumentString(`
     query PayoutAccount {
   payoutAccount {

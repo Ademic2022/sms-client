@@ -5,6 +5,7 @@ import { useState } from "react";
 
 import { IconAward, IconChevronRight, IconChild, IconLock } from "@/components/icons";
 import { Badge, Button, Card, Empty, ErrorNote, Field, Input, Loading, PageHeader } from "@/components/ui";
+import { NoticesCard } from "@/components/NoticesCard";
 import { graphql } from "@/gql";
 import { gql, useGql } from "@/lib/api";
 import { useDerivedState } from "@/lib/hooks";
@@ -149,6 +150,7 @@ export default function ParentHome() {
           {owing === 0 && <p className="text-center text-sm text-muted">All fees are paid. Thank you.</p>}
         </>
       )}
+      <NoticesCard emptyText="Announcements from the school will appear here." />
     </>
   );
 }

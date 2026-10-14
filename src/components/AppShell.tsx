@@ -242,11 +242,13 @@ export function AppShell({ children }: { children: ReactNode }) {
       </nav>
       <div className="border-t border-line p-3">
         <div className="flex items-center gap-3 rounded-lg px-2 py-1.5">
-          <span className="grid h-8 w-8 flex-none place-items-center rounded-full bg-subtle text-xs font-semibold text-ink ring-1 ring-line">{initials(me.user.fullName)}</span>
-          <div className="min-w-0 flex-1">
-            <div className="truncate text-sm font-medium text-ink">{me.user.fullName}</div>
-            <div className="truncate text-xs text-muted">{roleLabel}</div>
-          </div>
+          <Link href="/account" title="Your account and password" className="-m-1 flex min-w-0 flex-1 items-center gap-3 rounded-md p-1 transition hover:bg-subtle">
+            <span className="grid h-8 w-8 flex-none place-items-center rounded-full bg-subtle text-xs font-semibold text-ink ring-1 ring-line">{initials(me.user.fullName)}</span>
+            <div className="min-w-0 flex-1">
+              <div className="truncate text-sm font-medium text-ink">{me.user.fullName}</div>
+              <div className="truncate text-xs text-muted">{roleLabel}</div>
+            </div>
+          </Link>
           <a href="/guide" target="_blank" rel="noopener" aria-label="Help: user guide" title="User guide"
             className="grid h-8 w-8 place-items-center rounded-lg text-muted transition hover:bg-subtle hover:text-ink">
             <IconInfo size={17} />

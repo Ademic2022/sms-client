@@ -33,6 +33,12 @@ const ChildLedgerDocument = graphql(`
   }
 `);
 
+const AttendanceHistoryDocument = graphql(`
+  query ChildAttendance($studentId: ID!, $termId: ID!) {
+    attendanceHistory(studentId: $studentId, termId: $termId) { id date status }
+  }
+`);
+
 const REASONS: Record<string, string> = {
   not_published: "Results for this term have not been published yet.",
   not_yet_released: "Results will be available soon. The school has set a release date.",
@@ -99,6 +105,7 @@ export default function ChildPage() {
           </Card>
         </>
       )}
+      {termId && <AttendanceCard studentId={id} termId={termId} />}
       {l && (
         <Card flush title="Payments" description={`Balance ${naira(l.balanceKobo)}`}>
           {l.payments.length === 0 ? (
@@ -121,5 +128,50 @@ export default function ChildPage() {
         </Card>
       )}
     </>
+  );
+}
+
+const MISSED: Record<string, { label: string; tone: "bad" | "warn" | "neutral" }> = {
+  absent: { label: "Absent", tone: "bad" },
+  late: { label: "Late", tone: "warn" },
+  excused: { label: "Excused", tone: "neutral" },
+};
+
+/** The term's register for one child: totals, then each day they were absent, late or excused. */
+function AttendanceCard({ studentId, termId }: { studentId: string; termId: string }) {
+  const { data, isLoading } = useGql(AttendanceHistoryDocument, { studentId, termId });
+  const days = data?.attendanceHistory ?? [];
+  const count = (status: string) => days.filter((d) => d.status === status).length;
+  const present = count("present") + count("late");
+  const missed = days.filter((d) => d.status !== "present").reverse(); // newest first
+  return (
+    <Card title="Attendance" description={days.length ? `${days.length} school day${days.length === 1 ? "" : "s"} recorded this term` : undefined}>
+      {isLoading ? (
+        <Loading />
+      ) : !days.length ? (
+        <p className="text-sm text-muted">No attendance has been recorded for this term yet.</p>
+      ) : (
+        <div className="space-y-5">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            <Stat label="Present" value={`${Math.round((present / days.length) * 100)}%`} hint={`${present} of ${days.length} days`} />
+            <Stat label="Absent" value={count("absent")} />
+            <Stat label="Late" value={count("late")} />
+            <Stat label="Excused" value={count("excused")} />
+          </div>
+          {missed.length === 0 ? (
+            <p className="text-sm text-muted">Present every day recorded this term.</p>
+          ) : (
+            <ul className="divide-y divide-line rounded-lg border border-line">
+              {missed.map((d) => (
+                <li key={d.id} className="flex items-center justify-between gap-3 px-4 py-2.5 text-sm">
+                  <span className="text-ink">{new Date(`${d.date}T12:00:00`).toLocaleDateString("en-NG", { weekday: "short", day: "numeric", month: "long" })}</span>
+                  <Badge tone={MISSED[d.status]?.tone ?? "neutral"}>{MISSED[d.status]?.label ?? d.status}</Badge>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
+    </Card>
   );
 }

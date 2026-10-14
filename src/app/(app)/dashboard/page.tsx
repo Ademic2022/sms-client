@@ -6,7 +6,8 @@ import { useEffect } from "react";
 
 import { IconAward, IconCalendarCheck, IconMessage, IconPencilGrid, IconUsers, IconWallet } from "@/components/icons";
 import { BillingAlertNotice } from "@/components/BillingAlert";
-import { ButtonLink, Card, Empty, ErrorNote, Loading, Notice, PageHeader, Stat } from "@/components/ui";
+import { ButtonLink, Card, ErrorNote, Loading, Notice, PageHeader, Stat } from "@/components/ui";
+import { NoticesCard } from "@/components/NoticesCard";
 import { graphql } from "@/gql";
 import { useGql } from "@/lib/api";
 import { naira } from "@/lib/money";
@@ -37,12 +38,6 @@ const MyClassesDocument = graphql(`
 const BursarSummaryDocument = graphql(`
   query BursarSummary($termId: ID!) {
     termFeeSummary(termId: $termId) { expectedKobo collectedKobo collectedOnlineKobo outstandingKobo debtorCount }
-  }
-`);
-
-const NoticesDocument = graphql(`
-  query Notices {
-    notices(limit: 5) { id title body createdAt }
   }
 `);
 
@@ -201,7 +196,6 @@ function QuickActions() {
 export default function DashboardPage() {
   const { me, school, term, can } = useSession();
   const router = useRouter();
-  const notices = useGql(NoticesDocument, {});
   const parentOnly = me && me.permissions.length === 1 && me.permissions[0] === "portal.parent";
   const platformOnly = !school && me?.isPlatformAdmin;
 
@@ -228,25 +222,7 @@ export default function DashboardPage() {
       <QuickActions />
       {can("dashboard.owner") ? <OwnerPanel /> : can("fees.view") && term ? <BursarPanel termId={term.id} /> : null}
       <TeacherPanel />
-      <Card title="Notices" description="Announcements from the school">
-        {notices.isLoading ? (
-          <Loading />
-        ) : notices.data?.notices.length ? (
-          <ul className="divide-y divide-line">
-            {notices.data.notices.map((n) => (
-              <li key={n.id} className="py-3 first:pt-0 last:pb-0">
-                <div className="flex items-baseline justify-between gap-4">
-                  <div className="text-sm font-medium text-ink">{n.title || "Announcement"}</div>
-                  <time className="flex-none text-xs text-muted">{new Date(n.createdAt).toLocaleDateString("en-NG", { day: "numeric", month: "short" })}</time>
-                </div>
-                <p className="mt-1 whitespace-pre-line text-sm leading-relaxed text-muted">{n.body}</p>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <Empty title="No notices yet" icon={<IconMessage size={18} />}>Announcements sent from Messages appear here.</Empty>
-        )}
-      </Card>
+      <NoticesCard emptyText="Announcements sent from Messages appear here." />
     </>
   );
 }

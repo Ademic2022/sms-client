@@ -15,6 +15,7 @@ import * as types from './graphql';
  * Learn more about it here: https://the-guild.dev/graphql/codegen/plugins/presets/preset-client#reducing-bundle-size
  */
 type Documents = {
+    "\n  mutation ChangePassword($currentPassword: String!, $newPassword: String!) {\n    changePassword(currentPassword: $currentPassword, newPassword: $newPassword)\n  }\n": typeof types.ChangePasswordDocument,
     "\n  query Register($armId: ID!, $date: Date!) {\n    register(armId: $armId, date: $date) {\n      date\n      rows { status student { id fullName admissionNumber currentArm { label } } }\n    }\n  }\n": typeof types.RegisterDocument,
     "\n  mutation MarkAttendance($armId: ID!, $date: Date!, $entries: [AttendanceEntry!]!) {\n    markAttendance(armId: $armId, date: $date, entries: $entries) {\n      saved\n      conflicts { studentId serverStatus }\n    }\n  }\n": typeof types.MarkAttendanceDocument,
     "\n  query AttendanceClasses($all: Boolean!) {\n    myClasses { classArms { id label studentCount } }\n    arms @include(if: $all) { id label studentCount }\n  }\n": typeof types.AttendanceClassesDocument,
@@ -26,7 +27,6 @@ type Documents = {
     "\n  query OwnerDashboard {\n    ownerDashboard {\n      termLabel\n      activeStudents\n      classesPublished\n      classesTotal\n      studentsByLevel { level students }\n      fees { expectedKobo collectedKobo collectedOnlineKobo outstandingKobo debtorCount }\n    }\n  }\n": typeof types.OwnerDashboardDocument,
     "\n  query MyClasses {\n    myClasses {\n      classArms { id label studentCount }\n      subjectAssignments { id arm { id label } subject { id name } }\n    }\n  }\n": typeof types.MyClassesDocument,
     "\n  query BursarSummary($termId: ID!) {\n    termFeeSummary(termId: $termId) { expectedKobo collectedKobo collectedOnlineKobo outstandingKobo debtorCount }\n  }\n": typeof types.BursarSummaryDocument,
-    "\n  query Notices {\n    notices(limit: 5) { id title body createdAt }\n  }\n": typeof types.NoticesDocument,
     "\n  query FeesOverview($termId: ID!, $armId: ID, $offset: Int!) {\n    termFeeSummary(termId: $termId) { expectedKobo collectedKobo collectedOnlineKobo outstandingKobo debtorCount }\n    debtors(armId: $armId, offset: $offset, limit: 50) { total totalBalanceKobo items { balanceKobo student { id fullName admissionNumber currentArm { label } } } }\n  }\n": typeof types.FeesOverviewDocument,
     "\n  mutation GenerateBills($termId: ID!) { generateBills(termId: $termId) }\n": typeof types.GenerateBillsDocument,
     "\n  mutation RemindDebtors($body: String!) {\n    sendMessage(audience: \"debtors\", body: $body, showInApp: false) { id unitsUsed }\n  }\n": typeof types.RemindDebtorsDocument,
@@ -48,6 +48,7 @@ type Documents = {
     "\n  mutation SendMessage($audience: String!, $body: String!, $title: String!, $armId: ID, $sendSms: Boolean!, $showInApp: Boolean!) {\n    sendMessage(audience: $audience, body: $body, title: $title, armId: $armId, sendSms: $sendSms, showInApp: $showInApp) { id unitsUsed }\n  }\n": typeof types.SendMessageDocument,
     "\n  query ChildResult($studentId: ID!, $termId: ID!) {\n    childResult(studentId: $studentId, termId: $termId) {\n      visible reason classSize classAverage reportCardUrl\n      result {\n        total average position cumulativeAverage cumulativePosition\n        student { fullName currentArm { label } }\n        subjects { subjectId subjectName total grade remark position cumulativeAverage cumulativeGrade }\n      }\n    }\n  }\n": typeof types.ChildResultDocument,
     "\n  query ChildLedger($studentId: ID!) {\n    ledger(studentId: $studentId) {\n      balanceKobo\n      student { fullName admissionNumber currentArm { label } }\n      payments { id amountKobo method status receiptNumber paidAt }\n    }\n  }\n": typeof types.ChildLedgerDocument,
+    "\n  query ChildAttendance($studentId: ID!, $termId: ID!) {\n    attendanceHistory(studentId: $studentId, termId: $termId) { id date status }\n  }\n": typeof types.ChildAttendanceDocument,
     "\n  mutation GiveConsent($studentIds: [ID!]!) { giveConsent(studentIds: $studentIds) { pending } }\n": typeof types.GiveConsentDocument,
     "\n  mutation WithdrawMyConsent($studentId: ID!, $reason: String!) { withdrawMyConsent(studentId: $studentId, reason: $reason) { pending } }\n": typeof types.WithdrawMyConsentDocument,
     "\n  query MyChildren {\n    myChildren {\n      balanceKobo\n      student { id fullName firstName admissionNumber currentArm { label } }\n      currentBill { totalKobo term { label } lines { id description amountKobo } }\n    }\n  }\n": typeof types.MyChildrenDocument,
@@ -101,6 +102,7 @@ type Documents = {
     "\n  query PublicPrivacyNotice {\n    privacyNotice { version body publishedAt schoolName }\n  }\n": typeof types.PublicPrivacyNoticeDocument,
     "\n  mutation SignUpSchool(\n    $name: String!\n    $slug: String!\n    $adminFirstName: String!\n    $adminLastName: String!\n    $adminPhone: String!\n    $adminEmail: String\n    $password: String!\n    $sections: [String!]!\n    $accept: Boolean!\n  ) {\n    signUpSchool(\n      name: $name\n      slug: $slug\n      adminFirstName: $adminFirstName\n      adminLastName: $adminLastName\n      adminPhone: $adminPhone\n      adminEmail: $adminEmail\n      password: $password\n      sections: $sections\n      acceptDataProcessingAgreement: $accept\n    ) {\n      slug\n      schoolUrl\n      confirmationSentTo\n    }\n  }\n": typeof types.SignUpSchoolDocument,
     "\n  mutation Logout {\n    logout\n  }\n": typeof types.LogoutDocument,
+    "\n  query Notices {\n    notices(limit: 5) { id title body createdAt }\n  }\n": typeof types.NoticesDocument,
     "\n  query PayoutAccount { payoutAccount { connected bankName accountNumber accountName canChange } }\n": typeof types.PayoutAccountDocument,
     "query PayoutBanks { payoutBanks { code name } }": typeof types.PayoutBanksDocument,
     "\n  mutation ResolvePayoutAccount($bankCode: String!, $accountNumber: String!) { resolvePayoutAccount(bankCode: $bankCode, accountNumber: $accountNumber) }\n": typeof types.ResolvePayoutAccountDocument,
@@ -127,6 +129,7 @@ type Documents = {
     "\n  query Me {\n    me {\n      permissions\n      roles\n      accessMode\n      isPlatformAdmin\n      viaSupport\n      mustChangePassword\n      user { id fullName firstName phone email }\n      membership { id }\n      billingAlert { kind date invoice { number periodLabel amountKobo studentCount } }\n    }\n    school { name slug motto address phone email primaryColor secondaryColor logoUrl }\n    currentTerm { id label number isCurrent session { id name } }\n  }\n": typeof types.MeDocument,
 };
 const documents: Documents = {
+    "\n  mutation ChangePassword($currentPassword: String!, $newPassword: String!) {\n    changePassword(currentPassword: $currentPassword, newPassword: $newPassword)\n  }\n": types.ChangePasswordDocument,
     "\n  query Register($armId: ID!, $date: Date!) {\n    register(armId: $armId, date: $date) {\n      date\n      rows { status student { id fullName admissionNumber currentArm { label } } }\n    }\n  }\n": types.RegisterDocument,
     "\n  mutation MarkAttendance($armId: ID!, $date: Date!, $entries: [AttendanceEntry!]!) {\n    markAttendance(armId: $armId, date: $date, entries: $entries) {\n      saved\n      conflicts { studentId serverStatus }\n    }\n  }\n": types.MarkAttendanceDocument,
     "\n  query AttendanceClasses($all: Boolean!) {\n    myClasses { classArms { id label studentCount } }\n    arms @include(if: $all) { id label studentCount }\n  }\n": types.AttendanceClassesDocument,
@@ -138,7 +141,6 @@ const documents: Documents = {
     "\n  query OwnerDashboard {\n    ownerDashboard {\n      termLabel\n      activeStudents\n      classesPublished\n      classesTotal\n      studentsByLevel { level students }\n      fees { expectedKobo collectedKobo collectedOnlineKobo outstandingKobo debtorCount }\n    }\n  }\n": types.OwnerDashboardDocument,
     "\n  query MyClasses {\n    myClasses {\n      classArms { id label studentCount }\n      subjectAssignments { id arm { id label } subject { id name } }\n    }\n  }\n": types.MyClassesDocument,
     "\n  query BursarSummary($termId: ID!) {\n    termFeeSummary(termId: $termId) { expectedKobo collectedKobo collectedOnlineKobo outstandingKobo debtorCount }\n  }\n": types.BursarSummaryDocument,
-    "\n  query Notices {\n    notices(limit: 5) { id title body createdAt }\n  }\n": types.NoticesDocument,
     "\n  query FeesOverview($termId: ID!, $armId: ID, $offset: Int!) {\n    termFeeSummary(termId: $termId) { expectedKobo collectedKobo collectedOnlineKobo outstandingKobo debtorCount }\n    debtors(armId: $armId, offset: $offset, limit: 50) { total totalBalanceKobo items { balanceKobo student { id fullName admissionNumber currentArm { label } } } }\n  }\n": types.FeesOverviewDocument,
     "\n  mutation GenerateBills($termId: ID!) { generateBills(termId: $termId) }\n": types.GenerateBillsDocument,
     "\n  mutation RemindDebtors($body: String!) {\n    sendMessage(audience: \"debtors\", body: $body, showInApp: false) { id unitsUsed }\n  }\n": types.RemindDebtorsDocument,
@@ -160,6 +162,7 @@ const documents: Documents = {
     "\n  mutation SendMessage($audience: String!, $body: String!, $title: String!, $armId: ID, $sendSms: Boolean!, $showInApp: Boolean!) {\n    sendMessage(audience: $audience, body: $body, title: $title, armId: $armId, sendSms: $sendSms, showInApp: $showInApp) { id unitsUsed }\n  }\n": types.SendMessageDocument,
     "\n  query ChildResult($studentId: ID!, $termId: ID!) {\n    childResult(studentId: $studentId, termId: $termId) {\n      visible reason classSize classAverage reportCardUrl\n      result {\n        total average position cumulativeAverage cumulativePosition\n        student { fullName currentArm { label } }\n        subjects { subjectId subjectName total grade remark position cumulativeAverage cumulativeGrade }\n      }\n    }\n  }\n": types.ChildResultDocument,
     "\n  query ChildLedger($studentId: ID!) {\n    ledger(studentId: $studentId) {\n      balanceKobo\n      student { fullName admissionNumber currentArm { label } }\n      payments { id amountKobo method status receiptNumber paidAt }\n    }\n  }\n": types.ChildLedgerDocument,
+    "\n  query ChildAttendance($studentId: ID!, $termId: ID!) {\n    attendanceHistory(studentId: $studentId, termId: $termId) { id date status }\n  }\n": types.ChildAttendanceDocument,
     "\n  mutation GiveConsent($studentIds: [ID!]!) { giveConsent(studentIds: $studentIds) { pending } }\n": types.GiveConsentDocument,
     "\n  mutation WithdrawMyConsent($studentId: ID!, $reason: String!) { withdrawMyConsent(studentId: $studentId, reason: $reason) { pending } }\n": types.WithdrawMyConsentDocument,
     "\n  query MyChildren {\n    myChildren {\n      balanceKobo\n      student { id fullName firstName admissionNumber currentArm { label } }\n      currentBill { totalKobo term { label } lines { id description amountKobo } }\n    }\n  }\n": types.MyChildrenDocument,
@@ -213,6 +216,7 @@ const documents: Documents = {
     "\n  query PublicPrivacyNotice {\n    privacyNotice { version body publishedAt schoolName }\n  }\n": types.PublicPrivacyNoticeDocument,
     "\n  mutation SignUpSchool(\n    $name: String!\n    $slug: String!\n    $adminFirstName: String!\n    $adminLastName: String!\n    $adminPhone: String!\n    $adminEmail: String\n    $password: String!\n    $sections: [String!]!\n    $accept: Boolean!\n  ) {\n    signUpSchool(\n      name: $name\n      slug: $slug\n      adminFirstName: $adminFirstName\n      adminLastName: $adminLastName\n      adminPhone: $adminPhone\n      adminEmail: $adminEmail\n      password: $password\n      sections: $sections\n      acceptDataProcessingAgreement: $accept\n    ) {\n      slug\n      schoolUrl\n      confirmationSentTo\n    }\n  }\n": types.SignUpSchoolDocument,
     "\n  mutation Logout {\n    logout\n  }\n": types.LogoutDocument,
+    "\n  query Notices {\n    notices(limit: 5) { id title body createdAt }\n  }\n": types.NoticesDocument,
     "\n  query PayoutAccount { payoutAccount { connected bankName accountNumber accountName canChange } }\n": types.PayoutAccountDocument,
     "query PayoutBanks { payoutBanks { code name } }": types.PayoutBanksDocument,
     "\n  mutation ResolvePayoutAccount($bankCode: String!, $accountNumber: String!) { resolvePayoutAccount(bankCode: $bankCode, accountNumber: $accountNumber) }\n": types.ResolvePayoutAccountDocument,
@@ -239,6 +243,10 @@ const documents: Documents = {
     "\n  query Me {\n    me {\n      permissions\n      roles\n      accessMode\n      isPlatformAdmin\n      viaSupport\n      mustChangePassword\n      user { id fullName firstName phone email }\n      membership { id }\n      billingAlert { kind date invoice { number periodLabel amountKobo studentCount } }\n    }\n    school { name slug motto address phone email primaryColor secondaryColor logoUrl }\n    currentTerm { id label number isCurrent session { id name } }\n  }\n": types.MeDocument,
 };
 
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  mutation ChangePassword($currentPassword: String!, $newPassword: String!) {\n    changePassword(currentPassword: $currentPassword, newPassword: $newPassword)\n  }\n"): typeof import('./graphql').ChangePasswordDocument;
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
@@ -283,10 +291,6 @@ export function graphql(source: "\n  query MyClasses {\n    myClasses {\n      c
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function graphql(source: "\n  query BursarSummary($termId: ID!) {\n    termFeeSummary(termId: $termId) { expectedKobo collectedKobo collectedOnlineKobo outstandingKobo debtorCount }\n  }\n"): typeof import('./graphql').BursarSummaryDocument;
-/**
- * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
- */
-export function graphql(source: "\n  query Notices {\n    notices(limit: 5) { id title body createdAt }\n  }\n"): typeof import('./graphql').NoticesDocument;
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
@@ -371,6 +375,10 @@ export function graphql(source: "\n  query ChildResult($studentId: ID!, $termId:
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function graphql(source: "\n  query ChildLedger($studentId: ID!) {\n    ledger(studentId: $studentId) {\n      balanceKobo\n      student { fullName admissionNumber currentArm { label } }\n      payments { id amountKobo method status receiptNumber paidAt }\n    }\n  }\n"): typeof import('./graphql').ChildLedgerDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  query ChildAttendance($studentId: ID!, $termId: ID!) {\n    attendanceHistory(studentId: $studentId, termId: $termId) { id date status }\n  }\n"): typeof import('./graphql').ChildAttendanceDocument;
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
@@ -583,6 +591,10 @@ export function graphql(source: "\n  mutation SignUpSchool(\n    $name: String!\
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function graphql(source: "\n  mutation Logout {\n    logout\n  }\n"): typeof import('./graphql').LogoutDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  query Notices {\n    notices(limit: 5) { id title body createdAt }\n  }\n"): typeof import('./graphql').NoticesDocument;
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
