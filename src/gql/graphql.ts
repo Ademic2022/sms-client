@@ -47,6 +47,11 @@ export type PayFor = {
   studentId: string | number;
 };
 
+export type PromotionDecision = {
+  decision: string;
+  studentId: string | number;
+};
+
 export type RatingInput = {
   rating: number;
   studentId: string | number;
@@ -540,15 +545,6 @@ export type SetComponentsMutationVariables = Exact<{
 
 export type SetComponentsMutation = { setAssessmentComponents: { id: string } };
 
-export type PromoteClassMutationVariables = Exact<{
-  armId: string | number;
-  from: string | number;
-  to: string | number;
-}>;
-
-
-export type PromoteClassMutation = { promoteClass: { promoted: number, repeated: number, graduated: number } };
-
 export type BillingQueryVariables = Exact<{ [key: string]: never; }>;
 
 
@@ -626,6 +622,30 @@ export type PublishPrivacyNoticeMutationVariables = Exact<{
 
 
 export type PublishPrivacyNoticeMutation = { publishPrivacyNotice: { version: number } };
+
+export type PromotionSessionsQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type PromotionSessionsQuery = { sessions: Array<{ id: string, name: string, startDate: string, isCurrent: boolean }>, schoolSettings: { promotionPassMark: number } };
+
+export type PromotionPreviewQueryVariables = Exact<{
+  from: string | number;
+  to: string | number;
+  passMark?: number | null | undefined;
+}>;
+
+
+export type PromotionPreviewQuery = { promotionPreview: Array<{ movesTo: string | null, arm: { id: string, label: string }, rows: Array<{ average: string | null, suggestion: string, student: { id: string, fullName: string, admissionNumber: string } }> }> };
+
+export type PromoteSchoolMutationVariables = Exact<{
+  from: string | number;
+  to: string | number;
+  decisions: Array<PromotionDecision> | PromotionDecision;
+  passMark?: number | null | undefined;
+}>;
+
+
+export type PromoteSchoolMutation = { promoteSchool: { promoted: number, repeated: number, graduated: number } };
 
 export type StaffQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -1889,15 +1909,6 @@ export const SetComponentsDocument = new TypedDocumentString(`
   }
 }
     `) as unknown as TypedDocumentString<SetComponentsMutation, SetComponentsMutationVariables>;
-export const PromoteClassDocument = new TypedDocumentString(`
-    mutation PromoteClass($armId: ID!, $from: ID!, $to: ID!) {
-  promoteClass(armId: $armId, fromSessionId: $from, toSessionId: $to) {
-    promoted
-    repeated
-    graduated
-  }
-}
-    `) as unknown as TypedDocumentString<PromoteClassMutation, PromoteClassMutationVariables>;
 export const BillingDocument = new TypedDocumentString(`
     query Billing {
   billing {
@@ -2085,6 +2096,53 @@ export const PublishPrivacyNoticeDocument = new TypedDocumentString(`
   }
 }
     `) as unknown as TypedDocumentString<PublishPrivacyNoticeMutation, PublishPrivacyNoticeMutationVariables>;
+export const PromotionSessionsDocument = new TypedDocumentString(`
+    query PromotionSessions {
+  sessions {
+    id
+    name
+    startDate
+    isCurrent
+  }
+  schoolSettings {
+    promotionPassMark
+  }
+}
+    `) as unknown as TypedDocumentString<PromotionSessionsQuery, PromotionSessionsQueryVariables>;
+export const PromotionPreviewDocument = new TypedDocumentString(`
+    query PromotionPreview($from: ID!, $to: ID!, $passMark: Float) {
+  promotionPreview(fromSessionId: $from, toSessionId: $to, passMark: $passMark) {
+    arm {
+      id
+      label
+    }
+    movesTo
+    rows {
+      student {
+        id
+        fullName
+        admissionNumber
+      }
+      average
+      suggestion
+    }
+  }
+}
+    `) as unknown as TypedDocumentString<PromotionPreviewQuery, PromotionPreviewQueryVariables>;
+export const PromoteSchoolDocument = new TypedDocumentString(`
+    mutation PromoteSchool($from: ID!, $to: ID!, $decisions: [PromotionDecision!]!, $passMark: Float) {
+  promoteSchool(
+    fromSessionId: $from
+    toSessionId: $to
+    decisions: $decisions
+    passMark: $passMark
+  ) {
+    promoted
+    repeated
+    graduated
+  }
+}
+    `) as unknown as TypedDocumentString<PromoteSchoolMutation, PromoteSchoolMutationVariables>;
 export const StaffDocument = new TypedDocumentString(`
     query Staff {
   staff {

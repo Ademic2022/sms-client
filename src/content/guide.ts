@@ -217,7 +217,7 @@ export const GUIDE: GuideSection[] = [
             list: [
               "**Settings → Academics**: expand a level to add arms, pick each arm's **class teacher**, and edit the level's subjects.",
               "**Settings → Staff → Subject teachers → Assign a teacher**: choose a class, a subject and its teacher. A teacher only sees the classes and subjects assigned to them.",
-              "At the end of a session, **Promote a class** moves its students into the next class in the new session.",
+              "At the end of a session, **Settings → Academic setup → Review and promote** lists every class with each student's year average. Students below the pass mark are suggested to repeat; adjust any decision, then **Promote all** moves the whole school into the new session. Final-year students graduate.",
             ],
           },
         ],

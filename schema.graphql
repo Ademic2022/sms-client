@@ -149,6 +149,14 @@ type ChildResult {
   reportCardUrl: String
 }
 
+type ClassPromotion {
+  arm: ArmType!
+
+  """The class it moves into, or null when its students graduate."""
+  movesTo: String
+  rows: [PromotionRow!]!
+}
+
 type ClassReportInputs {
   traits: [TraitType!]!
   ratings: [TraitRatingRow!]!
@@ -505,6 +513,9 @@ type Mutation {
   addGuardian(studentId: ID!, guardian: GuardianInput!): StudentType!
   changeStudentStatus(id: ID!, status: String!, reason: String!): StudentType!
   setStudentSubjects(studentId: ID!, subjectIds: [ID!]!): [SubjectType!]!
+
+  """Promote every class in one go, applying each student's decision."""
+  promoteSchool(fromSessionId: ID!, toSessionId: ID!, decisions: [PromotionDecision!]!, passMark: Float = null): PromotionResult!
   promoteClass(armId: ID!, fromSessionId: ID!, toSessionId: ID!, decisions: [PromotionDecision!] = null): PromotionResult!
   markAttendance(armId: ID!, date: Date!, entries: [AttendanceEntry!]!): AttendanceSaveResult!
   saveScores(armId: ID!, subjectId: ID!, termId: ID!, entries: [ScoreEntry!]!): SaveScoresResult!
@@ -722,6 +733,16 @@ type PromotionResult {
   graduated: Int!
 }
 
+type PromotionRow {
+  student: StudentType!
+
+  """Year average: cumulative from the last term, else that term's."""
+  average: Decimal
+
+  """promote, repeat (below the pass mark) or graduate (final level)."""
+  suggestion: String!
+}
+
 type Query {
   """The logged-in user in this school, or null."""
   me: Me
@@ -743,6 +764,11 @@ type Query {
   staff: [MembershipType!]!
   roles: [RoleType!]!
   myClasses: MyClasses!
+
+  """
+  End of session: every class's students with their year average and a suggested move.
+  """
+  promotionPreview(fromSessionId: ID!, toSessionId: ID!, passMark: Float = null): [ClassPromotion!]!
 
   """The signed-in student's own record (student portal)."""
   myStudent: StudentType
@@ -902,6 +928,7 @@ type SchoolSettings {
   feeReminderEveryDays: Int!
   feeReminderMinBalanceKobo: Kobo!
   feeReminderTemplate: String!
+  promotionPassMark: Float!
 }
 
 type SchoolUsage {

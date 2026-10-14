@@ -72,7 +72,6 @@ type Documents = {
     "mutation SetCurrentTerm($termId: ID!) { setCurrentTerm(termId: $termId) { id } }": typeof types.SetCurrentTermDocument,
     "mutation SaveArm($id: ID, $levelId: ID!, $name: String!, $classTeacherId: ID) { saveArm(id: $id, levelId: $levelId, name: $name, classTeacherId: $classTeacherId) { id } }": typeof types.SaveArmDocument,
     "\n  mutation SetComponents($levelId: ID!, $components: [ComponentInput!]!) { setAssessmentComponents(levelId: $levelId, components: $components) { id } }\n": typeof types.SetComponentsDocument,
-    "\n  mutation PromoteClass($armId: ID!, $from: ID!, $to: ID!) { promoteClass(armId: $armId, fromSessionId: $from, toSessionId: $to) { promoted repeated graduated } }\n": typeof types.PromoteClassDocument,
     "\n  query Billing {\n    billing {\n      plan { name pricePerStudentKobo minimumKobo }\n      accessMode trialEndsAt inTrial graceDays activeStudents outstandingKobo\n      invoices { id number periodLabel studentCount pricePerStudentKobo amountKobo dueDate status paidAt paidVia readOnlyFrom isOverdue pdfUrl }\n      smsBalance smsUnitPriceKobo smsMinUnits smsMaxUnits\n      smsPurchases { id units amountKobo reason createdAt }\n      bank { bankName accountNumber accountName }\n      billingEmail\n    }\n  }\n": typeof types.BillingDocument,
     "\n  mutation PayInvoice($invoiceId: ID!, $returnPath: String!) { payInvoice(invoiceId: $invoiceId, returnPath: $returnPath) { authorizationUrl } }\n": typeof types.PayInvoiceDocument,
     "\n  mutation BuySmsUnits($units: Int!, $returnPath: String!) { buySmsUnits(units: $units, returnPath: $returnPath) { authorizationUrl } }\n": typeof types.BuySmsUnitsDocument,
@@ -84,6 +83,9 @@ type Documents = {
     "mutation RevokeSupport($id: ID!) { revokeSupportAccess(grantId: $id) }": typeof types.RevokeSupportDocument,
     "\n  query ConsentOverview {\n    consentOverview(limit: 50) {\n      notice { version body publishedAt }\n      activeStudents withConsent dpaVersion dpaAcceptedAt dpaAcceptedBy\n      missing { id fullName admissionNumber currentArm { label } }\n    }\n  }\n": typeof types.ConsentOverviewDocument,
     "\n  mutation PublishPrivacyNotice($body: String!) { publishPrivacyNotice(body: $body) { version } }\n": typeof types.PublishPrivacyNoticeDocument,
+    "\n  query PromotionSessions { sessions { id name startDate isCurrent } schoolSettings { promotionPassMark } }\n": typeof types.PromotionSessionsDocument,
+    "\n  query PromotionPreview($from: ID!, $to: ID!, $passMark: Float) {\n    promotionPreview(fromSessionId: $from, toSessionId: $to, passMark: $passMark) {\n      arm { id label } movesTo\n      rows { student { id fullName admissionNumber } average suggestion }\n    }\n  }\n": typeof types.PromotionPreviewDocument,
+    "\n  mutation PromoteSchool($from: ID!, $to: ID!, $decisions: [PromotionDecision!]!, $passMark: Float) {\n    promoteSchool(fromSessionId: $from, toSessionId: $to, decisions: $decisions, passMark: $passMark) { promoted repeated graduated }\n  }\n": typeof types.PromoteSchoolDocument,
     "\n  query Staff {\n    staff { id title isActive user { id fullName phone email } roles { code name } }\n    roles { code name isSystem }\n    levels { id arms { id label } levelSubjects { subject { id name } } }\n    subjectAssignments { id arm { label } subject { name } teacher { user { fullName } } }\n  }\n": typeof types.StaffDocument,
     "\n  mutation AddStaff($firstName: String!, $lastName: String!, $phone: String, $email: String, $roleCodes: [String!]!) {\n    addStaff(firstName: $firstName, lastName: $lastName, phone: $phone, email: $email, roleCodes: $roleCodes) { id }\n  }\n": typeof types.AddStaffDocument,
     "\n  mutation SetStaffRoles($id: ID!, $roleCodes: [String!]!, $isActive: Boolean!) {\n    setStaffRoles(membershipId: $id, roleCodes: $roleCodes, isActive: $isActive) { id }\n  }\n": typeof types.SetStaffRolesDocument,
@@ -190,7 +192,6 @@ const documents: Documents = {
     "mutation SetCurrentTerm($termId: ID!) { setCurrentTerm(termId: $termId) { id } }": types.SetCurrentTermDocument,
     "mutation SaveArm($id: ID, $levelId: ID!, $name: String!, $classTeacherId: ID) { saveArm(id: $id, levelId: $levelId, name: $name, classTeacherId: $classTeacherId) { id } }": types.SaveArmDocument,
     "\n  mutation SetComponents($levelId: ID!, $components: [ComponentInput!]!) { setAssessmentComponents(levelId: $levelId, components: $components) { id } }\n": types.SetComponentsDocument,
-    "\n  mutation PromoteClass($armId: ID!, $from: ID!, $to: ID!) { promoteClass(armId: $armId, fromSessionId: $from, toSessionId: $to) { promoted repeated graduated } }\n": types.PromoteClassDocument,
     "\n  query Billing {\n    billing {\n      plan { name pricePerStudentKobo minimumKobo }\n      accessMode trialEndsAt inTrial graceDays activeStudents outstandingKobo\n      invoices { id number periodLabel studentCount pricePerStudentKobo amountKobo dueDate status paidAt paidVia readOnlyFrom isOverdue pdfUrl }\n      smsBalance smsUnitPriceKobo smsMinUnits smsMaxUnits\n      smsPurchases { id units amountKobo reason createdAt }\n      bank { bankName accountNumber accountName }\n      billingEmail\n    }\n  }\n": types.BillingDocument,
     "\n  mutation PayInvoice($invoiceId: ID!, $returnPath: String!) { payInvoice(invoiceId: $invoiceId, returnPath: $returnPath) { authorizationUrl } }\n": types.PayInvoiceDocument,
     "\n  mutation BuySmsUnits($units: Int!, $returnPath: String!) { buySmsUnits(units: $units, returnPath: $returnPath) { authorizationUrl } }\n": types.BuySmsUnitsDocument,
@@ -202,6 +203,9 @@ const documents: Documents = {
     "mutation RevokeSupport($id: ID!) { revokeSupportAccess(grantId: $id) }": types.RevokeSupportDocument,
     "\n  query ConsentOverview {\n    consentOverview(limit: 50) {\n      notice { version body publishedAt }\n      activeStudents withConsent dpaVersion dpaAcceptedAt dpaAcceptedBy\n      missing { id fullName admissionNumber currentArm { label } }\n    }\n  }\n": types.ConsentOverviewDocument,
     "\n  mutation PublishPrivacyNotice($body: String!) { publishPrivacyNotice(body: $body) { version } }\n": types.PublishPrivacyNoticeDocument,
+    "\n  query PromotionSessions { sessions { id name startDate isCurrent } schoolSettings { promotionPassMark } }\n": types.PromotionSessionsDocument,
+    "\n  query PromotionPreview($from: ID!, $to: ID!, $passMark: Float) {\n    promotionPreview(fromSessionId: $from, toSessionId: $to, passMark: $passMark) {\n      arm { id label } movesTo\n      rows { student { id fullName admissionNumber } average suggestion }\n    }\n  }\n": types.PromotionPreviewDocument,
+    "\n  mutation PromoteSchool($from: ID!, $to: ID!, $decisions: [PromotionDecision!]!, $passMark: Float) {\n    promoteSchool(fromSessionId: $from, toSessionId: $to, decisions: $decisions, passMark: $passMark) { promoted repeated graduated }\n  }\n": types.PromoteSchoolDocument,
     "\n  query Staff {\n    staff { id title isActive user { id fullName phone email } roles { code name } }\n    roles { code name isSystem }\n    levels { id arms { id label } levelSubjects { subject { id name } } }\n    subjectAssignments { id arm { label } subject { name } teacher { user { fullName } } }\n  }\n": types.StaffDocument,
     "\n  mutation AddStaff($firstName: String!, $lastName: String!, $phone: String, $email: String, $roleCodes: [String!]!) {\n    addStaff(firstName: $firstName, lastName: $lastName, phone: $phone, email: $email, roleCodes: $roleCodes) { id }\n  }\n": types.AddStaffDocument,
     "\n  mutation SetStaffRoles($id: ID!, $roleCodes: [String!]!, $isActive: Boolean!) {\n    setStaffRoles(membershipId: $id, roleCodes: $roleCodes, isActive: $isActive) { id }\n  }\n": types.SetStaffRolesDocument,
@@ -482,10 +486,6 @@ export function graphql(source: "\n  mutation SetComponents($levelId: ID!, $comp
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
-export function graphql(source: "\n  mutation PromoteClass($armId: ID!, $from: ID!, $to: ID!) { promoteClass(armId: $armId, fromSessionId: $from, toSessionId: $to) { promoted repeated graduated } }\n"): typeof import('./graphql').PromoteClassDocument;
-/**
- * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
- */
 export function graphql(source: "\n  query Billing {\n    billing {\n      plan { name pricePerStudentKobo minimumKobo }\n      accessMode trialEndsAt inTrial graceDays activeStudents outstandingKobo\n      invoices { id number periodLabel studentCount pricePerStudentKobo amountKobo dueDate status paidAt paidVia readOnlyFrom isOverdue pdfUrl }\n      smsBalance smsUnitPriceKobo smsMinUnits smsMaxUnits\n      smsPurchases { id units amountKobo reason createdAt }\n      bank { bankName accountNumber accountName }\n      billingEmail\n    }\n  }\n"): typeof import('./graphql').BillingDocument;
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
@@ -527,6 +527,18 @@ export function graphql(source: "\n  query ConsentOverview {\n    consentOvervie
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function graphql(source: "\n  mutation PublishPrivacyNotice($body: String!) { publishPrivacyNotice(body: $body) { version } }\n"): typeof import('./graphql').PublishPrivacyNoticeDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  query PromotionSessions { sessions { id name startDate isCurrent } schoolSettings { promotionPassMark } }\n"): typeof import('./graphql').PromotionSessionsDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  query PromotionPreview($from: ID!, $to: ID!, $passMark: Float) {\n    promotionPreview(fromSessionId: $from, toSessionId: $to, passMark: $passMark) {\n      arm { id label } movesTo\n      rows { student { id fullName admissionNumber } average suggestion }\n    }\n  }\n"): typeof import('./graphql').PromotionPreviewDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  mutation PromoteSchool($from: ID!, $to: ID!, $decisions: [PromotionDecision!]!, $passMark: Float) {\n    promoteSchool(fromSessionId: $from, toSessionId: $to, decisions: $decisions, passMark: $passMark) { promoted repeated graduated }\n  }\n"): typeof import('./graphql').PromoteSchoolDocument;
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */

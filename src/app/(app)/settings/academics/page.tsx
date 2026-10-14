@@ -5,7 +5,7 @@ import { Fragment, useState } from "react";
 import { IconChevronRight, IconClose, IconPlus } from "@/components/icons";
 import { GradingScaleDialog, LevelDialog, LevelSubjectsDialog, SECTIONS, type LevelForm, type ScaleForm } from "@/components/setup/AcademicDialogs";
 import { SettingsNav } from "@/components/SettingsNav";
-import { Badge, Button, Card, Dialog, ErrorNote, Field, IconButton, Input, Loading, Notice, PageHeader, Select, Table, TD, TH, cx } from "@/components/ui";
+import { Badge, Button, ButtonLink, Card, Dialog, ErrorNote, Field, IconButton, Input, Loading, Notice, PageHeader, Select, TD, TH, Table, cx } from "@/components/ui";
 import { graphql } from "@/gql";
 import { gql, useGql } from "@/lib/api";
 import { useSession } from "@/lib/session";
@@ -38,9 +38,6 @@ const SetCurrentTermDocument = graphql(`mutation SetCurrentTerm($termId: ID!) { 
 const SaveArmDocument = graphql(`mutation SaveArm($id: ID, $levelId: ID!, $name: String!, $classTeacherId: ID) { saveArm(id: $id, levelId: $levelId, name: $name, classTeacherId: $classTeacherId) { id } }`);
 const SetComponentsDocument = graphql(`
   mutation SetComponents($levelId: ID!, $components: [ComponentInput!]!) { setAssessmentComponents(levelId: $levelId, components: $components) { id } }
-`);
-const PromoteDocument = graphql(`
-  mutation PromoteClass($armId: ID!, $from: ID!, $to: ID!) { promoteClass(armId: $armId, fromSessionId: $from, toSessionId: $to) { promoted repeated graduated } }
 `);
 
 function fmt(iso: string | null | undefined) {
@@ -105,11 +102,10 @@ export default function AcademicSetupPage() {
   const { data, error, isLoading, mutate } = useGql(AcademicSetupDocument, {});
   const [err, setErr] = useState<string | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
-  const [dialog, setDialog] = useState<null | "session" | "term" | "promote">(null);
+  const [dialog, setDialog] = useState<null | "session" | "term">(null);
   const [session, setSession] = useState({ name: "", startDate: "", endDate: "" });
   const [term, setTerm] = useState({ sessionId: "", number: "1", startDate: "", endDate: "", daysOpened: "", nextTermBegins: "" });
   const [newArm, setNewArm] = useState<Record<string, string>>({});
-  const [promo, setPromo] = useState({ armId: "", from: "", to: "" });
   const [busy, setBusy] = useState(false);
   const [dialogErr, setDialogErr] = useState<string | null>(null);
   const [levelForm, setLevelForm] = useState<LevelForm | null>(null);
@@ -156,7 +152,6 @@ export default function AcademicSetupPage() {
     setDialog("term");
   }
 
-  const allArms = data.levels.flatMap((l) => l.arms);
 
   return (
     <>
@@ -312,9 +307,9 @@ export default function AcademicSetupPage() {
         })}
       </Card>
 
-      <Card title="End-of-session promotion" description="Moves every active student in a class to the next level. Students in the final level graduate."
-        actions={<Button size="sm" variant="secondary" onClick={() => { setDialogErr(null); setDialog("promote"); }}>Promote a class</Button>}>
-        <p className="text-sm leading-relaxed text-muted">Run this once the third term&apos;s results are published. Students who should repeat can be moved back afterwards from their profile.</p>
+      <Card title="End-of-session promotion" description="Moves every active student to the next level; students in the final level graduate."
+        actions={<ButtonLink size="sm" variant="secondary" href="/settings/promotion">Review and promote</ButtonLink>}>
+        <p className="text-sm leading-relaxed text-muted">Run this once the third term&apos;s results are published and the new session exists. You review each class with every student&apos;s year average, choose who repeats, then promote the whole school at once.</p>
       </Card>
 
       {levelForm && (
@@ -370,34 +365,6 @@ export default function AcademicSetupPage() {
         </div>
       </Dialog>
 
-      <Dialog open={dialog === "promote"} onClose={() => setDialog(null)} title="Promote a class" description="Every active student moves to the same arm in the next level. Final-year students graduate."
-        footer={<><Button variant="secondary" onClick={() => setDialog(null)}>Cancel</Button><Button busy={busy} disabled={!promo.armId || !promo.from || !promo.to}
-          onClick={() => runDialog(async () => {
-            const { promoteClass: r } = await gql(PromoteDocument, { armId: promo.armId, from: promo.from, to: promo.to });
-            return `Promotion complete: ${r.promoted} promoted, ${r.repeated} repeating, ${r.graduated} graduated.`;
-          })}>Promote class</Button></>}>
-        <div className="space-y-4">
-          <ErrorNote error={dialogErr} />
-          <Field label="Class">
-            <Select value={promo.armId} onChange={(e) => setPromo({ ...promo, armId: e.target.value })}>
-              <option value="">Select a class</option>
-              {allArms.map((a) => <option key={a.id} value={a.id}>{a.label}</option>)}
-            </Select>
-          </Field>
-          <div className="grid grid-cols-2 gap-4">
-            <Field label="From session">
-              <Select value={promo.from} onChange={(e) => setPromo({ ...promo, from: e.target.value })}>
-                <option value="">Select</option>{data.sessions.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
-              </Select>
-            </Field>
-            <Field label="Into session">
-              <Select value={promo.to} onChange={(e) => setPromo({ ...promo, to: e.target.value })}>
-                <option value="">Select</option>{data.sessions.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
-              </Select>
-            </Field>
-          </div>
-        </div>
-      </Dialog>
     </>
   );
 }
