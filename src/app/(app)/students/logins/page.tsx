@@ -46,6 +46,7 @@ export default function StudentLoginsPage() {
       const made = await fn();
       // Newest first; a student reset twice keeps only their latest password.
       setSlips((old) => [...made, ...old.filter((o) => !made.some((m) => m.student.id === o.student.id))]);
+      window.scrollTo({ top: 0, behavior: "smooth" }); // the new slips appear at the top of the page
       await students.mutate();
     } catch (e) {
       setErr((e as Error).message);
@@ -65,6 +66,35 @@ export default function StudentLoginsPage() {
           subtitle="Students sign in with their admission number and a starting password, then choose their own."
         />
         <ErrorNote error={err} />
+        {slips.length > 0 && (
+          <Notice tone="warning" title={`${slips.length} login slip${slips.length === 1 ? "" : "s"} ready: print ${slips.length === 1 ? "it" : "them"} now`}>
+            Starting passwords are shown only once. If a slip is lost, use Reset password to make a new one.
+            <div className="mt-3 flex flex-wrap gap-2">
+              <Button size="sm" onClick={() => window.print()}>Print slips</Button>
+              <Button size="sm" variant="secondary" onClick={() => setSlips([])}>I&apos;ve printed them</Button>
+            </div>
+          </Notice>
+        )}
+      </div>
+
+      {slips.length > 0 && (
+        <section id="login-slips" aria-label="Login slips" className="mt-6 grid gap-3 sm:grid-cols-2 print:grid-cols-2 print:gap-2">
+          {slips.map((slip) => (
+            <div key={slip.student.id} className="break-inside-avoid rounded-lg border border-dashed border-line-strong bg-surface p-4 text-sm print:rounded-none print:border-black">
+              <div className="font-semibold text-ink">{school?.name} student portal</div>
+              <div className="mt-1 text-muted">{slip.student.fullName} · {slip.student.currentArm?.label}</div>
+              <dl className="mt-3 grid grid-cols-[auto_1fr] gap-x-3 gap-y-1">
+                <dt className="text-muted">Web address</dt><dd className="font-medium text-ink">{address}</dd>
+                <dt className="text-muted">Admission number</dt><dd className="font-mono font-medium text-ink">{slip.student.admissionNumber}</dd>
+                <dt className="text-muted">Starting password</dt><dd className="font-mono text-base font-semibold tracking-wide text-ink">{slip.password}</dd>
+              </dl>
+              <p className="mt-3 text-xs text-muted">You will choose your own password the first time you sign in. Keep it to yourself.</p>
+            </div>
+          ))}
+        </section>
+      )}
+
+      <div className="print:hidden mt-6 space-y-6">
         <Card
           flush
           title="Choose a class"
@@ -111,30 +141,8 @@ export default function StudentLoginsPage() {
             </>
           )}
         </Card>
-        {slips.length > 0 && (
-          <Notice tone="warning" title={`${slips.length} login slip${slips.length === 1 ? "" : "s"} ready`}>
-            Print them now: starting passwords are shown only once. A lost slip can be replaced with Reset password.
-            <div className="mt-3"><Button size="sm" onClick={() => window.print()}>Print slips</Button></div>
-          </Notice>
-        )}
       </div>
 
-      {slips.length > 0 && (
-        <section id="login-slips" aria-label="Login slips" className="grid gap-3 sm:grid-cols-2 print:grid-cols-2 print:gap-2">
-          {slips.map((slip) => (
-            <div key={slip.student.id} className="break-inside-avoid rounded-lg border border-dashed border-line-strong bg-surface p-4 text-sm print:rounded-none print:border-black">
-              <div className="font-semibold text-ink">{school?.name} student portal</div>
-              <div className="mt-1 text-muted">{slip.student.fullName} · {slip.student.currentArm?.label}</div>
-              <dl className="mt-3 grid grid-cols-[auto_1fr] gap-x-3 gap-y-1">
-                <dt className="text-muted">Web address</dt><dd className="font-medium text-ink">{address}</dd>
-                <dt className="text-muted">Admission number</dt><dd className="font-mono font-medium text-ink">{slip.student.admissionNumber}</dd>
-                <dt className="text-muted">Starting password</dt><dd className="font-mono text-base font-semibold tracking-wide text-ink">{slip.password}</dd>
-              </dl>
-              <p className="mt-3 text-xs text-muted">You will choose your own password the first time you sign in. Keep it to yourself.</p>
-            </div>
-          ))}
-        </section>
-      )}
       {/* On paper, only the slips: the app's menu and this page's controls are left out. */}
       <style>{`@media print { body * { visibility: hidden; } #login-slips, #login-slips * { visibility: visible; } #login-slips { position: absolute; inset: 0 auto auto 0; width: 100%; } }`}</style>
     </>

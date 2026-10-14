@@ -1,3 +1,14 @@
+type ActiveSupportGrant {
+  schoolId: ID!
+  schoolName: String!
+  reason: String!
+  grantedBy: String!
+  expiresAt: DateTime!
+
+  """Where support signs in to help this school."""
+  portalUrl: String!
+}
+
 type ArmType {
   id: ID!
   name: String!
@@ -704,6 +715,7 @@ type PlatformOverview {
   activeStudents: Int!
   onTrial: Int!
   pendingSenders: [PendingSender!]!
+  supportGrants: [ActiveSupportGrant!]!
 }
 
 type PlatformPaymentResult {
