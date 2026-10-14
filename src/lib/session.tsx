@@ -64,3 +64,15 @@ export function useSession(): SessionValue {
   if (!value) throw new Error("useSession must be used inside SessionProvider");
   return value;
 }
+
+/** Where someone lands after signing in: their portal page, or the staff overview. */
+export function homeFor(permissions: readonly string[]) {
+  if (permissions.length && permissions.every((p) => p === "portal.student")) return "/student";
+  if (permissions.length && permissions.every((p) => p === "portal.parent")) return "/parent";
+  return "/dashboard";
+}
+
+/** True for parents and students: the portal pages only, no staff menu. */
+export function isPortalOnly(permissions: readonly string[]) {
+  return permissions.length > 0 && permissions.every((p) => p.startsWith("portal."));
+}

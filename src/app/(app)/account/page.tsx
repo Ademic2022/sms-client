@@ -1,12 +1,13 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 
 import { Button, Card, ErrorNote, Field, FormSection, Input, Notice, PageHeader } from "@/components/ui";
 import { graphql } from "@/gql";
 import { gql } from "@/lib/api";
 import { localPhone } from "@/lib/money";
-import { useSession } from "@/lib/session";
+import { homeFor, useSession } from "@/lib/session";
 
 const ChangePasswordDocument = graphql(`
   mutation ChangePassword($currentPassword: String!, $newPassword: String!) {
@@ -17,7 +18,9 @@ const ChangePasswordDocument = graphql(`
 const EMPTY = { current: "", next: "", again: "" };
 
 export default function AccountPage() {
-  const { me, school } = useSession();
+  const { me, school, refresh } = useSession();
+  const router = useRouter();
+  const firstTime = Boolean(me?.mustChangePassword);
   const [form, setForm] = useState(EMPTY);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -35,6 +38,11 @@ export default function AccountPage() {
     try {
       await gql(ChangePasswordDocument, { currentPassword: form.current, newPassword: form.next });
       setForm(EMPTY);
+      if (firstTime && me) {
+        await refresh(); // the starting password is gone: carry on to the portal
+        router.replace(homeFor(me.permissions));
+        return;
+      }
       setDone(true);
     } catch (e2) {
       setErr((e2 as Error).message);
@@ -48,6 +56,11 @@ export default function AccountPage() {
   return (
     <>
       <PageHeader title="Your account" subtitle={school ? `Signed in to ${school.name}` : undefined} />
+      {firstTime && (
+        <Notice tone="warning" title="Choose your own password">
+          You signed in with a starting password from the school. Choose a new one that only you know before you continue.
+        </Notice>
+      )}
       <Card>
         <FormSection title="Your details" description="To change your name, phone number or email address, ask the school office.">
           <dl className="grid gap-4 text-sm sm:grid-cols-3">
@@ -60,7 +73,7 @@ export default function AccountPage() {
           <form onSubmit={submit} className="max-w-md space-y-4">
             <ErrorNote error={err} />
             {done && <Notice tone="success">Password changed. Use it the next time you sign in.</Notice>}
-            <Field label="Current password">
+            <Field label={firstTime ? "Starting password from the school" : "Current password"}>
               <Input type="password" autoComplete="current-password" value={form.current} onChange={set("current")} required />
             </Field>
             <Field label="New password">

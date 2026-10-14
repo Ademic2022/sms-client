@@ -492,6 +492,14 @@ type Mutation {
   assignSubjectTeacher(armId: ID!, subjectId: ID!, teacherId: ID!): SubjectAssignmentType!
   addStaff(firstName: String!, lastName: String!, roleCodes: [String!]!, phone: String = null, email: String = null, title: String! = ""): MembershipType!
   setStaffRoles(membershipId: ID!, roleCodes: [String!]!, isActive: Boolean! = true): MembershipType!
+
+  """Create portal logins for every student in a class who has none."""
+  createStudentLogins(armId: ID!): [StudentLogin!]!
+
+  """
+  A new starting password for one student; creates their login if they have none.
+  """
+  resetStudentPassword(studentId: ID!): StudentLogin!
   createStudent(data: StudentInput!, guardians: [GuardianInput!]!): StudentType!
   updateStudent(id: ID!, data: StudentInput!): StudentType!
   addGuardian(studentId: ID!, guardian: GuardianInput!): StudentType!
@@ -735,6 +743,9 @@ type Query {
   staff: [MembershipType!]!
   roles: [RoleType!]!
   myClasses: MyClasses!
+
+  """The signed-in student's own record (student portal)."""
+  myStudent: StudentType
   students(armId: ID = null, search: String = null, status: String = "active", offset: Int! = 0, limit: Int! = 50): StudentPage!
   student(id: ID!): StudentType!
   studentSubjects(studentId: ID!): [SubjectType!]!
@@ -988,6 +999,11 @@ input StudentInput {
   examNumbers: JSON = null
 }
 
+type StudentLogin {
+  student: StudentType!
+  password: String!
+}
+
 type StudentPage {
   items: [StudentType!]!
   total: Int!
@@ -1020,6 +1036,9 @@ type StudentType {
   guardianLinks: [StudentGuardianType!]!
   fullName: String!
   photoUrl: String
+
+  """Whether the student has a portal login."""
+  hasLogin: Boolean!
   medicalNotes: String
   emergencyContactName: String
   emergencyContactPhone: String

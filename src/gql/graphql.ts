@@ -335,28 +335,12 @@ export type SendMessageMutationVariables = Exact<{
 
 export type SendMessageMutation = { sendMessage: { id: string, unitsUsed: number } };
 
-export type ChildResultQueryVariables = Exact<{
-  studentId: string | number;
-  termId: string | number;
-}>;
-
-
-export type ChildResultQuery = { childResult: { visible: boolean, reason: string, classSize: number | null, classAverage: string | null, reportCardUrl: string | null, result: { total: string, average: string | null, position: number | null, cumulativeAverage: string | null, cumulativePosition: number | null, student: { fullName: string, currentArm: { label: string } | null }, subjects: Array<{ subjectId: string, subjectName: string, total: string | null, grade: string, remark: string, position: number | null, cumulativeAverage: string | null, cumulativeGrade: string }> } | null } };
-
 export type ChildLedgerQueryVariables = Exact<{
   studentId: string | number;
 }>;
 
 
 export type ChildLedgerQuery = { ledger: { balanceKobo: number, student: { fullName: string, admissionNumber: string, currentArm: { label: string } | null }, payments: Array<{ id: string, amountKobo: number, method: string, status: string, receiptNumber: string, paidAt: string }> } };
-
-export type ChildAttendanceQueryVariables = Exact<{
-  studentId: string | number;
-  termId: string | number;
-}>;
-
-
-export type ChildAttendanceQuery = { attendanceHistory: Array<{ id: string, date: string, status: string }> };
 
 export type GiveConsentMutationVariables = Exact<{
   studentIds: Array<string | number> | string | number;
@@ -677,6 +661,11 @@ export type AssignSubjectTeacherMutationVariables = Exact<{
 
 export type AssignSubjectTeacherMutation = { assignSubjectTeacher: { id: string } };
 
+export type MyStudentQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type MyStudentQuery = { myStudent: { id: string, fullName: string, firstName: string, admissionNumber: string, currentArm: { label: string } | null } | null };
+
 export type StudentProfileQueryVariables = Exact<{
   id: string | number;
   withFees: boolean;
@@ -699,6 +688,27 @@ export type ChangeStudentStatusMutationVariables = Exact<{
 
 
 export type ChangeStudentStatusMutation = { changeStudentStatus: { id: string, status: string } };
+
+export type ClassStudentLoginsQueryVariables = Exact<{
+  armId?: string | number | null | undefined;
+}>;
+
+
+export type ClassStudentLoginsQuery = { students: { total: number, items: Array<{ id: string, fullName: string, admissionNumber: string, hasLogin: boolean, currentArm: { label: string } | null }> } };
+
+export type CreateStudentLoginsMutationVariables = Exact<{
+  armId: string | number;
+}>;
+
+
+export type CreateStudentLoginsMutation = { createStudentLogins: Array<{ password: string, student: { id: string, fullName: string, admissionNumber: string, currentArm: { label: string } | null } }> };
+
+export type ResetStudentPasswordMutationVariables = Exact<{
+  studentId: string | number;
+}>;
+
+
+export type ResetStudentPasswordMutation = { resetStudentPassword: { password: string, student: { id: string, fullName: string, admissionNumber: string, currentArm: { label: string } | null } } };
 
 export type CreateStudentMutationVariables = Exact<{
   data: StudentInput;
@@ -747,7 +757,7 @@ export type LoginMutationVariables = Exact<{
 }>;
 
 
-export type LoginMutation = { login: { permissions: Array<string>, isPlatformAdmin: boolean } };
+export type LoginMutation = { login: { permissions: Array<string>, isPlatformAdmin: boolean, mustChangePassword: boolean } };
 
 export type PublicPrivacyNoticeQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -832,6 +842,22 @@ export type VoidInvoiceMutationVariables = Exact<{
 
 
 export type VoidInvoiceMutation = { voidInvoice: { id: string, status: string } };
+
+export type ChildResultQueryVariables = Exact<{
+  studentId: string | number;
+  termId: string | number;
+}>;
+
+
+export type ChildResultQuery = { childResult: { visible: boolean, reason: string, classSize: number | null, classAverage: string | null, reportCardUrl: string | null, result: { total: string, average: string | null, position: number | null, cumulativeAverage: string | null, cumulativePosition: number | null, student: { fullName: string, currentArm: { label: string } | null }, subjects: Array<{ subjectId: string, subjectName: string, total: string | null, grade: string, remark: string, position: number | null, cumulativeAverage: string | null, cumulativeGrade: string }> } | null } };
+
+export type ChildAttendanceQueryVariables = Exact<{
+  studentId: string | number;
+  termId: string | number;
+}>;
+
+
+export type ChildAttendanceQuery = { attendanceHistory: Array<{ id: string, date: string, status: string }> };
 
 export type SaveLevelMutationVariables = Exact<{
   id?: string | number | null | undefined;
@@ -1452,40 +1478,6 @@ export const SendMessageDocument = new TypedDocumentString(`
   }
 }
     `) as unknown as TypedDocumentString<SendMessageMutation, SendMessageMutationVariables>;
-export const ChildResultDocument = new TypedDocumentString(`
-    query ChildResult($studentId: ID!, $termId: ID!) {
-  childResult(studentId: $studentId, termId: $termId) {
-    visible
-    reason
-    classSize
-    classAverage
-    reportCardUrl
-    result {
-      total
-      average
-      position
-      cumulativeAverage
-      cumulativePosition
-      student {
-        fullName
-        currentArm {
-          label
-        }
-      }
-      subjects {
-        subjectId
-        subjectName
-        total
-        grade
-        remark
-        position
-        cumulativeAverage
-        cumulativeGrade
-      }
-    }
-  }
-}
-    `) as unknown as TypedDocumentString<ChildResultQuery, ChildResultQueryVariables>;
 export const ChildLedgerDocument = new TypedDocumentString(`
     query ChildLedger($studentId: ID!) {
   ledger(studentId: $studentId) {
@@ -1508,15 +1500,6 @@ export const ChildLedgerDocument = new TypedDocumentString(`
   }
 }
     `) as unknown as TypedDocumentString<ChildLedgerQuery, ChildLedgerQueryVariables>;
-export const ChildAttendanceDocument = new TypedDocumentString(`
-    query ChildAttendance($studentId: ID!, $termId: ID!) {
-  attendanceHistory(studentId: $studentId, termId: $termId) {
-    id
-    date
-    status
-  }
-}
-    `) as unknown as TypedDocumentString<ChildAttendanceQuery, ChildAttendanceQueryVariables>;
 export const GiveConsentDocument = new TypedDocumentString(`
     mutation GiveConsent($studentIds: [ID!]!) {
   giveConsent(studentIds: $studentIds) {
@@ -2184,6 +2167,19 @@ export const AssignSubjectTeacherDocument = new TypedDocumentString(`
   }
 }
     `) as unknown as TypedDocumentString<AssignSubjectTeacherMutation, AssignSubjectTeacherMutationVariables>;
+export const MyStudentDocument = new TypedDocumentString(`
+    query MyStudent {
+  myStudent {
+    id
+    fullName
+    firstName
+    admissionNumber
+    currentArm {
+      label
+    }
+  }
+}
+    `) as unknown as TypedDocumentString<MyStudentQuery, MyStudentQueryVariables>;
 export const StudentProfileDocument = new TypedDocumentString(`
     query StudentProfile($id: ID!, $withFees: Boolean!, $withSubjects: Boolean!) {
   student(id: $id) {
@@ -2254,6 +2250,52 @@ export const ChangeStudentStatusDocument = new TypedDocumentString(`
   }
 }
     `) as unknown as TypedDocumentString<ChangeStudentStatusMutation, ChangeStudentStatusMutationVariables>;
+export const ClassStudentLoginsDocument = new TypedDocumentString(`
+    query ClassStudentLogins($armId: ID) {
+  students(armId: $armId, status: "active", limit: 200) {
+    total
+    items {
+      id
+      fullName
+      admissionNumber
+      hasLogin
+      currentArm {
+        label
+      }
+    }
+  }
+}
+    `) as unknown as TypedDocumentString<ClassStudentLoginsQuery, ClassStudentLoginsQueryVariables>;
+export const CreateStudentLoginsDocument = new TypedDocumentString(`
+    mutation CreateStudentLogins($armId: ID!) {
+  createStudentLogins(armId: $armId) {
+    password
+    student {
+      id
+      fullName
+      admissionNumber
+      currentArm {
+        label
+      }
+    }
+  }
+}
+    `) as unknown as TypedDocumentString<CreateStudentLoginsMutation, CreateStudentLoginsMutationVariables>;
+export const ResetStudentPasswordDocument = new TypedDocumentString(`
+    mutation ResetStudentPassword($studentId: ID!) {
+  resetStudentPassword(studentId: $studentId) {
+    password
+    student {
+      id
+      fullName
+      admissionNumber
+      currentArm {
+        label
+      }
+    }
+  }
+}
+    `) as unknown as TypedDocumentString<ResetStudentPasswordMutation, ResetStudentPasswordMutationVariables>;
 export const CreateStudentDocument = new TypedDocumentString(`
     mutation CreateStudent($data: StudentInput!, $guardians: [GuardianInput!]!) {
   createStudent(data: $data, guardians: $guardians) {
@@ -2309,6 +2351,7 @@ export const LoginDocument = new TypedDocumentString(`
   login(identifier: $identifier, password: $password) {
     permissions
     isPlatformAdmin
+    mustChangePassword
   }
 }
     `) as unknown as TypedDocumentString<LoginMutation, LoginMutationVariables>;
@@ -2436,6 +2479,49 @@ export const VoidInvoiceDocument = new TypedDocumentString(`
   }
 }
     `) as unknown as TypedDocumentString<VoidInvoiceMutation, VoidInvoiceMutationVariables>;
+export const ChildResultDocument = new TypedDocumentString(`
+    query ChildResult($studentId: ID!, $termId: ID!) {
+  childResult(studentId: $studentId, termId: $termId) {
+    visible
+    reason
+    classSize
+    classAverage
+    reportCardUrl
+    result {
+      total
+      average
+      position
+      cumulativeAverage
+      cumulativePosition
+      student {
+        fullName
+        currentArm {
+          label
+        }
+      }
+      subjects {
+        subjectId
+        subjectName
+        total
+        grade
+        remark
+        position
+        cumulativeAverage
+        cumulativeGrade
+      }
+    }
+  }
+}
+    `) as unknown as TypedDocumentString<ChildResultQuery, ChildResultQueryVariables>;
+export const ChildAttendanceDocument = new TypedDocumentString(`
+    query ChildAttendance($studentId: ID!, $termId: ID!) {
+  attendanceHistory(studentId: $studentId, termId: $termId) {
+    id
+    date
+    status
+  }
+}
+    `) as unknown as TypedDocumentString<ChildAttendanceQuery, ChildAttendanceQueryVariables>;
 export const SaveLevelDocument = new TypedDocumentString(`
     mutation SaveLevel($id: ID, $name: String!, $section: String!, $gradingScaleId: ID, $nextLevelId: ID, $hasSubjectSelection: Boolean!, $reportTemplate: String!) {
   saveLevel(

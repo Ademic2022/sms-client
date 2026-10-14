@@ -11,7 +11,7 @@ import { NoticesCard } from "@/components/NoticesCard";
 import { graphql } from "@/gql";
 import { useGql } from "@/lib/api";
 import { naira } from "@/lib/money";
-import { useSession } from "@/lib/session";
+import { homeFor, isPortalOnly, useSession } from "@/lib/session";
 
 const OwnerDashboardDocument = graphql(`
   query OwnerDashboard {
@@ -196,15 +196,15 @@ function QuickActions() {
 export default function DashboardPage() {
   const { me, school, term, can } = useSession();
   const router = useRouter();
-  const parentOnly = me && me.permissions.length === 1 && me.permissions[0] === "portal.parent";
+  const portalHome = me && isPortalOnly(me.permissions) ? homeFor(me.permissions) : null;
   const platformOnly = !school && me?.isPlatformAdmin;
 
   useEffect(() => {
-    if (parentOnly) router.replace("/parent");
+    if (portalHome) router.replace(portalHome);
     else if (platformOnly) router.replace("/console");
-  }, [parentOnly, platformOnly, router]);
+  }, [portalHome, platformOnly, router]);
 
-  if (!me || parentOnly || platformOnly) return <Loading />;
+  if (!me || portalHome || platformOnly) return <Loading />;
 
   const hour = new Date().getHours();
   const greeting = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";

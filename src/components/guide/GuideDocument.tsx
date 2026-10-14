@@ -10,6 +10,7 @@ const ROLES: [string, string, string][] = [
   ["administrators", "Owners and admins", "Set up the school, staff, results and fees"],
   ["teachers", "Teachers", "Attendance, scores and report card comments"],
   ["parents", "Parents", "Results, report cards and paying fees"],
+  ["students", "Students", "Signing in, results and attendance"],
 ];
 
 /** Plain text with **bold** for menu items and buttons. */
@@ -62,7 +63,7 @@ function BlockView({ block }: { block: GuideBlock }): ReactNode {
 function Support() {
   return (
     <section id="support" aria-label="Support" className="scroll-mt-24 rounded-2xl border border-[var(--lp-rule)] bg-[var(--lp-card)] p-6 sm:p-8 print:break-inside-avoid">
-      <h2 className="font-display text-[24px] font-medium leading-tight text-[var(--lp-green)]">10. Support</h2>
+      <h2 className="font-display text-[24px] font-medium leading-tight text-[var(--lp-green)]">11. Support</h2>
       <p className="mt-3">
         For sign-in help, results, fees or a child&apos;s records, contact your school office first. Schools reach {SITE.name} support {SUPPORT.hours}, and we
         respond {SUPPORT.response}.
@@ -91,12 +92,12 @@ export function GuideDocument() {
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
             <h1 className="font-display text-[40px] font-medium leading-[1.08] tracking-[-0.015em] text-[var(--lp-green)] sm:text-[52px]">{SITE.name} user guide</h1>
-            <p className="mt-3 text-[15px] text-[var(--lp-muted)]">How owners, admins, bursars, teachers and parents use {SITE.name}. Updated {GUIDE_UPDATED}.</p>
+            <p className="mt-3 text-[15px] text-[var(--lp-muted)]">How owners, admins, bursars, teachers, parents and students use {SITE.name}. Updated {GUIDE_UPDATED}.</p>
           </div>
           <PrintButton className="inline-flex items-center gap-2 rounded-full border border-[var(--lp-rule)] px-4 py-2 text-[14px] font-medium text-[var(--lp-ink)] transition hover:border-[var(--lp-green)] hover:text-[var(--lp-green)] print:hidden" />
         </div>
 
-        <nav aria-label="Guides by role" className="mt-8 grid gap-3 sm:grid-cols-3 print:hidden">
+        <nav aria-label="Guides by role" className="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-4 print:hidden">
           {ROLES.map(([id, title, text]) => (
             <a key={id} href={`#${id}`} className="rounded-2xl border border-[var(--lp-rule)] bg-[var(--lp-card)] p-5 transition hover:border-[var(--lp-green)]">
               <div className="font-semibold text-[var(--lp-ink)]">{title}</div>

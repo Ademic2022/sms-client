@@ -49,6 +49,7 @@ export default function StudentsPage() {
             <ButtonLink href={`/files/students/export.xlsx${armId ? `?arm=${armId}` : ""}`} variant="secondary" icon={<IconDownload size={16} />}>Export</ButtonLink>
             {can("students.manage") && (
               <>
+                <ButtonLink href="/students/logins" variant="secondary">Portal logins</ButtonLink>
                 <ButtonLink href="/students/import" variant="secondary" icon={<IconUpload size={16} />}>Import</ButtonLink>
                 <ButtonLink href="/students/new" icon={<IconPlus size={16} />}>Add student</ButtonLink>
               </>

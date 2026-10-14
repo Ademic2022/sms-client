@@ -9,7 +9,7 @@ import { gql, useGql } from "@/lib/api";
 import { discard, flush, useOnline, useOutbox } from "@/lib/outbox";
 import { MyConsentDocument } from "@/lib/queries";
 import { SITE } from "@/lib/site";
-import { useSession, type School } from "@/lib/session";
+import { isPortalOnly, useSession, type School } from "@/lib/session";
 
 import {
   IconAward,
@@ -52,6 +52,7 @@ const NAV: { section: string; items: NavItem[] }[] = [
     items: [
       { href: "/dashboard", label: "Overview", perms: [], icon: IconHome },
       { href: "/parent", label: "My children", perms: ["portal.parent"], icon: IconChild },
+      { href: "/student", label: "My results", perms: ["portal.student"], icon: IconAward },
       { href: "/parent/consent", label: "Privacy and consent", perms: ["portal.parent"], icon: IconShield },
     ],
   },
@@ -171,6 +172,12 @@ export function AppShell({ children }: { children: ReactNode }) {
     if (!loading && !me) router.replace(`/login?next=${encodeURIComponent(pathname)}`);
   }, [loading, me, pathname, router]);
 
+  // A starting password (a student's login slip) must be changed before using anything else.
+  const mustChange = Boolean(me?.mustChangePassword) && pathname !== "/account";
+  useEffect(() => {
+    if (mustChange) router.replace("/account?first=1");
+  }, [mustChange, router]);
+
   useEffect(() => {
     if (school?.primaryColor) document.documentElement.style.setProperty("--brand", school.primaryColor);
   }, [school?.primaryColor]);
@@ -190,8 +197,8 @@ export function AppShell({ children }: { children: ReactNode }) {
   }
 
   // Parents land on "My children"; the staff overview would only redirect them there.
-  const parentOnly = me.permissions.length === 1 && me.permissions[0] === "portal.parent";
-  const visible = (i: NavItem) => (i.perms.length === 0 ? !parentOnly : can(...i.perms));
+  const portalOnly = isPortalOnly(me.permissions);
+  const visible = (i: NavItem) => (i.perms.length === 0 ? !portalOnly : can(...i.perms));
   const sections = school
     ? NAV.map((s) => ({ ...s, items: s.items.filter(visible) })).filter((s) => s.items.length)
     : [{ section: "Platform", items: [{ href: "/console", label: "Schools", perms: [], icon: IconBuilding }] }];

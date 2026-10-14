@@ -58,6 +58,7 @@ export const GUIDE: GuideSection[] = [
               "**Bursars**, who manage fees and payments.",
               "**Teachers**, both subject teachers and class teachers.",
               "**Parents and guardians**, who follow their children and pay fees.",
+              "**Students**, who see their own results, report cards, attendance and notices.",
             ],
           },
         ],
@@ -68,7 +69,7 @@ export const GUIDE: GuideSection[] = [
           {
             steps: [
               "Open your school's own web address. The school gives it to every user, and it is different for each school.",
-              "Sign in with your **phone number** (or email address) and password.",
+              "Sign in with your **phone number** (or email address) and password. Students use their **admission number**.",
               `On a phone, use your browser's **Add to Home Screen** option to install ${SITE.name} like an app.`,
             ],
           },
@@ -92,6 +93,7 @@ export const GUIDE: GuideSection[] = [
               "**Class teacher**: your class, with links to the daily register, broadsheet, comments and ratings.",
               "**Subject teacher**: the subjects and classes you teach, with links to score entry.",
               "**Parent**: goes straight to **My children**.",
+              "**Student**: goes straight to **My results**.",
             ],
           },
         ],
@@ -111,7 +113,8 @@ export const GUIDE: GuideSection[] = [
                 ["Messages", "SMS and in-app announcements, SMS wallet", "Owner, admin, bursar"],
                 ["Settings", "School profile, branding, academics, staff, billing, privacy, online payments", "Owner, admin"],
                 ["Audit log", "Who changed what, and when", "Owner, admin"],
-                ["My children", "Results, report cards, bills, payments, online payment", "Parents"],
+                ["My children", "Results, report cards, attendance, bills, payments, online payment, notices", "Parents"],
+                ["My results", "Own results, report cards, attendance and notices", "Students"],
               ],
             },
           },
@@ -122,7 +125,7 @@ export const GUIDE: GuideSection[] = [
         blocks: [
           {
             list: [
-              "**Announcements** are written under **Messages** and sent by SMS, as an in-app notice for staff, or both.",
+              "**Announcements** are written under **Messages** and sent by SMS, as an in-app notice, or both. Staff see notices on **Overview**, parents on **My children** and students on **My results**.",
               "**Automatic SMS** go out for payment receipts, results being published, absences (when the school turns this on) and scheduled fee reminders.",
               "**Emails** confirm a new school owner's address, deliver password reset codes, and send receipts for online payments and subscription invoices.",
               "A **banner** at the top warns staff when the school's subscription invoice is due or overdue.",
@@ -180,6 +183,20 @@ export const GUIDE: GuideSection[] = [
               "Search by name or admission number, filter by class or status, and export the list to Excel.",
             ],
           },
+        ],
+      },
+      {
+        heading: "Student portal logins",
+        blocks: [
+          {
+            steps: [
+              "Open **Students → Portal logins** and choose a class.",
+              "Click **Create logins for…**. Every active student in the class without a login gets one, with a starting password.",
+              "Click **Print slips** and hand each student their slip. It shows the web address, their admission number and the starting password. Passwords are shown only once.",
+              "A student who loses their password gets a new slip with **Reset password**.",
+            ],
+          },
+          "Students choose their own password the first time they sign in. Students who are withdrawn, transferred or graduate can no longer sign in.",
         ],
       },
       {
@@ -254,6 +271,7 @@ export const GUIDE: GuideSection[] = [
                 ["Class teacher", "Own class: register, broadsheet, comments, ratings; scores for assigned subjects"],
                 ["Subject teacher", "Scores for assigned subjects and classes only"],
                 ["Parent", "Own children only"],
+                ["Student", "Own results, report cards, attendance and notices only"],
               ],
             },
           },
@@ -327,7 +345,7 @@ export const GUIDE: GuideSection[] = [
       {
         heading: "Communicating with parents",
         blocks: [
-          "Announcements are sent by the school's admins or bursar under **Messages**. Parents are informed automatically when results are published and, if the school chooses, when a child is absent.",
+          "Announcements are sent by the school's admins or bursar under **Messages**, and appear in the parent and student portals. Parents are informed automatically when results are published and, if the school chooses, when a child is absent.",
         ],
       },
     ],
@@ -369,8 +387,9 @@ export const GUIDE: GuideSection[] = [
         blocks: [
           {
             list: [
-              "If the school has turned on absence alerts, you get an SMS the day your child is marked absent.",
-              "School announcements, result notifications and fee reminders arrive by SMS on your phone.",
+              "Open a child and choose the term: **Attendance** shows the share of days present and each day they were absent, late or excused.",
+              "**Notices** on **My children** shows the school's latest announcements.",
+              "If the school has turned on absence alerts, you also get an SMS the day your child is marked absent. Result notifications and fee reminders arrive by SMS too.",
             ],
           },
         ],
@@ -407,8 +426,41 @@ export const GUIDE: GuideSection[] = [
     ],
   },
   {
+    id: "students",
+    heading: "6. Student's guide",
+    lead: "Students sign in with their admission number and see only their own records.",
+    parts: [
+      {
+        heading: "Signing in for the first time",
+        blocks: [
+          {
+            steps: [
+              "Open the web address on your login slip.",
+              "Enter your **admission number** and the **starting password** from the slip.",
+              "Choose your own password, type it twice, and click **Change password**. Keep it to yourself.",
+            ],
+          },
+          "Forgot your password? Ask the school office for a new slip.",
+        ],
+      },
+      {
+        heading: "Results, attendance and notices",
+        blocks: [
+          {
+            list: [
+              "**My results** shows your average, position in class, and every subject's score and grade for the term you choose.",
+              "Click **Report card** to download it. Results appear once the school publishes them.",
+              "**Attendance** shows the share of days you were present, and each day you were absent, late or excused.",
+              "**Notices** shows the school's latest announcements.",
+            ],
+          },
+        ],
+      },
+    ],
+  },
+  {
     id: "security",
-    heading: "6. Account security and troubleshooting",
+    heading: "7. Account security and troubleshooting",
     lead: "Everyone signs in at their own school's address, and each account sees only what its role allows.",
     parts: [
       {
@@ -416,9 +468,10 @@ export const GUIDE: GuideSection[] = [
         blocks: [
           {
             list: [
-              "Sign in with your **phone number or email address** and password.",
+              "Sign in with your **phone number or email address** and password. Students sign in with their **admission number**.",
               "Forgot your password, or never set one: click **Forgot password?** Enter your phone number to get a code by SMS, or your email address to get it by email. The code lasts 10 minutes.",
-              "To change your password, sign out and use **Forgot password?** You get an email when it changes.",
+              "To change your password, click your name at the bottom of the menu to open **Your account**. You get an email when it changes, if your account has one.",
+              "Students who forget their password get a new starting password from the school office.",
               "A new school owner must click the link in the confirmation email before signing in. The link lasts 3 days, and **Resend** sends a new one after 60 seconds.",
               "After 10 wrong passwords in 10 minutes, the account is paused briefly. Wait, then try again or reset the password.",
             ],
@@ -450,6 +503,8 @@ export const GUIDE: GuideSection[] = [
                 ["Too many requests. Please wait a minute", "Too many actions in a short time", "Wait a minute, then try again"],
                 ["No connection. Your changes will be sent when you are back online", "You are offline", "Keep working; attendance and scores send themselves later"],
                 ["That code is wrong or has expired", "Reset code mistyped or older than 10 minutes", "Request a new code"],
+                ["Choose a new password before you continue", "Signed in with a starting password", "Choose your own password on **Your account**"],
+                ["This student is no longer at the school", "The student was withdrawn, transferred or graduated", "Contact the school office"],
               ],
             },
           },
@@ -473,7 +528,7 @@ export const GUIDE: GuideSection[] = [
   },
   {
     id: "glossary",
-    heading: "7. Glossary",
+    heading: "8. Glossary",
     parts: [
       {
         blocks: [
@@ -500,6 +555,7 @@ export const GUIDE: GuideSection[] = [
                 ["Read-only", "Signing in and viewing still work, but changes are paused until an invoice is paid"],
                 ["Audit log", "The record of who changed what, and when"],
                 ["Support access", "Time-limited permission for support to enter the school's account"],
+                ["Starting password", "The password on a student's login slip, replaced at first sign-in"],
               ],
             },
           },
@@ -509,7 +565,7 @@ export const GUIDE: GuideSection[] = [
   },
   {
     id: "faq",
-    heading: "8. Frequently asked questions",
+    heading: "9. Frequently asked questions",
     parts: [
       {
         blocks: [
@@ -520,6 +576,7 @@ export const GUIDE: GuideSection[] = [
           "**A parent paid online but the balance did not change.** Most payments show at once. If not, check **Fees and payments → Payments**; online payments are confirmed with Paystack automatically within minutes.",
           "**Can parents pay part of the fees?** Yes. Parents choose any amount, and can pay for several children at once.",
           "**Does it work without internet?** Attendance and scores save offline and send when the connection returns. Other screens need a connection.",
+          "**A student forgot their password.** Open **Students → Portal logins**, choose their class and click **Reset password** to print a new slip.",
           "**Who owns the school's data?** The school. It can export a full copy at any time.",
         ],
       },
@@ -527,15 +584,15 @@ export const GUIDE: GuideSection[] = [
   },
   {
     id: "coming-soon",
-    heading: "9. Coming soon",
+    heading: "10. Coming soon",
     lead: "These are on the way; this guide will be updated as each one arrives.",
     parts: [
       {
         blocks: [
           {
             list: [
-              "A student portal: results, timetables, assignments and learning materials.",
-              "Attendance history and in-app notices in the parent portal.",
+              "Class timetables, for staff and students.",
+              "Assignments and lesson notes from teachers, with files students can download.",
               "Messages from teachers to their class's parents.",
             ],
           },

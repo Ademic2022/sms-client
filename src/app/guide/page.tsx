@@ -6,7 +6,7 @@ import { SITE } from "@/lib/site";
 
 export const metadata: Metadata = {
   title: "User guide",
-  description: `How school owners, admins, bursars, teachers and parents use ${SITE.name}: setup, attendance, results, fees, online payments and troubleshooting.`,
+  description: `How school owners, admins, bursars, teachers, parents and students use ${SITE.name}: setup, attendance, results, fees, online payments and troubleshooting.`,
   alternates: { canonical: "/guide" },
   robots: { index: true, follow: true },
 };

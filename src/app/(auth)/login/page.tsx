@@ -10,13 +10,14 @@ import { graphql } from "@/gql";
 import { ApiError, gql } from "@/lib/api";
 import { localPhone } from "@/lib/money";
 import { ResendConfirmationDocument } from "@/lib/queries";
-import { useSession } from "@/lib/session";
+import { homeFor, useSession } from "@/lib/session";
 
 const LoginDocument = graphql(`
   mutation Login($identifier: String!, $password: String!) {
     login(identifier: $identifier, password: $password) {
       permissions
       isPlatformAdmin
+      mustChangePassword
     }
   }
 `);
@@ -42,9 +43,9 @@ function LoginForm() {
       await refresh();
       const next = params.get("next");
       const safeNext = next && next.startsWith("/") && !next.startsWith("//") ? next : null;
-      const parentOnly = login.permissions.length === 1 && login.permissions[0] === "portal.parent";
-      const home = !school && login.isPlatformAdmin ? "/console" : parentOnly ? "/parent" : "/dashboard";
-      router.replace(safeNext ?? home);
+      const home = !school && login.isPlatformAdmin ? "/console" : homeFor(login.permissions);
+      // A starting password from a login slip is replaced before anything else.
+      router.replace(login.mustChangePassword ? "/account?first=1" : safeNext ?? home);
     } catch (err) {
       setError((err as Error).message);
       if (err instanceof ApiError && err.code === "email_unconfirmed") setUnconfirmed(true);
@@ -87,7 +88,7 @@ function LoginForm() {
             )}
           </AuthAlert>
         )}
-        <AuthField label="Phone number or email">
+        <AuthField label="Phone number, email or admission number">
           <AuthInput
             value={identifier}
             onChange={(e) => setIdentifier(e.target.value)}
