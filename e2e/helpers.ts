@@ -15,7 +15,8 @@ export const ACCOUNTS = {
 
 export async function signIn(page: Page, who: keyof typeof ACCOUNTS, base = SCHOOL) {
   await page.goto(`${base}/login`);
-  await page.getByLabel("Phone number or email").fill(ACCOUNTS[who]);
+  // "Phone number, email or admission number": matched loosely so wording tweaks don't break every test.
+  await page.getByLabel(/^Phone number/).fill(ACCOUNTS[who]);
   await page.locator('input[type="password"]').fill(PASSWORD);
   await page.getByRole("button", { name: "Sign in" }).click();
   await expect(page).not.toHaveURL(/\/login/);
