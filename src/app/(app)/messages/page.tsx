@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useDeferredValue, useState } from "react";
 
 import { IconMessage, IconSend } from "@/components/icons";
+import { LowUnitsNotice } from "@/components/LowUnitsNotice";
 import { ActionDialog, Badge, Button, Card, Checkbox, Empty, ErrorNote, Field, Input, Loading, Notice, PageHeader, Pager, Select, Textarea, cx } from "@/components/ui";
 import { graphql } from "@/gql";
 import { gql, useGql } from "@/lib/api";
@@ -21,7 +22,7 @@ const MessagesDocument = graphql(`
       items {
         id kind audience title body unitsUsed createdAt sendSms isAutomatic
         arm { label }
-        delivery { queued sent delivered failed skipped }
+        delivery { queued sent delivered failed skipped resent }
         failedRecipients { id phone error }
       }
     }
@@ -98,6 +99,7 @@ export default function MessagesPage() {
         subtitle="Announcements by SMS and in the portal. SMS is charged to your school's wallet."
         actions={data && <div className="rounded-lg border border-line bg-surface px-4 py-2 text-right shadow-sm"><div className="text-xs text-muted">SMS wallet</div><div className="font-display text-lg font-medium tabular-nums text-ink">{data.smsWalletBalance.toLocaleString("en-NG")} units</div>{can("school.manage") && <Link href="/settings/billing" className="text-xs font-medium text-brand hover:underline dark:text-[color-mix(in_srgb,var(--brand),white_55%)]">Buy units</Link>}</div>}
       />
+      <LowUnitsNotice />
       <ErrorNote error={err} />
       {msg && <Notice tone="success">{msg}</Notice>}
 
@@ -183,13 +185,14 @@ export default function MessagesPage() {
                         {m.delivery.queued > 0 && <Badge dot>{m.delivery.queued} queued</Badge>}
                         {m.delivery.failed > 0 && <Badge tone="bad" dot>{m.delivery.failed} failed</Badge>}
                         {m.delivery.skipped > 0 && <Badge tone="warn" dot>{m.delivery.skipped} not sent: no units</Badge>}
+                        {m.delivery.resent > 0 && <Badge dot>{m.delivery.resent} sent again later</Badge>}
                         <Badge>{m.unitsUsed} unit{m.unitsUsed === 1 ? "" : "s"}</Badge>
                       </div>
                     )}
                     {m.failedRecipients.length > 0 && (
                       <div className="mt-2 flex flex-wrap items-start justify-between gap-2 text-xs">
                         <details>
-                          <summary className="cursor-pointer font-medium text-red-700 dark:text-red-300">Show failed numbers</summary>
+                          <summary className="cursor-pointer font-medium text-red-700 dark:text-red-300">Show numbers not reached</summary>
                           <ul className="mt-1 space-y-0.5 text-muted">{m.failedRecipients.map((r) => <li key={r.id}><span className="tabular-nums">{localPhone(r.phone)}</span>: {r.error}</li>)}</ul>
                         </details>
                         {can("messaging.send") && (

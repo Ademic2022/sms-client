@@ -317,7 +317,7 @@ export type MessagesQueryVariables = Exact<{
 }>;
 
 
-export type MessagesQuery = { smsWalletBalance: number, messages: { total: number, items: Array<{ id: string, kind: string, audience: string, title: string, body: string, unitsUsed: number, createdAt: string, sendSms: boolean, isAutomatic: boolean, arm: { label: string } | null, delivery: { queued: number, sent: number, delivered: number, failed: number, skipped: number }, failedRecipients: Array<{ id: string, phone: string, error: string }> }> } };
+export type MessagesQuery = { smsWalletBalance: number, messages: { total: number, items: Array<{ id: string, kind: string, audience: string, title: string, body: string, unitsUsed: number, createdAt: string, sendSms: boolean, isAutomatic: boolean, arm: { label: string } | null, delivery: { queued: number, sent: number, delivered: number, failed: number, skipped: number, resent: number }, failedRecipients: Array<{ id: string, phone: string, error: string }> }> } };
 
 export type EstimateMessageQueryVariables = Exact<{
   body: string;
@@ -576,7 +576,7 @@ export type ConfirmPlatformPaymentMutation = { confirmPlatformPayment: { referen
 export type SchoolSettingsQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type SchoolSettingsQuery = { school: { name: string, motto: string, address: string, phone: string, email: string, primaryColor: string, secondaryColor: string } | null, schoolSettings: { showClassPosition: boolean, admissionNumberFormat: string, admissionNumberPrefix: string, resultDebtThresholdKobo: number | null, transactionChargeBearer: string, smsSenderId: string, smsSenderStatus: string, notifyParentOnAbsence: boolean, reportTemplate: string, principalTitle: string, feeRemindersEnabled: boolean, feeReminderEveryDays: number, feeReminderMinBalanceKobo: number, feeReminderTemplate: string }, supportGrants: Array<{ id: string, reason: string, expiresAt: string, grantedBy: string }>, schoolBranding: { logoUrl: string | null, signatureUrl: string | null, stampUrl: string | null } };
+export type SchoolSettingsQuery = { school: { name: string, motto: string, address: string, phone: string, email: string, primaryColor: string, secondaryColor: string } | null, schoolSettings: { showClassPosition: boolean, admissionNumberFormat: string, admissionNumberPrefix: string, resultDebtThresholdKobo: number | null, transactionChargeBearer: string, smsSenderId: string, smsSenderStatus: string, smsLowBalanceUnits: number, notifyParentOnAbsence: boolean, reportTemplate: string, principalTitle: string, feeRemindersEnabled: boolean, feeReminderEveryDays: number, feeReminderMinBalanceKobo: number, feeReminderTemplate: string }, supportGrants: Array<{ id: string, reason: string, expiresAt: string, grantedBy: string }>, schoolBranding: { logoUrl: string | null, signatureUrl: string | null, stampUrl: string | null } };
 
 export type UpdateSchoolSettingsMutationVariables = Exact<{
   name?: string | null | undefined;
@@ -803,6 +803,11 @@ export type LogoutMutationVariables = Exact<{ [key: string]: never; }>;
 
 
 export type LogoutMutation = { logout: boolean };
+
+export type SmsWalletStatusQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type SmsWalletStatusQuery = { smsWalletStatus: { balance: number, lowThreshold: number, isLow: boolean } };
 
 export type NoticesQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -1463,6 +1468,7 @@ export const MessagesDocument = new TypedDocumentString(`
         delivered
         failed
         skipped
+        resent
       }
       failedRecipients {
         id
@@ -2004,6 +2010,7 @@ export const SchoolSettingsDocument = new TypedDocumentString(`
     transactionChargeBearer
     smsSenderId
     smsSenderStatus
+    smsLowBalanceUnits
     notifyParentOnAbsence
     reportTemplate
     principalTitle
@@ -2447,6 +2454,15 @@ export const LogoutDocument = new TypedDocumentString(`
   logout
 }
     `) as unknown as TypedDocumentString<LogoutMutation, LogoutMutationVariables>;
+export const SmsWalletStatusDocument = new TypedDocumentString(`
+    query SmsWalletStatus {
+  smsWalletStatus {
+    balance
+    lowThreshold
+    isLow
+  }
+}
+    `) as unknown as TypedDocumentString<SmsWalletStatusQuery, SmsWalletStatusQueryVariables>;
 export const NoticesDocument = new TypedDocumentString(`
     query Notices {
   notices(limit: 5) {

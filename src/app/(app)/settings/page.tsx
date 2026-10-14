@@ -17,7 +17,7 @@ const SettingsDocument = graphql(`
     school { name motto address phone email primaryColor secondaryColor }
     schoolSettings {
       showClassPosition admissionNumberFormat admissionNumberPrefix resultDebtThresholdKobo transactionChargeBearer
-      smsSenderId smsSenderStatus notifyParentOnAbsence reportTemplate principalTitle
+      smsSenderId smsSenderStatus smsLowBalanceUnits notifyParentOnAbsence reportTemplate principalTitle
       feeRemindersEnabled feeReminderEveryDays feeReminderMinBalanceKobo feeReminderTemplate
     }
     supportGrants { id reason expiresAt grantedBy }
@@ -54,12 +54,12 @@ export default function SettingsPage() {
     (ss) => ({
       showClassPosition: ss.showClassPosition, admissionNumberFormat: ss.admissionNumberFormat, admissionNumberPrefix: ss.admissionNumberPrefix,
       debt: ss.resultDebtThresholdKobo === null || ss.resultDebtThresholdKobo === undefined ? "" : String(ss.resultDebtThresholdKobo / 100),
-      bearer: ss.transactionChargeBearer, sender: ss.smsSenderId, notifyAbsence: ss.notifyParentOnAbsence, reportTemplate: ss.reportTemplate, principalTitle: ss.principalTitle,
+      bearer: ss.transactionChargeBearer, sender: ss.smsSenderId, notifyAbsence: ss.notifyParentOnAbsence, lowUnits: String(ss.smsLowBalanceUnits), reportTemplate: ss.reportTemplate, principalTitle: ss.principalTitle,
       remindersOn: ss.feeRemindersEnabled, remindEvery: String(ss.feeReminderEveryDays), remindMin: ss.feeReminderMinBalanceKobo ? String(ss.feeReminderMinBalanceKobo / 100) : "",
       remindText: ss.feeReminderTemplate,
     }),
     {
-      showClassPosition: true, admissionNumberFormat: "", admissionNumberPrefix: "", debt: "", bearer: "school", sender: "", notifyAbsence: false, reportTemplate: "classic", principalTitle: "Principal",
+      showClassPosition: true, admissionNumberFormat: "", admissionNumberPrefix: "", debt: "", bearer: "school", sender: "", notifyAbsence: false, lowUnits: "100", reportTemplate: "classic", principalTitle: "Principal",
       remindersOn: false, remindEvery: "14", remindMin: "", remindText: "",
     },
   );
@@ -100,7 +100,7 @@ export default function SettingsPage() {
     const current = data?.schoolSettings;
     const settingsJson: Record<string, unknown> = {
       show_class_position: s.showClassPosition, admission_number_format: s.admissionNumberFormat, admission_number_prefix: s.admissionNumberPrefix,
-      result_debt_threshold_kobo: debtKobo, transaction_charge_bearer: s.bearer, notify_parent_on_absence: s.notifyAbsence,
+      result_debt_threshold_kobo: debtKobo, transaction_charge_bearer: s.bearer, notify_parent_on_absence: s.notifyAbsence, sms_low_balance_units: Math.max(0, Math.round(Number(s.lowUnits) || 0)),
       report_template: s.reportTemplate, principal_title: s.principalTitle,
       fee_reminders_enabled: s.remindersOn, fee_reminder_every_days: Number(s.remindEvery), fee_reminder_min_balance_kobo: remindMinKobo,
       fee_reminder_template: s.remindText,
@@ -201,6 +201,9 @@ export default function SettingsPage() {
               </div>
             </Field>
             <Checkbox label="Text parents when a child is marked absent" description="Uses one SMS unit per parent per absence." checked={s.notifyAbsence} onChange={(v) => setS({ ...s, notifyAbsence: v })} />
+            <Field label="Warn me when SMS units fall below" hint="Owners and admins get a banner and an email. 0 turns the warning off.">
+              <Input inputMode="numeric" value={s.lowUnits} onChange={(e) => setS({ ...s, lowUnits: e.target.value.replace(/\D/g, "") })} className="w-32 tabular-nums" />
+            </Field>
           </div>
         </FormSection>
         <FormSection title="Automatic fee reminders" description="An SMS to parents who still owe, sent at 10am on a schedule while a term is running. Parents with several children get one message.">

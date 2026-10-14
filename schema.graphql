@@ -251,6 +251,7 @@ type DeliveryCounts {
   delivered: Int!
   failed: Int!
   skipped: Int!
+  resent: Int!
 }
 
 type DiscountType {
@@ -797,6 +798,9 @@ type Query {
   myChildren: [ChildAccount!]!
   checkoutStatus(reference: String!): CheckoutStatus!
   messages(offset: Int! = 0, limit: Int! = 50): MessagePage!
+
+  """The SMS wallet and whether it is below the school's warning level."""
+  smsWalletStatus: SmsWalletStatus!
   smsWalletBalance: Int!
   estimateMessage(body: String!, audience: String!, armId: ID = null): SmsEstimate!
 
@@ -929,6 +933,7 @@ type SchoolSettings {
   feeReminderMinBalanceKobo: Kobo!
   feeReminderTemplate: String!
   promotionPassMark: Float!
+  smsLowBalanceUnits: Int!
 }
 
 type SchoolUsage {
@@ -998,6 +1003,12 @@ type SmsPurchase {
   amountKobo: Kobo!
   reason: String!
   createdAt: DateTime!
+}
+
+type SmsWalletStatus {
+  balance: Int!
+  lowThreshold: Int!
+  isLow: Boolean!
 }
 
 type StudentConsent {

@@ -6,6 +6,7 @@ import { useEffect } from "react";
 
 import { IconAward, IconCalendarCheck, IconMessage, IconPencilGrid, IconUsers, IconWallet } from "@/components/icons";
 import { BillingAlertNotice } from "@/components/BillingAlert";
+import { LowUnitsNotice } from "@/components/LowUnitsNotice";
 import { ButtonLink, Card, ErrorNote, Loading, Notice, PageHeader, Stat } from "@/components/ui";
 import { NoticesCard } from "@/components/NoticesCard";
 import { graphql } from "@/gql";
@@ -219,6 +220,7 @@ export default function DashboardPage() {
         </Notice>
       )}
       <BillingAlertNotice alert={me.billingAlert} kinds={["due", "trial_ending"]} />
+      <LowUnitsNotice />
       <QuickActions />
       {can("dashboard.owner") ? <OwnerPanel /> : can("fees.view") && term ? <BursarPanel termId={term.id} /> : null}
       <TeacherPanel />

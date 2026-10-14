@@ -43,7 +43,7 @@ type Documents = {
     "\n  mutation RemoveBillItem($lineId: ID!, $reason: String!) { removeBillItem(lineId: $lineId, reason: $reason) { id } }\n": typeof types.RemoveBillItemDocument,
     "\n  mutation ReversePayment($paymentId: ID!, $reason: String!) { reversePayment(paymentId: $paymentId, reason: $reason) { id status } }\n": typeof types.ReversePaymentDocument,
     "mutation ResendFailed($messageId: ID!) { resendFailed(messageId: $messageId) { id unitsUsed } }": typeof types.ResendFailedDocument,
-    "\n  query Messages($offset: Int!) {\n    smsWalletBalance\n    messages(offset: $offset, limit: 20) {\n      total\n      items {\n        id kind audience title body unitsUsed createdAt sendSms isAutomatic\n        arm { label }\n        delivery { queued sent delivered failed skipped }\n        failedRecipients { id phone error }\n      }\n    }\n  }\n": typeof types.MessagesDocument,
+    "\n  query Messages($offset: Int!) {\n    smsWalletBalance\n    messages(offset: $offset, limit: 20) {\n      total\n      items {\n        id kind audience title body unitsUsed createdAt sendSms isAutomatic\n        arm { label }\n        delivery { queued sent delivered failed skipped resent }\n        failedRecipients { id phone error }\n      }\n    }\n  }\n": typeof types.MessagesDocument,
     "\n  query EstimateMessage($body: String!, $audience: String!, $armId: ID) {\n    estimateMessage(body: $body, audience: $audience, armId: $armId) { recipients units walletBalance senderId }\n  }\n": typeof types.EstimateMessageDocument,
     "\n  mutation SendMessage($audience: String!, $body: String!, $title: String!, $armId: ID, $sendSms: Boolean!, $showInApp: Boolean!) {\n    sendMessage(audience: $audience, body: $body, title: $title, armId: $armId, sendSms: $sendSms, showInApp: $showInApp) { id unitsUsed }\n  }\n": typeof types.SendMessageDocument,
     "\n  query ChildLedger($studentId: ID!) {\n    ledger(studentId: $studentId) {\n      balanceKobo\n      student { fullName admissionNumber currentArm { label } }\n      payments { id amountKobo method status receiptNumber paidAt }\n    }\n  }\n": typeof types.ChildLedgerDocument,
@@ -76,7 +76,7 @@ type Documents = {
     "\n  mutation PayInvoice($invoiceId: ID!, $returnPath: String!) { payInvoice(invoiceId: $invoiceId, returnPath: $returnPath) { authorizationUrl } }\n": typeof types.PayInvoiceDocument,
     "\n  mutation BuySmsUnits($units: Int!, $returnPath: String!) { buySmsUnits(units: $units, returnPath: $returnPath) { authorizationUrl } }\n": typeof types.BuySmsUnitsDocument,
     "\n  mutation ConfirmPlatformPayment($reference: String!) {\n    confirmPlatformPayment(reference: $reference) { reference status purpose units amountKobo invoiceNumber smsBalance }\n  }\n": typeof types.ConfirmPlatformPaymentDocument,
-    "\n  query SchoolSettings {\n    school { name motto address phone email primaryColor secondaryColor }\n    schoolSettings {\n      showClassPosition admissionNumberFormat admissionNumberPrefix resultDebtThresholdKobo transactionChargeBearer\n      smsSenderId smsSenderStatus notifyParentOnAbsence reportTemplate principalTitle\n      feeRemindersEnabled feeReminderEveryDays feeReminderMinBalanceKobo feeReminderTemplate\n    }\n    supportGrants { id reason expiresAt grantedBy }\n    schoolBranding { logoUrl signatureUrl stampUrl }\n  }\n": typeof types.SchoolSettingsDocument,
+    "\n  query SchoolSettings {\n    school { name motto address phone email primaryColor secondaryColor }\n    schoolSettings {\n      showClassPosition admissionNumberFormat admissionNumberPrefix resultDebtThresholdKobo transactionChargeBearer\n      smsSenderId smsSenderStatus smsLowBalanceUnits notifyParentOnAbsence reportTemplate principalTitle\n      feeRemindersEnabled feeReminderEveryDays feeReminderMinBalanceKobo feeReminderTemplate\n    }\n    supportGrants { id reason expiresAt grantedBy }\n    schoolBranding { logoUrl signatureUrl stampUrl }\n  }\n": typeof types.SchoolSettingsDocument,
     "\n  mutation UpdateSchoolSettings($name: String, $motto: String, $address: String, $phone: String, $email: String, $primaryColor: String, $settingsJson: JSON) {\n    updateSchoolSettings(name: $name, motto: $motto, address: $address, phone: $phone, email: $email, primaryColor: $primaryColor, settingsJson: $settingsJson) {\n      showClassPosition\n    }\n  }\n": typeof types.UpdateSchoolSettingsDocument,
     "\n  query FeeReminderStatus { feeReminderStatus { enabled nextDueOn lastSentAt recipients units walletBalance sample } }\n": typeof types.FeeReminderStatusDocument,
     "mutation GrantSupport($reason: String!, $hours: Int!) { grantSupportAccess(reason: $reason, hours: $hours) { id } }": typeof types.GrantSupportDocument,
@@ -106,6 +106,7 @@ type Documents = {
     "\n  query PublicPrivacyNotice {\n    privacyNotice { version body publishedAt schoolName }\n  }\n": typeof types.PublicPrivacyNoticeDocument,
     "\n  mutation SignUpSchool(\n    $name: String!\n    $slug: String!\n    $adminFirstName: String!\n    $adminLastName: String!\n    $adminPhone: String!\n    $adminEmail: String\n    $password: String!\n    $sections: [String!]!\n    $accept: Boolean!\n  ) {\n    signUpSchool(\n      name: $name\n      slug: $slug\n      adminFirstName: $adminFirstName\n      adminLastName: $adminLastName\n      adminPhone: $adminPhone\n      adminEmail: $adminEmail\n      password: $password\n      sections: $sections\n      acceptDataProcessingAgreement: $accept\n    ) {\n      slug\n      schoolUrl\n      confirmationSentTo\n    }\n  }\n": typeof types.SignUpSchoolDocument,
     "\n  mutation Logout {\n    logout\n  }\n": typeof types.LogoutDocument,
+    "query SmsWalletStatus { smsWalletStatus { balance lowThreshold isLow } }": typeof types.SmsWalletStatusDocument,
     "\n  query Notices {\n    notices(limit: 5) { id title body createdAt }\n  }\n": typeof types.NoticesDocument,
     "\n  query PayoutAccount { payoutAccount { connected bankName accountNumber accountName canChange } }\n": typeof types.PayoutAccountDocument,
     "query PayoutBanks { payoutBanks { code name } }": typeof types.PayoutBanksDocument,
@@ -163,7 +164,7 @@ const documents: Documents = {
     "\n  mutation RemoveBillItem($lineId: ID!, $reason: String!) { removeBillItem(lineId: $lineId, reason: $reason) { id } }\n": types.RemoveBillItemDocument,
     "\n  mutation ReversePayment($paymentId: ID!, $reason: String!) { reversePayment(paymentId: $paymentId, reason: $reason) { id status } }\n": types.ReversePaymentDocument,
     "mutation ResendFailed($messageId: ID!) { resendFailed(messageId: $messageId) { id unitsUsed } }": types.ResendFailedDocument,
-    "\n  query Messages($offset: Int!) {\n    smsWalletBalance\n    messages(offset: $offset, limit: 20) {\n      total\n      items {\n        id kind audience title body unitsUsed createdAt sendSms isAutomatic\n        arm { label }\n        delivery { queued sent delivered failed skipped }\n        failedRecipients { id phone error }\n      }\n    }\n  }\n": types.MessagesDocument,
+    "\n  query Messages($offset: Int!) {\n    smsWalletBalance\n    messages(offset: $offset, limit: 20) {\n      total\n      items {\n        id kind audience title body unitsUsed createdAt sendSms isAutomatic\n        arm { label }\n        delivery { queued sent delivered failed skipped resent }\n        failedRecipients { id phone error }\n      }\n    }\n  }\n": types.MessagesDocument,
     "\n  query EstimateMessage($body: String!, $audience: String!, $armId: ID) {\n    estimateMessage(body: $body, audience: $audience, armId: $armId) { recipients units walletBalance senderId }\n  }\n": types.EstimateMessageDocument,
     "\n  mutation SendMessage($audience: String!, $body: String!, $title: String!, $armId: ID, $sendSms: Boolean!, $showInApp: Boolean!) {\n    sendMessage(audience: $audience, body: $body, title: $title, armId: $armId, sendSms: $sendSms, showInApp: $showInApp) { id unitsUsed }\n  }\n": types.SendMessageDocument,
     "\n  query ChildLedger($studentId: ID!) {\n    ledger(studentId: $studentId) {\n      balanceKobo\n      student { fullName admissionNumber currentArm { label } }\n      payments { id amountKobo method status receiptNumber paidAt }\n    }\n  }\n": types.ChildLedgerDocument,
@@ -196,7 +197,7 @@ const documents: Documents = {
     "\n  mutation PayInvoice($invoiceId: ID!, $returnPath: String!) { payInvoice(invoiceId: $invoiceId, returnPath: $returnPath) { authorizationUrl } }\n": types.PayInvoiceDocument,
     "\n  mutation BuySmsUnits($units: Int!, $returnPath: String!) { buySmsUnits(units: $units, returnPath: $returnPath) { authorizationUrl } }\n": types.BuySmsUnitsDocument,
     "\n  mutation ConfirmPlatformPayment($reference: String!) {\n    confirmPlatformPayment(reference: $reference) { reference status purpose units amountKobo invoiceNumber smsBalance }\n  }\n": types.ConfirmPlatformPaymentDocument,
-    "\n  query SchoolSettings {\n    school { name motto address phone email primaryColor secondaryColor }\n    schoolSettings {\n      showClassPosition admissionNumberFormat admissionNumberPrefix resultDebtThresholdKobo transactionChargeBearer\n      smsSenderId smsSenderStatus notifyParentOnAbsence reportTemplate principalTitle\n      feeRemindersEnabled feeReminderEveryDays feeReminderMinBalanceKobo feeReminderTemplate\n    }\n    supportGrants { id reason expiresAt grantedBy }\n    schoolBranding { logoUrl signatureUrl stampUrl }\n  }\n": types.SchoolSettingsDocument,
+    "\n  query SchoolSettings {\n    school { name motto address phone email primaryColor secondaryColor }\n    schoolSettings {\n      showClassPosition admissionNumberFormat admissionNumberPrefix resultDebtThresholdKobo transactionChargeBearer\n      smsSenderId smsSenderStatus smsLowBalanceUnits notifyParentOnAbsence reportTemplate principalTitle\n      feeRemindersEnabled feeReminderEveryDays feeReminderMinBalanceKobo feeReminderTemplate\n    }\n    supportGrants { id reason expiresAt grantedBy }\n    schoolBranding { logoUrl signatureUrl stampUrl }\n  }\n": types.SchoolSettingsDocument,
     "\n  mutation UpdateSchoolSettings($name: String, $motto: String, $address: String, $phone: String, $email: String, $primaryColor: String, $settingsJson: JSON) {\n    updateSchoolSettings(name: $name, motto: $motto, address: $address, phone: $phone, email: $email, primaryColor: $primaryColor, settingsJson: $settingsJson) {\n      showClassPosition\n    }\n  }\n": types.UpdateSchoolSettingsDocument,
     "\n  query FeeReminderStatus { feeReminderStatus { enabled nextDueOn lastSentAt recipients units walletBalance sample } }\n": types.FeeReminderStatusDocument,
     "mutation GrantSupport($reason: String!, $hours: Int!) { grantSupportAccess(reason: $reason, hours: $hours) { id } }": types.GrantSupportDocument,
@@ -226,6 +227,7 @@ const documents: Documents = {
     "\n  query PublicPrivacyNotice {\n    privacyNotice { version body publishedAt schoolName }\n  }\n": types.PublicPrivacyNoticeDocument,
     "\n  mutation SignUpSchool(\n    $name: String!\n    $slug: String!\n    $adminFirstName: String!\n    $adminLastName: String!\n    $adminPhone: String!\n    $adminEmail: String\n    $password: String!\n    $sections: [String!]!\n    $accept: Boolean!\n  ) {\n    signUpSchool(\n      name: $name\n      slug: $slug\n      adminFirstName: $adminFirstName\n      adminLastName: $adminLastName\n      adminPhone: $adminPhone\n      adminEmail: $adminEmail\n      password: $password\n      sections: $sections\n      acceptDataProcessingAgreement: $accept\n    ) {\n      slug\n      schoolUrl\n      confirmationSentTo\n    }\n  }\n": types.SignUpSchoolDocument,
     "\n  mutation Logout {\n    logout\n  }\n": types.LogoutDocument,
+    "query SmsWalletStatus { smsWalletStatus { balance lowThreshold isLow } }": types.SmsWalletStatusDocument,
     "\n  query Notices {\n    notices(limit: 5) { id title body createdAt }\n  }\n": types.NoticesDocument,
     "\n  query PayoutAccount { payoutAccount { connected bankName accountNumber accountName canChange } }\n": types.PayoutAccountDocument,
     "query PayoutBanks { payoutBanks { code name } }": types.PayoutBanksDocument,
@@ -370,7 +372,7 @@ export function graphql(source: "mutation ResendFailed($messageId: ID!) { resend
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
-export function graphql(source: "\n  query Messages($offset: Int!) {\n    smsWalletBalance\n    messages(offset: $offset, limit: 20) {\n      total\n      items {\n        id kind audience title body unitsUsed createdAt sendSms isAutomatic\n        arm { label }\n        delivery { queued sent delivered failed skipped }\n        failedRecipients { id phone error }\n      }\n    }\n  }\n"): typeof import('./graphql').MessagesDocument;
+export function graphql(source: "\n  query Messages($offset: Int!) {\n    smsWalletBalance\n    messages(offset: $offset, limit: 20) {\n      total\n      items {\n        id kind audience title body unitsUsed createdAt sendSms isAutomatic\n        arm { label }\n        delivery { queued sent delivered failed skipped resent }\n        failedRecipients { id phone error }\n      }\n    }\n  }\n"): typeof import('./graphql').MessagesDocument;
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
@@ -502,7 +504,7 @@ export function graphql(source: "\n  mutation ConfirmPlatformPayment($reference:
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
-export function graphql(source: "\n  query SchoolSettings {\n    school { name motto address phone email primaryColor secondaryColor }\n    schoolSettings {\n      showClassPosition admissionNumberFormat admissionNumberPrefix resultDebtThresholdKobo transactionChargeBearer\n      smsSenderId smsSenderStatus notifyParentOnAbsence reportTemplate principalTitle\n      feeRemindersEnabled feeReminderEveryDays feeReminderMinBalanceKobo feeReminderTemplate\n    }\n    supportGrants { id reason expiresAt grantedBy }\n    schoolBranding { logoUrl signatureUrl stampUrl }\n  }\n"): typeof import('./graphql').SchoolSettingsDocument;
+export function graphql(source: "\n  query SchoolSettings {\n    school { name motto address phone email primaryColor secondaryColor }\n    schoolSettings {\n      showClassPosition admissionNumberFormat admissionNumberPrefix resultDebtThresholdKobo transactionChargeBearer\n      smsSenderId smsSenderStatus smsLowBalanceUnits notifyParentOnAbsence reportTemplate principalTitle\n      feeRemindersEnabled feeReminderEveryDays feeReminderMinBalanceKobo feeReminderTemplate\n    }\n    supportGrants { id reason expiresAt grantedBy }\n    schoolBranding { logoUrl signatureUrl stampUrl }\n  }\n"): typeof import('./graphql').SchoolSettingsDocument;
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
@@ -619,6 +621,10 @@ export function graphql(source: "\n  mutation SignUpSchool(\n    $name: String!\
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function graphql(source: "\n  mutation Logout {\n    logout\n  }\n"): typeof import('./graphql').LogoutDocument;
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "query SmsWalletStatus { smsWalletStatus { balance lowThreshold isLow } }"): typeof import('./graphql').SmsWalletStatusDocument;
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */

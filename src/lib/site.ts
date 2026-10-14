@@ -7,7 +7,7 @@ export const SITE = {
   tagline: "School management for Nigerian schools",
   pricePerStudentNaira: 1500,
   trialDays: 30,
-  smsUnitNaira: 4,
+  smsUnitNaira: 7, // must match the API's SMS_UNIT_PRICE_KOBO (700)
   contactEmail: "hello@akademiq.ng",
   whatsapp: "2349121424608", // support WhatsApp, international format without "+"
 };
