@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 
-import { Button, Card, ErrorNote, Field, FormSection, Input, Notice, PageHeader } from "@/components/ui";
+import { Button, Card, ErrorNote, Field, FormSection, Notice, PageHeader, PasswordInput } from "@/components/ui";
 import { graphql } from "@/gql";
 import { gql } from "@/lib/api";
 import { localPhone } from "@/lib/money";
@@ -74,13 +74,13 @@ export default function AccountPage() {
             <ErrorNote error={err} />
             {done && <Notice tone="success">Password changed. Use it the next time you sign in.</Notice>}
             <Field label={firstTime ? "Starting password from the school" : "Current password"}>
-              <Input type="password" autoComplete="current-password" value={form.current} onChange={set("current")} required />
+              <PasswordInput autoComplete="current-password" value={form.current} onChange={set("current")} required />
             </Field>
             <Field label="New password">
-              <Input type="password" autoComplete="new-password" minLength={8} value={form.next} onChange={set("next")} required />
+              <PasswordInput autoComplete="new-password" minLength={8} value={form.next} onChange={set("next")} required />
             </Field>
             <Field label="New password again">
-              <Input type="password" autoComplete="new-password" minLength={8} value={form.again} onChange={set("again")} required />
+              <PasswordInput autoComplete="new-password" minLength={8} value={form.again} onChange={set("again")} required />
             </Field>
             <Button type="submit" busy={busy}>Change password</Button>
           </form>

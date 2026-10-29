@@ -132,7 +132,7 @@ export type PlatformSchoolsQueryVariables = Exact<{
 }>;
 
 
-export type PlatformSchoolsQuery = { platformOverview: { schools: number, activeStudents: number, onTrial: number, pendingSenders: Array<{ schoolId: string, schoolName: string, senderId: string }> }, platformSchools: { total: number, items: Array<{ id: string, name: string, slug: string, status: string, accessMode: string, plan: string | null, studentCount: number, trialEndsAt: string | null, lastActivityAt: string | null, createdAt: string, smsSenderId: string, smsSenderStatus: string, usage: { signIns7d: number, activeUsers7d: number, smsUnits30d: number, collected30dKobo: number, onlineShare30d: number, unpaidInvoices: number } }> } };
+export type PlatformSchoolsQuery = { platformOverview: { schools: number, activeStudents: number, onTrial: number, pendingSenders: Array<{ schoolId: string, schoolName: string, senderId: string }>, supportGrants: Array<{ schoolId: string, schoolName: string, reason: string, grantedBy: string, expiresAt: string, portalUrl: string }> }, platformSchools: { total: number, items: Array<{ id: string, name: string, slug: string, status: string, accessMode: string, plan: string | null, studentCount: number, trialEndsAt: string | null, lastActivityAt: string | null, createdAt: string, smsSenderId: string, smsSenderStatus: string, usage: { signIns7d: number, activeUsers7d: number, smsUnits30d: number, collected30dKobo: number, onlineShare30d: number, unpaidInvoices: number } }> } };
 
 export type SetSchoolStatusMutationVariables = Exact<{
   schoolId: string | number;
@@ -1097,6 +1097,14 @@ export const PlatformSchoolsDocument = new TypedDocumentString(`
       schoolId
       schoolName
       senderId
+    }
+    supportGrants {
+      schoolId
+      schoolName
+      reason
+      grantedBy
+      expiresAt
+      portalUrl
     }
   }
   platformSchools(search: $search, offset: $offset, limit: 50) {

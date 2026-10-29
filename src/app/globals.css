@@ -86,3 +86,10 @@ input[type="number"] {
 @media (prefers-reduced-motion: reduce) {
   .ui-fade-in, .ui-pop-in, .ui-slide-in, .ui-skeleton { animation: none; }
 }
+
+/* Password boxes have their own Show/Hide button; hide the browser's eye (Edge), which is
+   invisible in dark mode and would otherwise appear beside ours. */
+input::-ms-reveal,
+input::-ms-clear {
+  display: none;
+}

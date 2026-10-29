@@ -11,7 +11,10 @@ import { naira } from "@/lib/money";
 
 const PlatformSchoolsDocument = graphql(`
   query PlatformSchools($search: String, $offset: Int!) {
-    platformOverview { schools activeStudents onTrial pendingSenders { schoolId schoolName senderId } }
+    platformOverview {
+      schools activeStudents onTrial pendingSenders { schoolId schoolName senderId }
+      supportGrants { schoolId schoolName reason grantedBy expiresAt portalUrl }
+    }
     platformSchools(search: $search, offset: $offset, limit: 50) {
       total
       items {
@@ -67,6 +70,22 @@ export default function ConsolePage() {
       </div>
       <ErrorNote error={error} />
       {msg && <Notice tone="success">{msg}</Notice>}
+
+      {(overview?.supportGrants.length ?? 0) > 0 && (
+        <Card flush title="Support access granted" description="Schools that have let the support team in. Everything done there is marked in their audit log.">
+          {overview!.supportGrants.map((g) => (
+            <div key={g.schoolId} className="flex flex-wrap items-center justify-between gap-3 border-b border-line px-5 py-3 last:border-b-0">
+              <div className="min-w-0 text-sm">
+                <div><span className="font-medium text-ink">{g.schoolName}</span> <span className="text-muted">· {g.reason}</span></div>
+                <div className="text-[13px] text-muted">
+                  By {g.grantedBy} · until {new Date(g.expiresAt).toLocaleString("en-NG", { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" })}
+                </div>
+              </div>
+              <a href={g.portalUrl} target="_blank" rel="noopener noreferrer" className="text-sm font-semibold text-brand hover:underline">Open school</a>
+            </div>
+          ))}
+        </Card>
+      )}
 
       {pendingSenders.length > 0 && (
         <Card flush title="SMS sender names awaiting network approval" description="Record the decision once the networks have approved or rejected the name.">

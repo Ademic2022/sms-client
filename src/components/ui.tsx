@@ -131,6 +131,25 @@ export function Input(props: InputHTMLAttributes<HTMLInputElement>) {
   return <input {...props} className={cx(control, "h-10", props.className)} />;
 }
 
+/** A password box with a Show/Hide button, readable in light and dark mode (matches the sign-in pages). */
+export function PasswordInput(props: Omit<InputHTMLAttributes<HTMLInputElement>, "type">) {
+  const [visible, setVisible] = useState(false);
+  return (
+    <div className="relative">
+      <input {...props} type={visible ? "text" : "password"} className={cx(control, "h-10 pr-16", props.className)} />
+      <button
+        type="button"
+        onClick={() => setVisible(!visible)}
+        className="absolute inset-y-0 right-0 rounded-r-lg px-3 text-xs font-semibold uppercase tracking-wide text-muted transition hover:text-ink focus-visible:text-ink focus-visible:outline-none"
+        aria-label={visible ? "Hide password" : "Show password"}
+        aria-pressed={visible}
+      >
+        {visible ? "Hide" : "Show"}
+      </button>
+    </div>
+  );
+}
+
 export function SearchInput(props: InputHTMLAttributes<HTMLInputElement>) {
   return (
     <div className={cx("relative", props.className)}>
